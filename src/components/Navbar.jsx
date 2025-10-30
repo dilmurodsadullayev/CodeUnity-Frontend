@@ -8,7 +8,7 @@ import PlaceholderUserImage from '../assests/userImage.jpeg'; // A new placehold
 const Navbar = () => {
   const [openUserMenu, setOpenUserMenu] = useState(false);
   const [openNotifications, setOpenNotifications] = useState(false);
-  const { loggedIn, user } = useSelector((state) => state.auth);
+  const { isLoggedIn, user } = useSelector((state) => state.auth);
   const { notificationss, status } = useSelector((state) => state.notification);
   console.log("Notification lar ", notificationss)
 
@@ -156,7 +156,7 @@ const Navbar = () => {
 
           {/* Right: Coins, Notifications & Auth (User logged in state) */}
           <div className="flex items-center space-x-4">
-            {loggedIn ? (
+            {isLoggedIn ? (
               <>
                 <Link
                   to={'/codecoin-history'}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Outlet, Navigate, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector, Provider } from "react-redux"; // Providerni bu yerdan olamiz, asliga ko'ra
+import { BrowserRouter as Router, Routes, Route, Outlet, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { useDispatch, useSelector, Provider } from "react-redux";
 
 import {
   Main, Navbar, Footer, Login, Register, Problems, Feedback, CodeCoin, Users,
@@ -8,28 +8,31 @@ import {
   CodeCoinHistory, NotificationsPage
 } from "./components";
 import store from "./store";
-import AuthService from "./services/auth";
-import { logoutUser, signUserSuccess, isLoading } from "./features/auth/Auth"; // signUserFailure ham kerak bo'lishi mumkin
-import { closeWebSocket, initWebSocket } from "./services/notificationService";
+import AuthService from "./services/auth"; // AuthService import qilindi
+import { logoutUser, signUserSuccess, signUserStart, signUserFailer } from "./features/auth/Auth";
 
 // PrivateRoute komponenti
 const PrivateRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useSelector((state) => state.auth);
+  const { isLoggedIn, isLoading } = useSelector((state) => state.auth);
+  // console.log("PrivateRoute Render: isLoading =", isLoading, ", isLoggedIn =", isLoggedIn);
 
   if (isLoading) {
-    // Agar autentifikatsiya holati yuklanayotgan bo'lsa, yuklanish indikatorini ko'rsatish
-    return <div className="flex items-center justify-center min-h-screen dark:bg-[#0d1117] text-gray-800 dark:text-gray-200">Yuklanmoqda...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen dark:bg-[#0d1117] text-gray-800 dark:text-gray-200">
+        Yuklanmoqda...
+      </div>
+    );
   }
 
-  // Agar login bo'lmagan bo'lsa, login sahifasiga yo'naltiramiz
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  return isLoggedIn ? children : <Navigate to="/login" replace />;
 };
 
 function AppContent() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const dispatch = useDispatch();
-  const { user, isAuthenticated, isLoading } = useSelector((state) => state.auth); // isLoading ni Redux'dan olamiz
-  const navigate = useNavigate();
+  const { isLoggedIn, isLoading } = useSelector((state) => state.auth);
+  // console.log("AppContent Render: isLoggedIn =", isLoggedIn, ", isLoading =", isLoading, ", currentPath =", location.pathname);
+  const location = useLocation();
 
   // Mavzuni localStorage'dan yuklash
   useEffect(() => {
@@ -60,54 +63,59 @@ function AppContent() {
 
   // Foydalanuvchi ma'lumotlarini dastlabki yuklash va autentifikatsiya holatini tekshirish
   useEffect(() => {
-    const checkUserStatus = async () => {
-      dispatch(isLoading(true)); // Loadingni boshlaymiz
-      try {
-        const response = await AuthService.getUser(); // Backend'dan user holatini tekshirish (cookie orqali)
-        // Agar muvaffaqiyatli bo'lsa, user ma'lumotlari bilan Redux state'ni yangilaymiz
-        // response.user deb olsak, chunki AuthService'dan shunday keladi deb faraz qilyapmiz
-        dispatch(signUserSuccess(response.user));
-      } catch (error) {
-        console.log("Foydalanuvchi sessioni yaroqsiz yoki mavjud emas:", error);
-        dispatch(logoutUser()); // Token yaroqsiz bo'lsa, logout qilamiz
-      } finally {
-        dispatch(isLoading(false)); // Loadingni tugatamiz
-      }
-    };
+    const publicPaths = ['/login', '/register'];
+    const isPublicPath = publicPaths.includes(location.pathname);
 
-    checkUserStatus();
-  }, [dispatch]); // Faqat bir marta, komponent yuklanganda ishga tushadi
-
-  // WebSocketni boshqarish
-  useEffect(() => {
-    // isLoading tugagandan so'ng va isAuthenticated bo'lsa, WebSocketni ulaymiz
-    if (!isLoading && isAuthenticated && user && user.id) { // user.id mavjudligini ham tekshiramiz
-      console.log("isAuthenticated true, WebSocket ulanmoqda...");
-      initWebSocket(dispatch, user.id); // user.id ni initWebSocket ga o'tkazamiz
-    } else if (!isLoading && !isAuthenticated) {
-      console.log("isAuthenticated false, WebSocket uzilmoqda...");
-      closeWebSocket();
-      // Logout bo'lganda yoki autentifikatsiya yo'q bo'lganda,
-      // agar hozirgi sahifa login/register emas bo'lsa, login sahifasiga yo'naltiramiz
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
-        navigate('/login');
-      }
+    // Agar allaqachon login bo'lgan bo'lsa va public yo'lda bo'lmasak, va loading tugagan bo'lsa, qaytamiz.
+    if (isLoggedIn && !isLoading && !isPublicPath) {
+        // console.log("Autentifikatsiya tekshiruvini o'tkazib yuborish (Allaqachon login):", { isLoggedIn, isLoading, isPublicPath, currentPath: location.pathname });
+        return;
     }
+    // Agar public yo'lda bo'lsak va login bo'lmagan bo'lsak, va loading tugagan bo'lsa, qaytamiz.
+    if (isPublicPath && !isLoggedIn && !isLoading) {
+      // console.log("Autentifikatsiya tekshiruvini o'tkazib yuborish (Public yo'l):", { isLoggedIn, isLoading, isPublicPath, currentPath: location.pathname });
+      return;
+    }
+    // Agar public yo'lda bo'lsak va loading tugagan bo'lsa, va login bo'lgan bo'lsak, lekin user null bo'lsa...
+    // Bu yerda biroz murakkablik bor. Foydalanuvchi `/login` ga kirgan bo'lsa va allaqachon login bo'lgan bo'lsa,
+    // uni `/` ga yo'naltirishimiz kerak. Bu mantiqni `Login` komponenti ichida hal qilish maqsadga muvofiq.
 
-    // Komponent o'chirilganda WebSocketni yopish
-    return () => {
-      closeWebSocket();
+    const checkUserStatus = async () => {
+      // console.log("Autentifikatsiya holatini tekshirishni boshlash...");
+      // signUserStart dispatch qilinadi, chunki bu blok faqat loading holatida ishlaydi (yoki boshida)
+      dispatch(signUserStart()); 
+      try {
+        const response = await AuthService.getUser();
+        // console.log("AuthService.getUser() dan kelgan javob:", response); 
+        
+        if (response && response.id) {
+          dispatch(signUserSuccess(response));
+        } else {
+          // Serverdan user topilmagan bo'lsa (lekin 200 OK qaytargan bo'lishi mumkin)
+          // console.log("Autentifikatsiya muvaffaqiyatsiz: Foydalanuvchi obyekti topilmadi yoki noto'g'ri formatda.");
+          dispatch(signUserFailer("Foydalanuvchi ma'lumotlari mavjud emas yoki noto'g'ri."));
+          dispatch(logoutUser()); // Cookie ni server o'chirishi kerak, faqat Redux holatini tozalaymiz
+        }
+      } catch (error) {
+        // Bu yerga serverdan 401 (Unauthorized) yoki boshqa xatolar keladi
+        // console.error("Foydalanuvchi sessioni yaroqsiz yoki mavjud emas:", error);
+        dispatch(signUserFailer(error.message || "Autentifikatsiya xatosi yuz berdi."));
+        dispatch(logoutUser()); // Redux holatini tozalaymiz
+      }
     };
-  }, [isAuthenticated, user, dispatch, navigate, isLoading]); // Dependency'larga isLoading'ni ham qo'shamiz
 
-  // isLoading state Redux'dan keladi, ilova yuklanayotganini ko'rsatish uchun ishlatiladi
-  if (isLoading) {
-    return (
-      <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'dark' : ''} bg-[#0d1117]`}>
-        <h1 className="text-white text-3xl">Yuklanmoqda...</h1>
-      </div>
-    );
-  }
+    // Agar Reduxdagi `isLoading` hali `true` bo'lsa (dastlabki yuklanishda)
+    // va public yo'lda bo'lmasak (chunki public yo'llarda user tekshiruvi shart emas)
+    if (isLoading && !isPublicPath) {
+      checkUserStatus();
+    } else if (isLoading && isPublicPath) {
+      // Agar public yo'lda bo'lsak va hali `isLoading` `true` bo'lsa, uni `false` ga o'rnatishimiz kerak
+      // bu user tekshiruvini o'tkazib yuborganimizni bildiradi
+      dispatch(signUserFailer(null)); // Xato emas, shunchaki loadingni tugatish
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, isLoggedIn, location.pathname]); // `isLoading` ni dependency'dan olib tashladim, chunki u `useEffect` ichida boshqariladi
+
 
   return (
     <>
@@ -115,12 +123,12 @@ function AppContent() {
         {/* Login va Register sahifalari */}
         <Route path="/login" element={
           <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'dark' : ''} bg-[#0d1117]`}>
-            <Login />
+            {isLoggedIn ? <Navigate to="/" replace /> : <Login />} {/* Agar login bo'lgan bo'lsa, asosiy sahifaga yo'naltirish */}
           </div>
         } />
         <Route path="/register" element={
           <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'dark' : ''} bg-[#0d1117]`}>
-            <Register />
+            {isLoggedIn ? <Navigate to="/" replace /> : <Register />} {/* Agar login bo'lgan bo'lsa, asosiy sahifaga yo'naltirish */}
           </div>
         } />
 
@@ -135,15 +143,15 @@ function AppContent() {
         <Route
           path="/"
           element={
-            <PrivateRoute> {/* Himoyalangan route */}
-              <div className="flex flex-col min-h-screen"> {/* Footer'ni pastga itarish uchun */}
+            <PrivateRoute>
+              <div className="flex flex-col min-h-screen">
                 <Navbar toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
                 <div
-                  className={`flex-grow ${ // Kontentni kengaytirish uchun
+                  className={`flex-grow ${
                     isDarkMode ? "dark" : ""
                   } text-gray-800 dark:text-gray-200 transition-colors duration-300 bg-gray-100 dark:bg-[#0d1117]`}
                 >
-                  <Outlet /> {/* ichki sahifalar shu yerga chiqadi */}
+                  <Outlet />
                 </div>
                 <Footer />
               </div>
