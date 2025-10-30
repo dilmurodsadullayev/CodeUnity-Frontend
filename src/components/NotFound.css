@@ -1,0 +1,51 @@
+/* components/NotFound.css */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0d1117;
+    color: #c9d1d9;
+}
+
+.body-bg {
+    background-color: #0d1117; /* Asosiy body fon rangini React komponentiga o'tkazish */
+}
+
+/* ----- YULDUZLAR PARVOZI ANIMATSIYASI ----- */
+.starfield {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: -1;
+}
+.star {
+    position: absolute;
+    background-color: white;
+    border-radius: 50%;
+    animation: animStar linear infinite;
+}
+@keyframes animStar {
+    from { transform: translateY(-20vh); }
+    to { transform: translateY(120vh); }
+}
+
+/* ----- GOLOGRAFİK TEKST EFFEKTI ----- */
+.glitch-text {
+    text-shadow: 
+        -2px -2px 0px rgba(0, 255, 255, 0.5), 
+        2px 2px 0px rgba(255, 0, 255, 0.5);
+    animation: glitch 1.5s infinite linear alternate-reverse;
+}
+@keyframes glitch {
+    0% { transform: translate(0); }
+    25% { transform: translate(2px, -2px); }
+    50% { transform: translate(-2px, 2px); }
+    75% { transform: translate(2px, 2px); }
+    100% { transform: translate(-2px, -2px); }
+}
+
+/* ----- SUZIB YURUVCHI DROID ANIMATSIYASI ----- */
+.floating-droid {
+    animation: float-droid 5s ease-in-out infinite;
+}
+@keyframes float-droid {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}

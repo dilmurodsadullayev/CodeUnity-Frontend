@@ -1,0 +1,56 @@
+/* index.css */
+:root {
+    --dark-bg: #0d1117;
+    --dark-bg-secondary: #161b22;
+    --border-color: rgba(193, 205, 219, 0.2);
+    --text-primary: #c9d1d9;
+    --indigo: #4f46e5;
+    --purple: #a855f7;
+    --pink: #ec4899;
+}
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--dark-bg);
+    color: var(--text-primary);
+    overflow-x: hidden;
+}
+
+/* ----- Parallaks va Aurora Foni ----- */
+.aurora-section { position: relative; }
+.aurora-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; filter: blur(100px); }
+.aurora-bg > div { position: absolute; border-radius: 50%; animation-duration: 12s; animation-iteration-count: infinite; animation-direction: alternate; }
+.aurora-1 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(79, 70, 229, 0.25), transparent 70%); top: 10%; left: 15%; animation-name: pulse-1; }
+.aurora-2 { width: 350px; height: 350px; background: radial-gradient(circle, rgba(168, 85, 247, 0.2), transparent 70%); bottom: 15%; right: 10%; animation-name: pulse-2; animation-delay: 2s; }
+@keyframes pulse-1 { from { transform: scale(0.9) translateX(-20px); opacity: 0.8; } to { transform: scale(1.2) translateX(20px); opacity: 1; } }
+@keyframes pulse-2 { from { transform: scale(1.1) translateY(30px); opacity: 0.7; } to { transform: scale(0.8) translateY(-30px); opacity: 1; } }
+
+/* ----- Shishasimon Kartochka ----- */
+.glass-card { position: relative; background: rgba(22, 27, 34, 0.6); backdrop-filter: blur(12px); border: 1px solid var(--border-color); border-radius: 0.75rem; z-index: 1; transition: all 0.4s ease; }
+.glass-card::after { content: ""; position: absolute; inset: -1px; border-radius: inherit; background: linear-gradient(120deg, var(--indigo), var(--purple)); opacity: 0; transition: opacity 0.4s ease; z-index: -1; }
+.glass-card:hover::after { opacity: 1; }
+.glass-card:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+
+/* ----- Timeline (Mobile-First & Responsive) ----- */
+.timeline-container { position: relative; }
+/* Mobil uchun chiziq (chapda) */
+.timeline-line { position: absolute; left: 1rem; top: 0; width: 3px; height: 100%; background: linear-gradient(to bottom, transparent, var(--indigo), var(--purple), transparent); }
+.timeline-item { position: relative; padding-left: 2.5rem; /* 40px */ }
+/* Mobil uchun nuqta */
+.timeline-item::before { content: ''; position: absolute; top: 1.5rem; left: 0.5rem; /* 8px */ width: 16px; height: 16px; background-color: var(--dark-bg-secondary); border: 3px solid var(--indigo); border-radius: 50%; z-index: 1; box-shadow: 0 0 10px rgba(79, 70, 229, 0.7); }
+
+/* Katta ekranlar uchun (md va undan yuqori) */
+@media (min-width: 768px) {
+    .timeline-line { left: 50%; transform: translateX(-50%); }
+    .timeline-item { width: 50%; padding-left: 2.5rem; padding-right: 2.5rem; --translate-x: -30px; }
+    .timeline-item:nth-child(odd) { align-self: flex-start; text-align: right; }
+    .timeline-item:nth-child(odd) .timeline-content { align-items: flex-end; }
+    .timeline-item:nth-child(even) { align-self: flex-end; --translate-x: 30px; }
+    .timeline-item:nth-child(odd)::before { right: -8px; left: auto; }
+    .timeline-item:nth-child(even)::before { left: -8px; }
+}
+
+/* ----- Animatsiyalar ----- */
+@keyframes slide-in { from { opacity: 0; transform: translateY(30px) translateX(var(--translate-x, 0)); } to { opacity: 1; transform: translateY(0) translateX(0); } }
+.animate-slide-in { animation: slide-in 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; opacity: 0; }
+@keyframes fade-in-char { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in-char { display: inline-block; animation: fade-in-char 0.5s both; }

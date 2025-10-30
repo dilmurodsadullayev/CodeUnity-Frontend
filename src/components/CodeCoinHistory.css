@@ -1,0 +1,125 @@
+/* General styles, assuming a dark theme is prevalent */
+:root {
+  --background-dark: #1a1a2e;
+  --card-bg: #212136;
+  --card-border: rgba(255, 255, 255, 0.1);
+  --text-white: #e0e0e0;
+  --text-gray: #a0a0b0;
+  --gold: #fcc433; /* For CodeCoin economy theme */
+  --green-earn: #34d399; /* Tailwind green-400 */
+  --purple-spend: #a78bfa; /* Tailwind purple-400 */
+}
+
+body {
+  background-color: var(--background-dark);
+  color: var(--text-white);
+  font-family: 'Inter', sans-serif; /* You might need to import Inter font */
+}
+
+/* Animations (re-used from CodeCoin or slightly adapted) */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 0.6s ease-out forwards;
+  opacity: 0; /* Hidden by default until animation starts */
+}
+
+/* Container for the history */
+.codecoin-history-container {
+  max-width: 900px; /* Adjust as needed */
+}
+
+/* Info card styling (consistent with CodeCoin component) */
+.info-card {
+  background-color: var(--card-bg);
+  border-radius: 1rem; /* Tailwind rounded-xl */
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--card-border);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.info-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Specific styles for history items */
+.history-item .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px; /* rounded-full */
+  font-size: 1.5rem; /* text-2xl */
+}
+
+.earn-item .icon {
+  background-color: rgba(52, 211, 153, 0.1); /* green-500/10 */
+  color: var(--green-earn);
+}
+
+.spend-item .icon {
+  background-color: rgba(167, 139, 250, 0.1); /* purple-500/10 */
+  color: var(--purple-spend);
+}
+
+.history-item .amount {
+  min-width: 100px; /* To align amounts */
+  text-align: right;
+}
+
+.text-gold {
+  color: var(--gold);
+}
+.text-green-400 {
+  color: var(--green-earn);
+}
+.text-purple-400 {
+  color: var(--purple-spend);
+}
+/* Utility classes for consistency, if not using Tailwind directly */
+.text-white { color: var(--text-white); }
+.text-gray-400 { color: var(--text-gray); }
+.font-black { font-weight: 900; }
+.font-bold { font-weight: 700; }
+.text-5xl { font-size: 3rem; /* 48px */ }
+.text-6xl { font-size: 3.75rem; /* 60px */ }
+.text-lg { font-size: 1.125rem; /* 18px */ }
+.text-xl { font-size: 1.25rem; /* 20px */ }
+.text-2xl { font-size: 1.5rem; /* 24px */ }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.gap-4 { gap: 1rem; /* 16px */ }
+.p-4 { padding: 1rem; }
+.mt-4 { margin-top: 1rem; }
+.mt-8 { margin-top: 2rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mx-auto { margin-left: auto; margin-right: auto; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.py-16 { padding-top: 4rem; padding-bottom: 4rem; }
+.pt-8 { padding-top: 2rem; }
+.pb-12 { padding-bottom: 3rem; }
+.text-center { text-align: center; }
+.max-w-2xl { max-width: 42rem; /* 672px */ }
+.grid { display: grid; }
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.gap-6 { gap: 1.5rem; }
+.w-14 { width: 3.5rem; }
+.h-14 { height: 3.5rem; }
+.flex-grow { flex-grow: 1; }
+.rounded-full { border-radius: 9999px; }
+.rounded-xl { border-radius: 1rem; }
+
+/* Responsive adjustments */
+@media (min-width: 768px) { /* md breakpoint */
+  .md\:text-6xl { font-size: 3.75rem; }
+}
