@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from "framer-motion";
 import UserImage from '../assests/userImage.jpeg'; // Default user image
 import PlaceholderUserImage from '../assests/userImage.jpeg'; // A new placeholder for notification avatars
+import { timeUntilDeadline } from '../utils/timeUntilDeadline';
 
 const Navbar = () => {
   const [openUserMenu, setOpenUserMenu] = useState(false);
@@ -227,7 +228,7 @@ const Navbar = () => {
                                   <p className="text-sm font-semibold text-white mb-1 leading-tight">
                                     {notification.type === "problem_urgent" && (
                                       <>
-                                        <span className="text-indigo-400">Yangi vazifa:</span> Sizga <span className="text-indigo-200">"{notification.problem.message}"</span> vazifasi yuklatildi.
+                                        <span className="text-indigo-400">Yangi vazifa:</span> Sizga <span className="text-indigo-200">"{notification.problem.problem}"</span> vazifasi yuklatildi.
                                       </>
                                     )}
                                     {notification.type === "problem_completed" && (
@@ -245,8 +246,8 @@ const Navbar = () => {
                                     {notification.type === "problem_urgent" && (
                                       <>
                                         <span><i className="fas fa-user mr-1"></i>{notification.sender.username}</span> •
-                                        <span className="text-yellow-400"><i className="fas fa-coins mr-1"></i>{notification.coins}</span> •
-                                        <span className="text-red-400"><i className="fas fa-calendar-alt mr-1"></i>{notification.deadline}</span>
+                                        <span className="text-yellow-400"><i className="fas fa-coins mr-1"></i>{notification.problem.offered_coins}</span> •
+                                        <span className="text-red-400"><i className="fas fa-calendar-alt mr-1"></i>{timeUntilDeadline(notification.problem.deadline)}</span>
                                       </>
                                     )}
                                      {notification.type === "problem_completed" && (
