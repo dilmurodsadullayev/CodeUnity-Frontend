@@ -1,22 +1,26 @@
+// src/store/index.js
 import { configureStore } from '@reduxjs/toolkit'
+// Fayl yo'llarini tuzatish: `./features/...` o'rniga `../features/...`
 import AuthReducer from '../features/auth/Auth'
 import CommentReducer from '../features/comments/Comment'
 import ProblemReducer from '../features/problems/Problems'
-import problemResponse from '../features/problemResponse/problemResponse'
-import UserReducer from '../features/users'
+import problemResponseReducer from '../features/problemResponse/problemResponse'
+import UserReducer from '../features/users' // Agar bu katalog bo'lsa, indeks fayl borligini tekshiring
 import FeedbackReducer from '../features/feedback'
-import ProblemNotification from '../features/notificationSlice'
+import notificationReducer from '../features/notificationSlice'
+import notificationMiddleware from '../middleware/notificationMiddleware'
 
-export default configureStore({
+export const store = configureStore({
   reducer: {
     auth: AuthReducer,
     comment: CommentReducer,
     problem: ProblemReducer,
-    problemResponse: problemResponse,
+    problemResponse: problemResponseReducer,
     user: UserReducer,
     feedback: FeedbackReducer,
-    notification: ProblemNotification
-
+    notifications: notificationReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(notificationMiddleware),
   devTools: process.env.NODE_ENV !== 'production',
-})
+});

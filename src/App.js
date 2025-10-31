@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Outlet, Navigate, useNavigate, useLocation } from "react-router-dom";
-import { useDispatch, useSelector, Provider } from "react-redux";
+import { BrowserRouter as Router, Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux"; // Providerni App.js da ishlatmasdan, index.js da ishlatamiz
 
 import {
   Main, Navbar, Footer, Login, Register, Problems, Feedback, CodeCoin, Users,
   Profile, NotFound, ProblemDetail, ProblemCreate, ProblemSolutionUpdate,
-  CodeCoinHistory, NotificationsPage
+  CodeCoinHistory, NotificationsPage // NotificationsPage komponentini import qiling
 } from "./components";
-import store from "./store";
-import AuthService from "./services/auth"; // AuthService import qilindi
+// import store from "./store"; // store ni index.js da Providerga beramiz
+import AuthService from "./services/auth";
 import { logoutUser, signUserSuccess, signUserStart, signUserFailer } from "./features/auth/Auth";
+import { connectWebSocket, disconnectWebSocket } from "./middleware/notificationMiddleware"; // Middleware dan action creatorlarni import qilish
 
 // PrivateRoute komponenti
 const PrivateRoute = ({ children }) => {
@@ -24,6 +25,7 @@ const PrivateRoute = ({ children }) => {
     );
   }
 
+  // Agar login bo'lmagan bo'lsa, /login ga yo'naltiramiz
   return isLoggedIn ? children : <Navigate to="/login" replace />;
 };
 
@@ -31,7 +33,6 @@ function AppContent() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const dispatch = useDispatch();
   const { isLoggedIn, isLoading } = useSelector((state) => state.auth);
-  // console.log("AppContent Render: isLoggedIn =", isLoggedIn, ", isLoading =", isLoading, ", currentPath =", location.pathname);
   const location = useLocation();
 
   // Mavzuni localStorage'dan yuklash
@@ -66,56 +67,51 @@ function AppContent() {
     const publicPaths = ['/login', '/register'];
     const isPublicPath = publicPaths.includes(location.pathname);
 
-    // Agar allaqachon login bo'lgan bo'lsa va public yo'lda bo'lmasak, va loading tugagan bo'lsa, qaytamiz.
-    if (isLoggedIn && !isLoading && !isPublicPath) {
-        // console.log("Autentifikatsiya tekshiruvini o'tkazib yuborish (Allaqachon login):", { isLoggedIn, isLoading, isPublicPath, currentPath: location.pathname });
-        return;
-    }
-    // Agar public yo'lda bo'lsak va login bo'lmagan bo'lsak, va loading tugagan bo'lsa, qaytamiz.
-    if (isPublicPath && !isLoggedIn && !isLoading) {
-      // console.log("Autentifikatsiya tekshiruvini o'tkazib yuborish (Public yo'l):", { isLoggedIn, isLoading, isPublicPath, currentPath: location.pathname });
-      return;
-    }
-    // Agar public yo'lda bo'lsak va loading tugagan bo'lsa, va login bo'lgan bo'lsak, lekin user null bo'lsa...
-    // Bu yerda biroz murakkablik bor. Foydalanuvchi `/login` ga kirgan bo'lsa va allaqachon login bo'lgan bo'lsa,
-    // uni `/` ga yo'naltirishimiz kerak. Bu mantiqni `Login` komponenti ichida hal qilish maqsadga muvofiq.
-
     const checkUserStatus = async () => {
-      // console.log("Autentifikatsiya holatini tekshirishni boshlash...");
-      // signUserStart dispatch qilinadi, chunki bu blok faqat loading holatida ishlaydi (yoki boshida)
-      dispatch(signUserStart()); 
+      dispatch(signUserStart()); // Autentifikatsiya tekshiruvini boshlash
       try {
         const response = await AuthService.getUser();
-        // console.log("AuthService.getUser() dan kelgan javob:", response); 
-        
         if (response && response.id) {
           dispatch(signUserSuccess(response));
+          // Foydalanuvchi muvaffaqiyatli login bo'lganda WebSocketga ulanish
+          dispatch(connectWebSocket());
         } else {
-          // Serverdan user topilmagan bo'lsa (lekin 200 OK qaytargan bo'lishi mumkin)
-          // console.log("Autentifikatsiya muvaffaqiyatsiz: Foydalanuvchi obyekti topilmadi yoki noto'g'ri formatda.");
           dispatch(signUserFailer("Foydalanuvchi ma'lumotlari mavjud emas yoki noto'g'ri."));
-          dispatch(logoutUser()); // Cookie ni server o'chirishi kerak, faqat Redux holatini tozalaymiz
+          dispatch(logoutUser());
+          // Foydalanuvchi login bo'lmaganda WebSocket ulanishini uzish
+          dispatch(disconnectWebSocket());
         }
       } catch (error) {
-        // Bu yerga serverdan 401 (Unauthorized) yoki boshqa xatolar keladi
-        // console.error("Foydalanuvchi sessioni yaroqsiz yoki mavjud emas:", error);
         dispatch(signUserFailer(error.message || "Autentifikatsiya xatosi yuz berdi."));
-        dispatch(logoutUser()); // Redux holatini tozalaymiz
+        dispatch(logoutUser());
+        // Xato yuz berganda WebSocket ulanishini uzish
+        dispatch(disconnectWebSocket());
       }
     };
 
-    // Agar Reduxdagi `isLoading` hali `true` bo'lsa (dastlabki yuklanishda)
-    // va public yo'lda bo'lmasak (chunki public yo'llarda user tekshiruvi shart emas)
-    if (isLoading && !isPublicPath) {
+    // Agar user allaqachon login bo'lmasa VA hozir loading holatida bo'lmasa, user holatini tekshirish
+    // yoki user login bo'lgan bo'lsa va loading tugagan bo'lsa, bu blokni tashlab ketish.
+    // Faqatgina dastlabki yuklanishda yoki login holati o'zgarganda tekshiramiz.
+    if (!isLoggedIn && isLoading) { // Agar hali login bo'lmagan bo'lsa va yuklanayotgan bo'lsa
       checkUserStatus();
-    } else if (isLoading && isPublicPath) {
-      // Agar public yo'lda bo'lsak va hali `isLoading` `true` bo'lsa, uni `false` ga o'rnatishimiz kerak
-      // bu user tekshiruvini o'tkazib yuborganimizni bildiradi
-      dispatch(signUserFailer(null)); // Xato emas, shunchaki loadingni tugatish
+    } else if (isLoggedIn && !isLoading) {
+      // Agar allaqachon login bo'lgan bo'lsa va loading tugagan bo'lsa
+      // WebSocket ulanishini ta'minlash (agar allaqachon ulanmagan bo'lsa)
+      dispatch(connectWebSocket());
+    } else if (!isLoggedIn && !isLoading && !isPublicPath) {
+      // Agar login bo'lmagan bo'lsa, loading tugagan bo'lsa va public yo'lda bo'lmasa,
+      // bu holatda foydalanuvchini logout deb belgilab, WebSocketni uzamiz
+      dispatch(logoutUser());
+      dispatch(disconnectWebSocket());
+    } else if (!isLoggedIn && !isLoading && isPublicPath) {
+      // Agar login bo'lmagan bo'lsa, loading tugagan bo'lsa va public yo'lda bo'lsa
+      // WebSocketni uzamiz, chunki login bo'lmagan userga bildirishnomalar kerak emas
+      dispatch(disconnectWebSocket());
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, isLoggedIn, location.pathname]); // `isLoading` ni dependency'dan olib tashladim, chunki u `useEffect` ichida boshqariladi
 
+    // `isLoggedIn` dependency'si kerak, chunki login/logout sodir bo'lganda `useEffect` qayta ishga tushishi kerak.
+    // `isLoading` ni esa ichkarida boshqarganimiz uchun tashqarida dependency sifatida kiritmadik.
+  }, [dispatch, isLoggedIn, isLoading, location.pathname]); // location.pathname ham dependency ga qo'shildi
 
   return (
     <>
@@ -123,12 +119,12 @@ function AppContent() {
         {/* Login va Register sahifalari */}
         <Route path="/login" element={
           <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'dark' : ''} bg-[#0d1117]`}>
-            {isLoggedIn ? <Navigate to="/" replace /> : <Login />} {/* Agar login bo'lgan bo'lsa, asosiy sahifaga yo'naltirish */}
+            {isLoggedIn ? <Navigate to="/" replace /> : <Login />}
           </div>
         } />
         <Route path="/register" element={
           <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'dark' : ''} bg-[#0d1117]`}>
-            {isLoggedIn ? <Navigate to="/" replace /> : <Register />} {/* Agar login bo'lgan bo'lsa, asosiy sahifaga yo'naltirish */}
+            {isLoggedIn ? <Navigate to="/" replace /> : <Register />}
           </div>
         } />
 
@@ -179,11 +175,10 @@ function AppContent() {
 
 function App() {
   return (
-    <Provider store={store}>
-      <Router>
-        <AppContent />
-      </Router>
-    </Provider>
+    // Providerni bu yerda ishlatish kerak, chunki AppContent ichida useSelector va useDispatch ishlatiladi
+    <Router>
+      <AppContent />
+    </Router>
   );
 }
 

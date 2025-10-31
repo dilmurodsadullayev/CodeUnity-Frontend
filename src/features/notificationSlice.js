@@ -6,6 +6,7 @@ const initialState = {
   wsConnected: false,
   totalUnreadCount: 0,
   wsError: null,
+  loading: true, // Bildirishnomalarni yuklash holatini ko'rsatish uchun
 };
 
 const notificationSlice = createSlice({
@@ -15,16 +16,19 @@ const notificationSlice = createSlice({
     wsConnected: (state) => {
       state.wsConnected = true;
       state.wsError = null;
+      state.loading = false;
     },
     wsDisconnected: (state, action) => {
       state.wsConnected = false;
       state.wsError = action.payload || null;
       state.notifications = [];
       state.totalUnreadCount = 0;
+      state.loading = false;
     },
     setNotifications: (state, action) => {
       state.notifications = action.payload;
       state.totalUnreadCount = action.payload.filter(notif => !notif.is_read).length;
+      state.loading = false;
     },
     addNotification: (state, action) => {
       const newNotification = action.payload;
@@ -47,7 +51,11 @@ const notificationSlice = createSlice({
     clearNotifications: (state) => {
       state.notifications = [];
       state.totalUnreadCount = 0;
-    }
+      state.loading = false;
+    },
+    setLoading: (state, action) => {
+      state.loading = action.payload;
+    },
   },
 });
 
@@ -59,6 +67,7 @@ export const {
   markNotificationAsReadLocally,
   setTotalUnreadCount,
   clearNotifications,
+  setLoading,
 } = notificationSlice.actions;
 
 export default notificationSlice.reducer;

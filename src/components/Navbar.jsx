@@ -9,8 +9,8 @@ const Navbar = () => {
   const [openUserMenu, setOpenUserMenu] = useState(false);
   const [openNotifications, setOpenNotifications] = useState(false);
   const { isLoggedIn, user } = useSelector((state) => state.auth);
-  const { notificationss, status } = useSelector((state) => state.notification);
-  console.log("Notification lar ", notificationss)
+  const { notifications, status } = useSelector((state) => state.notifications);
+  console.log("Notification lar ", notifications)
 
   
   const userMenuRef = useRef(null);
@@ -20,7 +20,7 @@ const Navbar = () => {
   const baseUrl = "http://127.0.0.1:8000";
 
   // Mock Notification Data (Enhanced with imageUrl for better demonstration)
-  const [notifications, setNotifications] = useState([
+  const [notificationss, setNotifications] = useState([
     {
       id: 1,
       type: "problem_assigned",
@@ -211,8 +211,8 @@ const Navbar = () => {
                                 {/* Notification User Image */}
                                 <img
                                   src={
-                                    notification.type === "problem_assigned"
-                                      ? notification.assignedByImage || PlaceholderUserImage
+                                    notification.type === "problem_urgent"
+                                      ? notification.sender.image || PlaceholderUserImage
                                       : notification.type === "new_feedback"
                                       ? notification.feedbackFromImage || PlaceholderUserImage
                                       : notification.type === "problem_completed"
@@ -225,9 +225,9 @@ const Navbar = () => {
 
                                 <div className="flex-grow">
                                   <p className="text-sm font-semibold text-white mb-1 leading-tight">
-                                    {notification.type === "problem_assigned" && (
+                                    {notification.type === "problem_urgent" && (
                                       <>
-                                        <span className="text-indigo-400">Yangi vazifa:</span> Sizga <span className="text-indigo-200">"{notification.problemName}"</span> vazifasi yuklatildi.
+                                        <span className="text-indigo-400">Yangi vazifa:</span> Sizga <span className="text-indigo-200">"{notification.problem.message}"</span> vazifasi yuklatildi.
                                       </>
                                     )}
                                     {notification.type === "problem_completed" && (
@@ -242,9 +242,9 @@ const Navbar = () => {
                                     )}
                                   </p>
                                   <p className="text-xs text-gray-400 space-x-1">
-                                    {notification.type === "problem_assigned" && (
+                                    {notification.type === "problem_urgent" && (
                                       <>
-                                        <span><i className="fas fa-user mr-1"></i>{notification.assignedBy}</span> •
+                                        <span><i className="fas fa-user mr-1"></i>{notification.sender.username}</span> •
                                         <span className="text-yellow-400"><i className="fas fa-coins mr-1"></i>{notification.coins}</span> •
                                         <span className="text-red-400"><i className="fas fa-calendar-alt mr-1"></i>{notification.deadline}</span>
                                       </>
