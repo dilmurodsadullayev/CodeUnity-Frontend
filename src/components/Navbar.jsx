@@ -1,79 +1,31 @@
+// src/components/Navbar.js
+
 import React, { useState, useRef, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux'; // <-- useDispatch hali ham kerak, agar boshqa joyda ishlatilsa.
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from "framer-motion";
 import UserImage from '../assests/userImage.jpeg'; // Default user image
-import PlaceholderUserImage from '../assests/userImage.jpeg'; // A new placeholder for notification avatars
-import { timeUntilDeadline } from '../utils/timeUntilDeadline';
+import NotificationDropdown from './NotificationDropdown';
 
 const Navbar = () => {
   const [openUserMenu, setOpenUserMenu] = useState(false);
-  const [openNotifications, setOpenNotifications] = useState(false);
+  const [openNotifications, setOpenNotifications] = useState(false); // State qoldirildi
   const { isLoggedIn, user } = useSelector((state) => state.auth);
-  const { notifications, status } = useSelector((state) => state.notifications);
+  // notifications faqat NotificationDropdown ga prop sifatida berilmaydi, lekin log uchun qoldi:
+  const { notifications } = useSelector((state) => state.notifications); 
   console.log("Notification lar ", notifications)
-
   
+  // useDispatch agar faqat mark as read uchun ishlatilgan bo'lsa, NotificationDropdown ga ko'chdi.
+  // Lekin logout uchun kerak bo'lishi mumkin.
+  // const dispatch = useDispatch(); 
+
   const userMenuRef = useRef(null);
-  const notificationsRef = useRef(null);
+  const notificationsRef = useRef(null); // Ref qoldirildi
   const navigate = useNavigate();
   const location = useLocation();
   const baseUrl = "http://127.0.0.1:8000";
 
-  // Mock Notification Data (Enhanced with imageUrl for better demonstration)
-  const [notificationss, setNotifications] = useState([
-    {
-      id: 1,
-      type: "problem_assigned",
-      problemName: "Implement User Authentication",
-      assignedBy: "Alice Smith",
-      assignedByImage: PlaceholderUserImage, // Added for demo
-      coins: 150,
-      deadline: "2 days",
-      read: false,
-      timestamp: "2 hours ago",
-    },
-    {
-      id: 2,
-      type: "problem_completed",
-      problemName: "Fix Payment Gateway Bug",
-      completedBy: "Bob Johnson",
-      completedByImage: PlaceholderUserImage, // Added for demo
-      coins: 200,
-      timestamp: "1 day ago",
-      read: true,
-    },
-    {
-      id: 3,
-      type: "new_feedback",
-      feedbackFrom: "Charlie Brown",
-      feedbackFromImage: PlaceholderUserImage, // Added for demo
-      problemName: "Dashboard UI Redesign",
-      timestamp: "3 days ago",
-      read: false,
-    },
-    {
-      id: 4,
-      type: "problem_assigned",
-      problemName: "Develop REST API for Products",
-      assignedBy: "David Lee",
-      assignedByImage: PlaceholderUserImage, // Added for demo
-      coins: 180,
-      deadline: "4 days",
-      read: false,
-      timestamp: "5 hours ago",
-    },
-    {
-      id: 5,
-      type: "problem_completed",
-      problemName: "Refactor Database Schema",
-      completedBy: "Eve White",
-      completedByImage: PlaceholderUserImage, // Added for demo
-      coins: 250,
-      timestamp: "6 hours ago",
-      read: false,
-    },
-  ]);
+  // Mock Notification Data O'CHIRIB TASHLANDI
 
   const isActive = (path) => location.pathname === path;
 
@@ -82,6 +34,9 @@ const Navbar = () => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setOpenUserMenu(false);
       }
+      // Notifications mantiqi NotificationDropdown da bo'lsa ham,
+      // umumiy yopish mantiqi bu yerda qolishi mumkin yoki NotificationDropdown ga to'liq ko'chirilishi kerak.
+      // Hozirgi holatda bu yerda qoldirildi.
       if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
         setOpenNotifications(false);
       }
@@ -99,18 +54,8 @@ const Navbar = () => {
     setOpenUserMenu(false);
     navigate('/login');
   };
-
-  const markNotificationAsRead = (id) => {
-    // In a real application, you would dispatch an action to update the backend
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notification =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
-    // You might want to navigate to a specific problem/feedback page here
-    // For now, we keep the dropdown open after marking as read to allow viewing other notifications
-    // setOpenNotifications(false); // Uncomment this if you want to close after any click
-  };
+  
+  // markNotificationAsRead O'CHIRILDI / NotificationDropdown ga ko'chdi
 
   const navLinks = [
     { path: "/feedback", iconClass: "fas fa-comments", text: "Feedback" },
@@ -119,7 +64,7 @@ const Navbar = () => {
     { path: "/codecoin", iconClass: "fas fa-coins", text: "CodeCoin" },
   ];
 
-  const unreadNotificationsCount = notifications.filter(n => !n.read).length;
+  // unreadNotificationsCount NotificationDropdown ga ko'chdi
 
   const dropdownVariants = {
     hidden: { opacity: 0, y: -10, scale: 0.95 },
@@ -169,125 +114,12 @@ const Navbar = () => {
                   <span className="font-bold text-md text-white">{user?.coins || 0}</span>
                 </Link>
 
-                {/* Notifications Icon */}
-                <div className="relative" ref={notificationsRef}>
-                  <button
-                    onClick={() => setOpenNotifications(!openNotifications)}
-                    className="relative p-2 rounded-full hover:bg-gray-700/50 transition-colors duration-200 focus:outline-none"
-                    aria-label="Bildirishnomalar"
-                  >
-                    <i className="fas fa-bell text-white text-xl"></i>
-                    {unreadNotificationsCount > 0 && (
-                      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full z-10">
-                        {unreadNotificationsCount}
-                      </span>
-                    )}
-                  </button>
-
-                  <AnimatePresence>
-                    {openNotifications && (
-                      <motion.div
-                        className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-gray-800 border border-gray-700 rounded-md shadow-lg z-20 notification-dropdown transform origin-top-right"
-                        variants={dropdownVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                      >
-                        <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-                          <h3 className="text-lg font-bold text-white">Bildirishnomalar</h3>
-                          {unreadNotificationsCount > 0 && (
-                            <span className="text-sm text-gray-400">{unreadNotificationsCount} yangi</span>
-                          )}
-                        </div>
-                        <div className="py-1">
-                          {notifications.length > 0 ? (
-                            notifications.map((notification) => (
-                              <div
-                                key={notification.id}
-                                className={`flex items-start gap-3 px-4 py-3 border-b border-gray-700 last:border-b-0 cursor-pointer transition-all duration-200 ${
-                                  !notification.read ? 'bg-indigo-900/30 hover:bg-indigo-900/50' : 'hover:bg-gray-700/50'
-                                }`}
-                                onClick={() => markNotificationAsRead(notification.id)}
-                              >
-                                {/* Notification User Image */}
-                                <img
-                                  src={
-                                    notification.type === "problem_urgent"
-                                      ? notification.sender.image || PlaceholderUserImage
-                                      : notification.type === "new_feedback"
-                                      ? notification.feedbackFromImage || PlaceholderUserImage
-                                      : notification.type === "problem_completed"
-                                      ? notification.completedByImage || PlaceholderUserImage
-                                      : PlaceholderUserImage // Default if no specific image type
-                                  }
-                                  alt="User"
-                                  className="h-9 w-9 rounded-full object-cover flex-shrink-0 mt-0.5"
-                                />
-
-                                <div className="flex-grow">
-                                  <p className="text-sm font-semibold text-white mb-1 leading-tight">
-                                    {notification.type === "problem_urgent" && (
-                                      <>
-                                        <span className="text-indigo-400">Yangi vazifa:</span> Sizga <span className="text-indigo-200">"{notification.problem.problem}"</span> vazifasi yuklatildi.
-                                      </>
-                                    )}
-                                    {notification.type === "problem_completed" && (
-                                      <>
-                                        <span className="text-green-400">Hal qilindi:</span> <span className="text-green-200">"{notification.problemName}"</span> hal qilindi.
-                                      </>
-                                    )}
-                                    {notification.type === "new_feedback" && (
-                                      <>
-                                        <span className="text-blue-400">Yangi fikr:</span> <span className="text-blue-200">"{notification.problemName}"</span> bo'yicha yangi fikr keldi.
-                                      </>
-                                    )}
-                                  </p>
-                                  <p className="text-xs text-gray-400 space-x-1">
-                                    {notification.type === "problem_urgent" && (
-                                      <>
-                                        <span><i className="fas fa-user mr-1"></i>{notification.sender.username}</span> •
-                                        <span className="text-yellow-400"><i className="fas fa-coins mr-1"></i>{notification.problem.offered_coins}</span> •
-                                        <span className="text-red-400"><i className="fas fa-calendar-alt mr-1"></i>{timeUntilDeadline(notification.problem.deadline)}</span>
-                                      </>
-                                    )}
-                                     {notification.type === "problem_completed" && (
-                                      <>
-                                        <span><i className="fas fa-user-check mr-1"></i>{notification.completedBy}</span> •
-                                        <span className="text-yellow-400">{notification.coins} Coin berildi</span>
-                                      </>
-                                    )}
-                                    {notification.type === "new_feedback" && (
-                                      <>
-                                        <span><i className="fas fa-user-edit mr-1"></i>{notification.feedbackFrom}</span>
-                                      </>
-                                    )}
-                                  </p>
-                                  <span className="text-xs text-gray-500 mt-2 block text-right">{notification.timestamp}</span>
-                                </div>
-                                {!notification.read && (
-                                  <span className="ml-2 h-2 w-2 rounded-full bg-indigo-500 flex-shrink-0 mt-2"></span>
-                                )}
-                              </div>
-                            ))
-                          ) : (
-                            <p className="px-4 py-3 text-sm text-gray-400 text-center">Bildirishnomalar yo'q.</p>
-                          )}
-                        </div>
-                        {notifications.length > 0 && (
-                          <div className="p-2 border-t border-gray-700">
-                            <Link
-                              to="/notifications"
-                              className="block text-center text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
-                              onClick={() => setOpenNotifications(false)}
-                            >
-                              Ko'proq ko'rish <i className="fas fa-arrow-right ml-1"></i>
-                            </Link>
-                          </div>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                {/* Notifications Icon (NotificationDropdown komponentiga almashtirildi) */}
+                <NotificationDropdown
+                    openNotifications={openNotifications}
+                    setOpenNotifications={setOpenNotifications}
+                    notificationsRef={notificationsRef}
+                />
 
                 {/* User Dropdown */}
                 <div className="relative" ref={userMenuRef}>

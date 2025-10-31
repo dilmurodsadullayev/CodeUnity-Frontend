@@ -24,5 +24,7 @@ export { default as DeleteConfirmationModal } from './DeleteConfirmationModal';
 export { default as ProblemSolutionUpdate } from './ProblemSolutionUpdate';
 export { default as CodeCoinHistory } from './CodeCoinHistory';
 export { default as NotificationsPage } from './NotificationsPage';
+export { default as NotificationDropdown } from './NotificationDropdown';
+
 
 

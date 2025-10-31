@@ -1,11 +1,26 @@
+// src/middleware/notificationMiddleware.js
+
 import {
   wsConnected,
   wsDisconnected,
   setNotifications,
   addNotification,
   setLoading,
-  clearNotifications
-} from "../features/notificationSlice";
+  clearNotifications,
+  // Lokal Redux stateni yangilash uchun yangi actions
+  markNotificationAsReadLocally, 
+  markAllNotificationsAsReadLocally
+} from "../features/notificationSlice"; // Bu actions notificationSlice.js dan import qilinishi shart
+
+// NEW: WS orqali yuborish uchun action creators
+export const markNotificationAsRead = (id) => ({
+  type: "notifications/markNotificationAsRead",
+  payload: { notification_id: id }
+});
+
+export const markAllNotificationsAsRead = () => ({
+  type: "notifications/markAllNotificationsAsRead"
+});
 
 export const connectWebSocket = () => ({ type: "notifications/connectWebSocket" });
 export const disconnectWebSocket = () => ({ type: "notifications/disconnectWebSocket" });
@@ -28,7 +43,6 @@ const notificationMiddleware = (store) => {
   const onClose = (event) => {
     console.log(`DEBUG [WS]: WebSocket Disconnected: ${event.code} - ${event.reason}`);
     
-    // 1000: Normal Closure, 1001: Going Away (brauzer yopilishi), 4000: Server maxsus yopdi
     store.dispatch(wsDisconnected(`Disconnected: ${event.code} - ${event.reason}`));
     
     // Agar normal yoki 'going away' yoki serverning maxsus yopish kodi bo'lmasa
@@ -76,6 +90,7 @@ const notificationMiddleware = (store) => {
         store.dispatch(setNotifications(message.notifications));
         console.log(`DEBUG [WS]: Dispatching setNotifications with ${message.notifications.length} items.`);
       } else {
+         // Real-time bildirishnoma kelganda
          store.dispatch(addNotification(message));
          console.log("DEBUG [WS]: Dispatching addNotification.");
       }
@@ -83,6 +98,17 @@ const notificationMiddleware = (store) => {
     } catch (e) {
       console.error("DEBUG [WS]: Failed to parse WebSocket message:", e);
     }
+  };
+  
+  // NEW: Xabar yuborish funksiyasi
+  const sendMessage = (message) => {
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+      websocket.send(JSON.stringify(message));
+      console.log("DEBUG [WS]: Sent message:", message);
+      return true;
+    }
+    console.warn("DEBUG [WS]: WebSocket is not open. Message not sent:", message);
+    return false;
   };
 
   const connectWebSocketInternal = () => {
@@ -96,10 +122,8 @@ const notificationMiddleware = (store) => {
 
     store.dispatch(setLoading(true));
     
-    // !!! ENG ASOSIY O'ZGARISH !!!
-    // Brauzer hozirda qaysi host/portdan yuklangan bo'lsa, o'sha manzilni ishlatamiz (localhost:3000 yoki 127.0.0.1:8000)
-    // Va portni o'zimizning 8000 portiga qo'l bilan o'zgartiramiz, chunki Django shu portda ishlaydi.
-    const currentHost = window.location.host.split(':')[0]; // Faqat hostni (localhost/127.0.0.1) olish
+    // Brauzer hozirda qaysi host/portdan yuklangan bo'lsa, o'sha manzilni ishlatamiz.
+    const currentHost = window.location.host.split(':')[0]; 
     const wsUrl = `ws://${currentHost}:8000/ws/notifications/`; // Portni 8000 qilib belgilash
     
     console.log(`DEBUG [WS]: Attempting to connect to ${wsUrl}`);
@@ -143,6 +167,33 @@ const notificationMiddleware = (store) => {
         }
         store.dispatch(clearNotifications());
         break;
+      
+      // NEW: Yakka bildirishnomani o'qildi deb belgilash
+      case markNotificationAsRead().type:
+        const notifId = action.payload.notification_id;
+        const success = sendMessage({
+          action: "mark_as_read",
+          notification_id: notifId
+        });
+        
+        // Agar xabar yuborish muvaffaqiyatli bo'lsa, Redux stateni yangilash
+        if (success) {
+           store.dispatch(markNotificationAsReadLocally({ id: notifId }));
+        }
+        break;
+
+      // NEW: Barcha bildirishnomalarni o'qildi deb belgilash
+      case markAllNotificationsAsRead().type:
+        const allSuccess = sendMessage({
+          action: "mark_all_as_read"
+        });
+        
+        // Agar xabar yuborish muvaffaqiyatli bo'lsa, Redux stateni yangilash
+        if (allSuccess) {
+            store.dispatch(markAllNotificationsAsReadLocally());
+        }
+        break;
+
       default:
         break;
     }

@@ -37,13 +37,24 @@ const notificationSlice = createSlice({
         state.totalUnreadCount += 1;
       }
     },
+    // Mark Notification as Read Locally funksiyasi
     markNotificationAsReadLocally: (state, action) => {
-      const notificationId = action.payload;
+      // action.payload bu yerda faqat notificationId bo'lishi kutiladi
+      const notificationId = action.payload; 
       const notif = state.notifications.find(n => n.id === notificationId);
       if (notif && !notif.is_read) {
         notif.is_read = true;
         state.totalUnreadCount -= 1;
       }
+    },
+    // Barcha bildirishnomalarni o'qildi deb belgilash funksiyasi
+    markAllNotificationsAsReadLocally: (state) => {
+      state.notifications.forEach(notif => {
+        if (!notif.is_read) {
+          notif.is_read = true;
+        }
+      });
+      state.totalUnreadCount = 0;
     },
     setTotalUnreadCount: (state, action) => {
       state.totalUnreadCount = action.payload;
@@ -65,6 +76,7 @@ export const {
   setNotifications,
   addNotification,
   markNotificationAsReadLocally,
+  markAllNotificationsAsReadLocally, // <-- Yangi action export qilindi
   setTotalUnreadCount,
   clearNotifications,
   setLoading,
