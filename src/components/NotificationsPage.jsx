@@ -2,96 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from "framer-motion";
 import PlaceholderUserImage from '../assests/userImage.jpeg'; // Ensure this path is correct
+import { useSelector } from 'react-redux';
+import { timeUntilDeadline } from '../utils/timeUntilDeadline';
 
-// Mock Notification Data (similar to Navbar, but can be expanded)
-const initialNotifications = [
-  {
-    id: 1,
-    type: "problem_assigned",
-    problemName: "Implement User Authentication",
-    assignedBy: "Alice Smith",
-    assignedByImage: PlaceholderUserImage,
-    coins: 150,
-    deadline: "2 days",
-    read: false,
-    timestamp: "2 hours ago",
-    link: "/problems/1" // Example link to the problem
-  },
-  {
-    id: 2,
-    type: "problem_completed",
-    problemName: "Fix Payment Gateway Bug",
-    completedBy: "Bob Johnson",
-    completedByImage: PlaceholderUserImage,
-    coins: 200,
-    timestamp: "1 day ago",
-    read: true,
-    link: "/problems/2"
-  },
-  {
-    id: 3,
-    type: "new_feedback",
-    feedbackFrom: "Charlie Brown",
-    feedbackFromImage: PlaceholderUserImage,
-    problemName: "Dashboard UI Redesign",
-    timestamp: "3 days ago",
-    read: false,
-    link: "/feedback/3"
-  },
-  {
-    id: 4,
-    type: "problem_assigned",
-    problemName: "Develop REST API for Products",
-    assignedBy: "David Lee",
-    assignedByImage: PlaceholderUserImage,
-    coins: 180,
-    deadline: "4 days",
-    read: false,
-    timestamp: "5 hours ago",
-    link: "/problems/4"
-  },
-  {
-    id: 5,
-    type: "problem_completed",
-    problemName: "Refactor Database Schema",
-    completedBy: "Eve White",
-    completedByImage: PlaceholderUserImage,
-    coins: 250,
-    timestamp: "6 hours ago",
-    read: false,
-    link: "/problems/5"
-  },
-  {
-    id: 6,
-    type: "new_feedback",
-    feedbackFrom: "Frank Green",
-    feedbackFromImage: PlaceholderUserImage,
-    problemName: "User Profile Page",
-    timestamp: "1 week ago",
-    read: true,
-    link: "/feedback/6"
-  },
-];
 
 
 const NotificationsPage = () => {
-  const [notifications, setNotifications] = useState(initialNotifications);
+   const { notifications } = useSelector((state) => state.notifications); 
   const [filter, setFilter] = useState('all'); // 'all', 'unread', 'read'
 
   const markNotificationAsRead = (id) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(n =>
-        n.id === id ? { ...n, read: true } : n
-      )
-    );
+    // setNotifications(prevNotifications =>
+    //   prevNotifications.map(n =>
+    //     n.id === id ? { ...n, read: true } : n
+    //   )
+    // );
     // In a real app, you'd send an API call here to mark as read on the backend
     console.log(`Notification ${id} marked as read.`);
   };
 
   const markAllAsRead = () => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(n => ({ ...n, read: true }))
-    );
+    // setNotifications(prevNotifications =>
+    //   prevNotifications.map(n => ({ ...n, read: true }))
+    // );
     // API call to mark all as read
     console.log("All notifications marked as read.");
   };
@@ -119,17 +52,17 @@ const NotificationsPage = () => {
         userImage = notification.assignedByImage || PlaceholderUserImage;
         userName = notification.assignedBy;
         break;
-      case "problem_completed":
+      case "problem_urgent":
         icon = "fas fa-check-circle";
         colorClass = "text-green-400";
-        text = `<span class="font-semibold text-white">"${notification.problemName}"</span> vazifasi yakunlandi va sizga <span class="text-yellow-400 font-semibold">${notification.coins} Coin</span> berildi.`;
-        userImage = notification.completedByImage || PlaceholderUserImage;
-        userName = notification.completedBy;
+        text = `<span class="font-semibold text-white">"${notification.message}"</span> vazifasi yakunlandi va sizga <span class="text-yellow-400 font-semibold">${notification.problem.offered_coins} Coin</span> berildi.`;
+        userImage = notification.sender.image || PlaceholderUserImage;
+        userName = notification.sender.username;
         break;
       case "new_feedback":
         icon = "fas fa-comments";
         colorClass = "text-blue-400";
-        text = `<span class="font-semibold text-white">"${notification.problemName}"</span> bo'yicha yangi fikr keldi.`;
+        text = `<span class="font-semibold text-white">"${notification.message}"</span> bo'yicha yangi fikr keldi.`;
         userImage = notification.feedbackFromImage || PlaceholderUserImage;
         userName = notification.feedbackFrom;
         break;
@@ -200,7 +133,7 @@ const NotificationsPage = () => {
             {filteredNotifications.length > 0 ? (
               filteredNotifications.map((notification) => {
                 const { icon, colorClass, text, userImage, userName } = getNotificationDetails(notification);
-                const notificationLink = notification.link || `/notifications/${notification.id}`; // Fallback link
+                const notificationLink = notification.link || `/problem/${notification.problem.id}/detail`; // Fallback link
 
                 return (
                   <motion.div
@@ -233,13 +166,13 @@ const NotificationsPage = () => {
                         <span className="font-medium">{userName}</span>
                         <span className="text-gray-600">•</span>
                         <i className="fas fa-clock"></i>
-                        <span>{notification.timestamp}</span>
+                        <span>{timeUntilDeadline(notification.problem.deadline)}</span>
                       </p>
                     </div>
 
                     {/* Actions and Status */}
                     <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                      {!notification.read && (
+                      {notification.is_read && (
                         <button
                           onClick={() => markNotificationAsRead(notification.id)}
                           className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center"
@@ -247,10 +180,10 @@ const NotificationsPage = () => {
                           <i className="fas fa-check mr-1"></i> O'qilgan
                         </button>
                       )}
-                      {!notification.read && (
+                      {!notification.is_read && (
                         <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" title="Yangi bildirishnoma"></span>
                       )}
-                      {notification.read && (
+                      {notification.is_read && (
                          <span className="text-xs text-gray-500">O'qilgan</span>
                       )}
                     </div>

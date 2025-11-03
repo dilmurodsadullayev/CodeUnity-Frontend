@@ -7,7 +7,7 @@ import CommentService from '../services/comments';
 import UserImage from '../assests/userImage.jpeg';
 
 const CommentSection = () => {
-    const { loggedIn, user } = useSelector((state) => state.auth);
+    const { isLoggedIn, user } = useSelector((state) => state.auth);
     const { comments, isLoading } = useSelector((state) => state.comment);
     const dispatch = useDispatch();
     const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://127.0.0.1:8000";
@@ -62,7 +62,7 @@ const CommentSection = () => {
                 <p className="text-center text-gray-400 mb-12 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                     Platformamiz foydalanuvchilarining fikrlari biz uchun eng muhim rag'bat. O'z tajribangiz bilan bo'lishing!
                 </p>
-                {loggedIn ? (
+                {isLoggedIn ? (
                     <CommentForm />
                 ) : (
                     <div className="text-center">

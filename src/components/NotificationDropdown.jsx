@@ -187,17 +187,23 @@ const NotificationDropdown = ({ openNotifications, setOpenNotifications, notific
               )}
             </div>
             <div className="py-1">
-              {sortedNotifications.length > 0 ? (
-                sortedNotifications.map((notification) => (
-                    <NotificationItem 
-                        key={notification.id}
-                        notification={notification}
-                        handleMarkOneAsRead={handleMarkOneAsRead}
-                    />
+              {sortedNotifications && sortedNotifications.length > 0 ? (
+              // Avval o‘qilmaganlarni ajratamiz
+              sortedNotifications
+                .filter(notification => !notification.is_read)
+                .map(notification => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    handleMarkOneAsRead={handleMarkOneAsRead}
+                  />
                 ))
-              ) : (
-                <p className="px-4 py-3 text-sm text-gray-400 text-center">Bildirishnomalar yo'q.</p>
-              )}
+            ) : (
+              <p className="px-4 py-3 text-sm text-gray-400 text-center">
+                Bildirishnomalar yo‘q.
+              </p>
+            )}
+
             </div>
             {notifications.length > 0 && (
               <div className="p-2 border-t border-gray-700 bg-gray-900/50">

@@ -186,13 +186,14 @@ const Navbar = () => {
                           >
                             <i className="fas fa-user-circle mr-2"></i> Mening Profilim
                           </Link>
-                          <Link
-                            to="/settings"
-                            className="block px-4 py-2 text-sm text-gray-300 hover:bg-indigo-600 hover:text-white transition-colors duration-200"
-                            onClick={() => setOpenUserMenu(false)}
-                          >
-                            <i className="fas fa-cog mr-2"></i> Sozlamalar
-                          </Link>
+                         <Link
+                          to="/my-problems"
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-indigo-600 hover:text-white transition-colors duration-200"
+                          onClick={() => setOpenUserMenu(false)}
+                        >
+                          <i className="fas fa-bug mr-2"></i> Muammolar paneli
+                        </Link>
+
                         </div>
 
                         <div className="py-1 border-t border-gray-700">

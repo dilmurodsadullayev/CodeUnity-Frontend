@@ -25,6 +25,8 @@ export { default as ProblemSolutionUpdate } from './ProblemSolutionUpdate';
 export { default as CodeCoinHistory } from './CodeCoinHistory';
 export { default as NotificationsPage } from './NotificationsPage';
 export { default as NotificationDropdown } from './NotificationDropdown';
+export { default as MyProblems } from './MyProblems';
+export { default as MyProblemCard } from './MyProblemCard';
 
 
 

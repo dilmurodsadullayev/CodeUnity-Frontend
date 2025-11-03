@@ -5,7 +5,8 @@ import { useDispatch, useSelector } from "react-redux"; // Providerni App.js da 
 import {
   Main, Navbar, Footer, Login, Register, Problems, Feedback, CodeCoin, Users,
   Profile, NotFound, ProblemDetail, ProblemCreate, ProblemSolutionUpdate,
-  CodeCoinHistory, NotificationsPage // NotificationsPage komponentini import qiling
+  CodeCoinHistory, NotificationsPage, // NotificationsPage komponentini import qiling
+  MyProblems
 } from "./components";
 // import store from "./store"; // store ni index.js da Providerga beramiz
 import AuthService from "./services/auth";
@@ -157,6 +158,7 @@ function AppContent() {
           {/* ichki sahifalar */}
           <Route index element={<Main />} />
           <Route path="problems" element={<Problems />} />
+          <Route path="my-problems" element={<MyProblems />} />
           <Route path="problem-create" element={<ProblemCreate />} />
           <Route path="problem/:id/edit" element={<ProblemCreate />} />
           <Route path="problem/:id/solution/:solutionId/edit" element={<ProblemSolutionUpdate />} />

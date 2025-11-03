@@ -4,6 +4,10 @@ const initialState = {
     isLoading: false,
     popularProblems: [],
     problems: [], // Doim massiv bo'lishi kerak
+    
+    myProblems: [],
+    myProblemsCount: 0,
+
     languages: [],
     problemDetail: null,
     count: 0, // Doim raqam bo'lishi kerak
@@ -48,6 +52,28 @@ export const problemSlice = createSlice({
             state.error = action.payload;
             state.problems = []; // Xato bo'lganda ham problems ni bo'sh massivga o'rnatish
             state.count = 0;     // count ni ham 0 ga o'rnatish
+        },
+
+
+        getMyProblemStart: state => {
+            state.isLoading = true;
+            state.error = null; // Yangi so'rov boshlanganda xatoni tozalash
+        },
+        getMyProblemSuccess: (state, actions) => {
+            state.isLoading = false;
+            // ✅ TO'G'RI: myProblems va myProblemsCount ni yangilash
+            state.myProblems = actions.payload.results || [];
+            state.myProblemsCount = actions.payload.count || 0; 
+            state.next = actions.payload.next;
+            state.previous = actions.payload.previous;
+            state.error = null;
+        },
+        getMyProblemtFailure: (state, action) => {
+            state.isLoading = false;
+            state.error = action.payload;
+            // ✅ TO'G'RI: myProblems va myProblemsCount ni tozalash
+            state.myProblems = []; 
+            state.myProblemsCount = 0;     
         },
 
         getLanguagesStart: state => {
@@ -122,6 +148,25 @@ export const problemSlice = createSlice({
             state.isLoading = false;
             state.error = action.payload || 'Error removing star';
         },
+
+
+          // ⭐ YANGI: Yechimni qabul qilish uchun action'lar
+        acceptSolutionStart: state => {
+            state.isLoading = true;
+            state.error = null;
+        },
+        acceptSolutionSuccess: (state, action) => {
+                state.isLoading = false;
+                // ⭐ Yangilangan problemDetail ni to'liq qabul qilish va saqlash
+                // Taxmin: Server butun yangilangan ProblemDetail obyektini qaytaradi
+                state.problemDetail = action.payload; 
+                state.error = null;
+            },
+        acceptSolutionFailure: (state, action) => {
+            state.isLoading = false;
+            state.error = action.payload || 'Yechimni qabul qilishda xato yuz berdi';
+        },
+        
     }
 });
 
@@ -132,6 +177,11 @@ export const {
     getProblemStart,
     getProblemSuccess,
     getProblemtFailure,
+
+    getMyProblemStart,
+    getMyProblemSuccess,
+    getMyProblemtFailure,
+
     getLanguagesStart,
     getLanguagesSuccess,
     getLanguagesFailure,
@@ -145,7 +195,14 @@ export const {
 
     deleteProblemStarStart,
     deleteProblemStarSuccess,
-    deleteProblemStarFailure
+    deleteProblemStarFailure,
+
+
+    // ⭐ YANGI EXPORT
+    acceptSolutionStart, 
+    acceptSolutionSuccess, 
+    acceptSolutionFailure
+
 } = problemSlice.actions;
 
 export default problemSlice.reducer;

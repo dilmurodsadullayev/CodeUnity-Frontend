@@ -144,13 +144,13 @@ const Problems = () => {
                   lastName={problem.user.last_name}
                   image={problem.user.image}
                   name={problem.problem}
-                  status={problem.is_solved}
                   views={problem.total_views}
                   // `languages` propining qiymati `language_data` dan kelishini ta'minlash
                   languages={problem.language_data}
                   createdAt={problem.created_at}
                   star={problem.star}
                   responseCount={problem.response_count}
+                  isSolved={problem.is_solved}
                 />
               ))
             ) : (
