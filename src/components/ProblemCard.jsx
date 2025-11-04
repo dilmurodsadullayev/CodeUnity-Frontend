@@ -4,35 +4,11 @@ import { Link } from 'react-router-dom';
 import { limitText } from '../utils/limitText';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import timeAgo from '../utils/timeAgo';
 
 const ProblemCard = ({id, username, firstName, lastName, image, name, views, languages, createdAt, star, responseCount, isSolved}) => {
 
-    function timeAgo(createdAt) {
-        const now = new Date();
-        const created = new Date(createdAt);
-
-        const diffMs = now - created; 
-        const diffSeconds = Math.floor(diffMs / 1000);
-        const diffMinutes = Math.floor(diffSeconds / 60);
-        const diffHours = Math.floor(diffMinutes / 60);
-        const diffDays = Math.floor(diffHours / 24);
-
-        if (diffDays > 0) {
-            return diffDays === 1
-                ? "1 kun oldin"
-                : `${diffDays} kun oldin`;
-        } else if (diffHours > 0) {
-            return diffHours === 1
-                ? "1 soat oldin"
-                : `${diffHours} soat oldin`;
-        } else if (diffMinutes > 0) {
-            return diffMinutes === 1
-                ? "1 daqiqa oldin"
-                : `${diffMinutes} daqiqa oldin`;
-        } else {
-            return "hozirgina";
-        }
-    }
+ 
 
     // ⭐ YECHILGAN/YECHILMAGAN HOLATIGA QARAB KLASSLARNI BELGILASH
     const cardClass = isSolved 

@@ -4,6 +4,7 @@ import React from 'react';
 import UserImage from '../assests/userImage.jpeg'; // Agar bu joylashuv to'g'ri bo'lsa
 import { Link } from 'react-router-dom';
 import { limitText } from '../utils/limitText'; // limitText utilitasi mavjud deb hisoblaymiz
+import timeAgo from '../utils/timeAgo';
 
 const MyProblemCard = ({
     id, 
@@ -22,33 +23,6 @@ const MyProblemCard = ({
     isUrgent // Agar is_urgent kelsa, uni ham ishlatamiz (sizning API javobingizda mavjud)
 }) => {
 
-    function timeAgo(createdAt) {
-        // ... timeAgo funksiyasi o'zgarishsiz qoldi
-        const now = new Date();
-        const created = new Date(createdAt);
-
-        const diffMs = now - created; // millisekund farq
-        const diffSeconds = Math.floor(diffMs / 1000);
-        const diffMinutes = Math.floor(diffSeconds / 60);
-        const diffHours = Math.floor(diffMinutes / 60);
-        const diffDays = Math.floor(diffHours / 24);
-
-        if (diffDays > 0) {
-            return diffDays === 1
-                ? "1 kun oldin"
-                : `${diffDays} kun oldin`;
-        } else if (diffHours > 0) {
-            return diffHours === 1
-                ? "1 soat oldin"
-                : `${diffHours} soat oldin`;
-        } else if (diffMinutes > 0) {
-            return diffMinutes === 1
-                ? "1 daqiqa oldin"
-                : `${diffMinutes} daqiqa oldin`;
-        } else {
-            return "hozirgina";
-        }
-    }
     
     // ⭐ YANGI: Deadline qolgan vaqtni hisoblash
     const getDeadlineText = (deadline) => {

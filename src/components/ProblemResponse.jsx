@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faStar, faCopy, faRocket, faCheckCircle, faAward } from '@fortawesome/free-solid-svg-icons'; 
 import { Link } from 'react-router-dom';
 import UserImage from '../assests/userImage.jpeg'
+import timeAgo from '../utils/timeAgo';
 
 const ProblemResponse = ({ 
     id, 
@@ -46,34 +47,7 @@ const ProblemResponse = ({
         }
     }, [id, dispatch]); 
 
-    // Vaqtni hisoblash funksiyasi
-    function timeAgo(createdAt) {
-        if (!createdAt) return "Vaqt noma'lum";
-        const now = new Date();
-        const created = new Date(createdAt);
-
-        const diffMs = now - created;
-        const diffSeconds = Math.floor(diffMs / 1000);
-        const diffMinutes = Math.floor(diffSeconds / 60);
-        const diffHours = Math.floor(diffMinutes / 60);
-        const diffDays = Math.floor(diffHours / 24);
-        const diffMonths = Math.floor(diffDays / 30); 
-        const diffYears = Math.floor(diffDays / 365); 
-
-        if (diffYears > 0) {
-            return diffYears === 1 ? "1 yil oldin" : `${diffYears} yil oldin`;
-        } else if (diffMonths > 0) {
-            return diffMonths === 1 ? "1 oy oldin" : `${diffMonths} oy oldin`;
-        } else if (diffDays > 0) {
-            return diffDays === 1 ? "1 kun oldin" : `${diffDays} kun oldin`;
-        } else if (diffHours > 0) {
-            return diffHours === 1 ? "1 soat oldin" : `${diffHours} soat oldin`;
-        } else if (diffMinutes > 0) {
-            return diffMinutes === 1 ? "1 daqiqa oldin" : `${diffMinutes} daqiqa oldin`;
-        } else {
-            return "Hozirgina";
-        }
-    }
+ 
 
     // ⭐ STAR bosish/olib tashlash funksiyasi
     const handleStarClick = async (responseId) => {

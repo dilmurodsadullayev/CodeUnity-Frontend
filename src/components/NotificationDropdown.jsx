@@ -19,10 +19,12 @@ const dropdownVariants = {
 
 // Notification Item uchun alohida kichik komponent (rasmdagi dizaynga o'xshatildi)
 const NotificationItem = ({ notification, handleMarkOneAsRead }) => {
-  const problemTitle = notification.problem?.problem || 'Noma\'lum vazifa';
+  // notification.problem?.problem - vazifa nomini olish uchun kutiladi
+  const problemTitle = notification.problem?.problem || 'Noma\'lum vazifa'; 
   const senderUsername = notification.sender?.username || 'Noma\'lum';
   const createdAt = new Date(notification.created_at);
-  const problemId = notification.problem?.id;
+  // notification.problem?.id - vazifaning ID'sini olish uchun kutiladi
+  const problemId = notification.problem?.id || notification.object_id; // object_id ni zaxira sifatida ishlatamiz
 
   const imageSrc = notification.sender?.image 
     ? `${baseUrl}${notification.sender.image}` 
@@ -32,6 +34,7 @@ const NotificationItem = ({ notification, handleMarkOneAsRead }) => {
   let typeText = notification.message || 'Yangi bildirishnoma';
   let problemUrl = problemId ? `/problem/${problemId}/detail` : '/problems';
 
+  // notification.type asosida ikonka va matnni belgilash
   if (notification.type === "problem_assigned" || notification.type === "problem_urgent") {
     typeIcon = 'fas fa-clipboard-check';
     typeText = `Yangi vazifa: Sizga "${problemTitle}" vazifasi yuklatildi.`;
@@ -41,6 +44,17 @@ const NotificationItem = ({ notification, handleMarkOneAsRead }) => {
   } else if (notification.type === "new_feedback") {
     typeIcon = 'fas fa-comment-dots';
     typeText = `Yangi fikr: "${problemTitle}" bo'yicha yangi fikr keldi.`;
+  } else if (notification.content_type === "problem") {
+    // Agar type bo'lmasa, content_type "problem" bo'lsa (yangi muammo joylandi)
+    typeIcon = 'fas fa-plus-square';
+    // message: "Yangi muammo joylandi: Muammo 6"
+    const titleMatch = notification.message.match(/:\s*(.*)/);
+    const inferredTitle = titleMatch ? titleMatch[1].trim() : problemTitle;
+    typeText = notification.message; // Asl xabarni qoldiramiz
+  } else if (notification.content_type === "star") {
+    // Agar content_type "star" bo'lsa (star berildi)
+    typeIcon = 'fas fa-star text-yellow-400';
+    typeText = notification.message; // Asl xabarni qoldiramiz
   }
   
   const isUnread = !notification.is_read;
@@ -64,12 +78,13 @@ const NotificationItem = ({ notification, handleMarkOneAsRead }) => {
       <div className="flex-grow">
         {/* Yuqori qator: Icon + Xabar matni */}
         <p className="text-sm font-semibold text-white mb-1 leading-tight pr-4"> 
-          <span className="text-indigo-400 mr-2"><i className={typeIcon}></i></span>
+          <span className={`${typeIcon.includes('text-yellow') ? '' : 'text-indigo-400'} mr-2`}><i className={typeIcon}></i></span>
           {typeText}
         </p>
         
         {/* Pastki qator: Detallar vaqt bilan */}
-        {(notification.type === "problem_assigned" || notification.type === "problem_urgent") && (
+        {/* "problem_assigned", "problem_urgent" yoki "problem" turidagi xabarlar uchun */}
+        {(notification.type === "problem_assigned" || notification.type === "problem_urgent" || notification.content_type === "problem") && (
           <div className="flex flex-col space-y-1 mt-1">
             {/* Kimdan/Coin/Deadline */}
             <p className="text-xs text-gray-300 flex items-center space-x-2">
@@ -78,17 +93,19 @@ const NotificationItem = ({ notification, handleMarkOneAsRead }) => {
                 {senderUsername}
               </span>
 
-              {notification.problem?.offered_coins && (
+              {/* offered_coins ni notification.offered_coins dan yoki notification.problem?.offered_coins dan olish */}
+              {(notification.offered_coins || notification.problem?.offered_coins) && (
                   <span className="inline-flex items-center">
                     • <i className="fas fa-coins text-yellow-400 ml-2 mr-1"></i>
-                    <span className="text-yellow-400 font-bold">{notification.problem.offered_coins}</span>
+                    <span className="text-yellow-400 font-bold">{notification.offered_coins || notification.problem.offered_coins}</span>
                   </span>
               )}
 
-              {notification.problem?.deadline && (
+              {/* deadline ni notification.deadline dan yoki notification.problem?.deadline dan olish */}
+              {(notification.deadline || notification.problem?.deadline) && (
                   <span className="inline-flex items-center">
                     • <i className="fas fa-clock text-red-500 ml-2 mr-1"></i>
-                    <span className="text-red-400">{timeUntilDeadline(notification.problem.deadline)}</span>
+                    <span className="text-red-400">{timeUntilDeadline(notification.deadline || notification.problem.deadline)}</span>
                   </span>
               )}
             </p>
@@ -100,11 +117,12 @@ const NotificationItem = ({ notification, handleMarkOneAsRead }) => {
           </div>
         )}
          {/* Boshqa turlarda faqat sender va vaqtni pastga joylashtirish */}
-        {!(notification.type === "problem_assigned" || notification.type === "problem_urgent") && (
+        {!(notification.type === "problem_assigned" || notification.type === "problem_urgent" || notification.content_type === "problem") && (
             <div className="flex flex-col space-y-1 mt-1">
                 <p className="text-xs text-gray-300 flex items-center">
                     <i className="fas fa-user mr-1 text-gray-400"></i>
                     {senderUsername}
+                    {/* problem_completed turida coins bor bo'lsa */}
                     {notification.type === "problem_completed" && notification.coins && (
                       <span className="inline-flex items-center ml-4">
                         <i className="fas fa-gift text-green-400 mr-1"></i> 
@@ -130,6 +148,7 @@ const NotificationItem = ({ notification, handleMarkOneAsRead }) => {
 
 const NotificationDropdown = ({ openNotifications, setOpenNotifications, notificationsRef }) => {
   const dispatch = useDispatch();
+  // Redux store'dan bildirishnomalarni olish
   const { notifications } = useSelector((state) => state.notifications); 
   const unreadNotificationsCount = notifications.filter(n => !n.is_read).length; 
 
@@ -141,6 +160,7 @@ const NotificationDropdown = ({ openNotifications, setOpenNotifications, notific
     dispatch(markAllNotificationsAsRead()); 
   };
   
+  // Eng oxirgi kelgan xabarni birinchi ko'rsatish uchun saralash
   const sortedNotifications = [...notifications].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
 
@@ -188,9 +208,9 @@ const NotificationDropdown = ({ openNotifications, setOpenNotifications, notific
             </div>
             <div className="py-1">
               {sortedNotifications && sortedNotifications.length > 0 ? (
-              // Avval o‘qilmaganlarni ajratamiz
+              // Avval o‘qilmaganlarni ajratamiz (rasmdagi dizaynda faqat o'qilmaganlar ko'rinadi)
               sortedNotifications
-                .filter(notification => !notification.is_read)
+                .filter(notification => !notification.is_read) // Faqat o'qilmaganlarni ko'rsatamiz
                 .map(notification => (
                   <NotificationItem
                     key={notification.id}
@@ -198,11 +218,11 @@ const NotificationDropdown = ({ openNotifications, setOpenNotifications, notific
                     handleMarkOneAsRead={handleMarkOneAsRead}
                   />
                 ))
-            ) : (
-              <p className="px-4 py-3 text-sm text-gray-400 text-center">
-                Bildirishnomalar yo‘q.
-              </p>
-            )}
+              ) : (
+                <p className="px-4 py-3 text-sm text-gray-400 text-center">
+                  O‘qilmagan bildirishnomalar yo‘q.
+                </p>
+              )}
 
             </div>
             {notifications.length > 0 && (

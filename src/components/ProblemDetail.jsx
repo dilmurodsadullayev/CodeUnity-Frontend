@@ -14,6 +14,7 @@ import ProblemResponse from './ProblemResponse';
 import ProblemResponseForm from './ProblemResponseForm';
 import ProblemCreate from './ProblemCreate'; // Modal komponenti
 import CountdownTimer from '../utils/countdowntimer';
+import timeAgo from '../utils/timeAgo';
 
 const ProblemDetail = () => {
     const { id } = useParams();
@@ -79,27 +80,7 @@ const ProblemDetail = () => {
     };
 
 
-    function timeAgo(createdAt) {
-        const now = new Date();
-        const created = new Date(createdAt);
-
-        const diffMs = now - created; 
-        const diffSeconds = Math.floor(diffMs / 1000);
-        const diffMinutes = Math.floor(diffSeconds / 60);
-        const diffHours = Math.floor(diffMinutes / 60);
-        const diffDays = Math.floor(diffHours / 24);
-
-        if (diffDays > 0) {
-            return diffDays === 1 ? "1 kun oldin" : `${diffDays} kun oldin`;
-        } else if (diffHours > 0) {
-            return diffHours === 1 ? "1 soat oldin" : `${diffHours} soat oldin`;
-        } else if (diffMinutes > 0) {
-            return diffMinutes === 1 ? "1 daqiqa oldin" : `${diffMinutes} daqiqa oldin`;
-        } else {
-            return "hozirgina";
-        }
-    }
-
+   
     // Modalni ochish funksiyasi
     const handleOpenEditProblemModal = () => {
         setIsEditProblemModalOpen(true);
