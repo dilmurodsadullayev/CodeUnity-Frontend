@@ -191,6 +191,25 @@ const ProblemService = {
             throw error;
         }
     },
+
+    // SimilarProblems
+    async getSimilarProblems(problemId) {
+        try {
+            const { data } = await axios.get(
+                `/problems/problem/${problemId}/similar/`, // API endpoint to'g'ri
+            );
+            console.log("✅ Similar qabul qilindi:", data);
+            
+            // --- BU QISM TUZATILDI ---
+            // Serverdan kelgan ma'lumotni to'g'ridan-to'g'ri qaytaramiz (data array bo'lishi kerak)
+            return data; 
+            // -------------------------
+            
+        } catch (error) {
+            console.error("❌ Similar qabul qilishda xato:", error.response || error.message);
+            throw error;
+        }
+    },
   
 }
 

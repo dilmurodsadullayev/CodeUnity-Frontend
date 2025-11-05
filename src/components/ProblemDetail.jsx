@@ -15,6 +15,7 @@ import ProblemResponseForm from './ProblemResponseForm';
 import ProblemCreate from './ProblemCreate'; // Modal komponenti
 import CountdownTimer from '../utils/countdowntimer';
 import timeAgo from '../utils/timeAgo';
+import SimilarProblems from './SimilarProblems';
 
 const ProblemDetail = () => {
     const { id } = useParams();
@@ -356,25 +357,7 @@ const ProblemDetail = () => {
 
                 <aside className="lg:col-span-4 mt-12 lg:mt-0">
                 
-                    <div className="sticky top-24">
-                        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-5 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-                            <h3 className="text-lg font-bold text-white mb-4">Shu kabi muammolar</h3>
-                            <ul className="space-y-4">
-                                <li className="border-b border-gray-700 pb-3">
-                                    <a href="#" className="text-gray-300 hover:text-indigo-400 transition">Django-rest-framework'da Serializer bilan bog'liq N+1</a>
-                                    <div className="text-xs text-gray-500 mt-1">7 ta javob</div>
-                                </li>
-                                <li className="border-b border-gray-700 pb-3">
-                                    <a href="#" className="text-gray-300 hover:text-indigo-400 transition">`only` va `defer` qachon ishlatiladi?</a>
-                                    <div className="text-xs text-gray-500 mt-1">4 ta javob</div>
-                                </li>
-                                <li>
-                                    <a href="#" className="text-gray-300 hover:text-indigo-400 transition">Raw SQL so'rovlarni optimallashtirish</a>
-                                    <div className="text-xs text-gray-500 mt-1">11 ta javob</div>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
+                    <SimilarProblems problemId={id}/>
                     
                 </aside>
                 

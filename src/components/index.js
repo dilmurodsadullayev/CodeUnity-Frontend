@@ -27,6 +27,7 @@ export { default as NotificationsPage } from './NotificationsPage';
 export { default as NotificationDropdown } from './NotificationDropdown';
 export { default as MyProblems } from './MyProblems';
 export { default as MyProblemCard } from './MyProblemCard';
+export { default as SimilarProblems } from './SimilarProblems';
 
 
 

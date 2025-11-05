@@ -1,19 +1,26 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-    isLoading: false,
+    // isLoading umumiy yuklanish holati uchun saqlanadi, lekin uni kamroq ishlatishga harakat qilamiz
+    isLoading: false, 
+    
+    // ✅ YANGI: SimilarProblems uchun alohida yuklanish holati
+    similarIsLoading: false, 
+    similarError: null,
+
     popularProblems: [],
-    problems: [], // Doim massiv bo'lishi kerak
+    problems: [],
+    similarProblems : [],
     
     myProblems: [],
     myProblemsCount: 0,
 
     languages: [],
     problemDetail: null,
-    count: 0, // Doim raqam bo'lishi kerak
+    count: 0,
     next: null,
     previous: null,
-    error: null // Xato holatini saqlash uchun
+    error: null // Umumiy xato holatini saqlash uchun
 };
 
 export const problemSlice = createSlice({
@@ -166,6 +173,22 @@ export const problemSlice = createSlice({
             state.isLoading = false;
             state.error = action.payload || 'Yechimni qabul qilishda xato yuz berdi';
         },
+
+       // ⭐ similarProblemsStart/Success/Failure da o'zgarish:
+        similarProblemsStart: state => {
+            state.similarIsLoading = true; // ✅ Faqat o'zining isLoading'ini o'zgartiradi
+            state.similarError = null;
+        },
+        similarProblemsSuccess: (state, action) => {
+            state.similarIsLoading = false; // ✅ Faqat o'zining isLoading'ini o'zgartiradi
+            state.similarProblems = action.payload; 
+            state.similarError = null;
+        },
+        similarProblemsFailure: (state, action) => {
+            state.similarIsLoading = false; // ✅ Faqat o'zining isLoading'ini o'zgartiradi
+            state.similarError = action.payload || "O'xshash muammoni yuklashda xato yuz berdi";
+        },
+
         
     }
 });
@@ -201,7 +224,12 @@ export const {
     // ⭐ YANGI EXPORT
     acceptSolutionStart, 
     acceptSolutionSuccess, 
-    acceptSolutionFailure
+    acceptSolutionFailure,
+
+    // SimilarProblems
+    similarProblemsStart,
+    similarProblemsSuccess,
+    similarProblemsFailure
 
 } = problemSlice.actions;
 
