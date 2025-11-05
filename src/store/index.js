@@ -9,6 +9,7 @@ import UserReducer from '../features/users' // Agar bu katalog bo'lsa, indeks fa
 import FeedbackReducer from '../features/feedback'
 import notificationReducer from '../features/notificationSlice'
 import notificationMiddleware from '../middleware/notificationMiddleware'
+import CoinReducer from '../features/coins'
 
 export const store = configureStore({
   reducer: {
@@ -19,6 +20,8 @@ export const store = configureStore({
     user: UserReducer,
     feedback: FeedbackReducer,
     notifications: notificationReducer,
+    coin: CoinReducer
+    
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(notificationMiddleware),

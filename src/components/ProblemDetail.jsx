@@ -210,7 +210,7 @@ const ProblemDetail = () => {
                                 ) : (
                                     <img src={UserImage} className="w-8 h-8 rounded-full mr-3" alt="Avatar"/>
                                 )}
-                                <a href={`/profile/${problemDetail?.user?.username}`} className="font-semibold text-white hover:underline">{problemDetail?.user.username}</a>
+                                <a href={`/profile/${problemDetail?.user?.username}`} className="font-semibold text-white hover:underline">{problemDetail?.user?.username}</a>
                                 <span className="mx-2">&bull;</span>
                                 <span>{timeAgo(problemDetail?.created_at)} so'ralgan</span>
                                 <span className="mx-2">&bull;</span>

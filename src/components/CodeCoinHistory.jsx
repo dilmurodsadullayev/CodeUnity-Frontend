@@ -1,133 +1,228 @@
-import React from 'react';
-import './CodeCoinHistory.css'; // CSS faylini yaratishni unutmang
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; 
+import { 
+    faSpinner, 
+    faExclamationTriangle, 
+    faChevronLeft, 
+    faChevronRight, 
+    faCoins, 
+    faArrowUp, 
+    faArrowDown,
+    // Agar bu ikonalar COIN_STATUS_MAP da bo'lmasa, ularni bu yerga qo'shish kerak. 
+    // Masalan: faComment, faGift, faRocket
+} from '@fortawesome/free-solid-svg-icons'; 
+import CoinService from '../services/coin';
+import { getCoinFailure, getCoinStart, getCoinSuccess } from '../features/coins'; 
+// UTILITY_ICONS o'rniga COIN_STATUS_MAP dagi ikonni ishlatamiz.
+import { COIN_STATUS_MAP, UTILITY_ICONS } from './CoinHistoryMap'; 
+
+import './CodeCoinHistory.css'; 
+import { motion } from 'framer-motion'; 
+import timeAgo from '../utils/timeAgo';
 
 const CodeCoinHistory = () => {
-  // Anakin foydalanuvchisi uchun namunaviy CodeCoin tarixi
-  const userHistory = {
-    username: 'Anakin',
-    currentCoins: 1255,
-    history: [
-      {
-        id: 1,
-        type: 'earn',
-        description: 'Javob yozish (React komponentini optimallashtirish)',
-        amount: 5,
-        date: '2023-10-26 10:00',
-        icon: 'fas fa-pen-nib text-green-400'
-      },
-      {
-        id: 2,
-        type: 'earn',
-        description: 'Javob "Eng Yaxshi Yechim" deb topildi (CSS animatsiyalari)',
-        amount: 50,
-        date: '2023-10-25 18:30',
-        icon: 'fas fa-crown text-green-400'
-      },
-      {
-        id: 3,
-        type: 'spend',
-        description: 'Profil uchun "Dark Nebula" temasi sotib olindi',
-        amount: -150,
-        date: '2023-10-25 10:15',
-        icon: 'fas fa-palette text-purple-400'
-      },
-      {
-        id: 4,
-        type: 'earn',
-        description: 'Har kuni kirish bonusi',
-        amount: 1,
-        date: '2023-10-25 09:00',
-        icon: 'fas fa-calendar-day text-green-400'
-      },
-      {
-        id: 5,
-        type: 'earn',
-        description: 'Yulduzcha olindi (⭐) "JavaScript debugging" uchun',
-        amount: 10,
-        date: '2023-10-24 14:20',
-        icon: 'fas fa-star text-green-400'
-      },
-      {
-        id: 6,
-        type: 'earn',
-        description: 'Yangi loyiha yuklandi ("E-commerce Dashboard")',
-        amount: 100,
-        date: '2023-10-24 11:00',
-        icon: 'fas fa-rocket text-green-400'
-      },
-      {
-        id: 7,
-        type: 'spend',
-        description: 'Maxsus avatar ramkasi sotib olindi ("Galactic Border")',
-        amount: -80,
-        date: '2023-10-23 20:00',
-        icon: 'fas fa-image text-purple-400'
-      },
-      {
-        id: 8,
-        type: 'earn',
-        description: 'Musobaqada g\'olib bo\'ldi ("Frontend Challenge Q-3")',
-        amount: 500,
-        date: '2023-10-23 16:45',
-        icon: 'fas fa-trophy text-green-400'
-      },
-      {
-        id: 9,
-        type: 'earn',
-        description: 'Boshqalardan sovg\'a (tip) olindi',
-        amount: 25,
-        date: '2023-10-22 19:10',
-        icon: 'fas fa-gift text-green-400'
-      },
-      {
-        id: 10,
-        type: 'earn',
-        description: 'Savol berish ("Optimallashtirilgan SQL so\'rovlari")',
-        amount: 2,
-        date: '2023-10-22 11:30',
-        icon: 'fas fa-question-circle text-green-400'
-      },
-    ].sort((a, b) => new Date(b.date) - new Date(a.date)), // Eng yangilari tepada bo'lishi uchun saralash
-  };
+    const dispatch = useDispatch();
+    const { 
+        coins, 
+        isLoading, 
+        error,
+        count, 
+        currentPage, 
+        pageSize, 
+    } = useSelector((state) => state.coin);
 
-  return (
-    <main className="container mx-auto px-4 py-16 codecoin-history-container">
-      <section className="text-center pt-8 pb-12">
-        <h1 className="text-5xl md:text-6xl font-black text-white mt-4 animate-slide-in-up">
-          <span style={{ background: 'linear-gradient(90deg, var(--gold), #ffbf44)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            {userHistory.username}
-          </span> CodeCoin Tarixi
-        </h1>
-        <p className="text-lg text-gray-400 max-w-2xl mx-auto mt-4 animate-slide-in-up" style={{ animationDelay: '0.2s' }}>
-          Jami "CodeCoin"laringiz: <span className="text-gold font-bold text-2xl">{userHistory.currentCoins}</span>
-        </p>
-      </section>
+    // Namuna uchun: Siz buni o'z state'ingizdan olishingiz kerak
+    const username = coins.length > 0 ? coins[0].user.username : '';
+    const totalCoins = coins.length > 0 ? coins[0].user.coins : 0;
 
-      <div className="history-cards-wrapper grid grid-cols-1 gap-6">
-        {userHistory.history.map((item) => (
-          <div key={item.id} className={`info-card history-item animate-slide-in-up ${item.type === 'earn' ? 'earn-item' : 'spend-item'}`}>
-            <div className="flex items-center gap-4 p-4">
-              <div className={`icon w-14 h-14 rounded-full flex items-center justify-center text-2xl 
-                ${item.type === 'earn' ? 'bg-green-500/10' : 'bg-purple-500/10'}`}>
-                <i className={item.icon}></i>
-              </div>
-              <div className="flex-grow">
-                <p className="text-lg font-semibold text-white">{item.description}</p>
-                <p className="text-sm text-gray-400">{item.date}</p>
-              </div>
-              <span className={`amount font-bold text-xl ${item.type === 'earn' ? 'text-green-400' : 'text-purple-400'}`}>
-                {item.type === 'earn' ? '+' : ''}{item.amount} coin
-              </span>
+    const totalPages = Math.ceil(count / pageSize);
+
+    const getCoin = async (page = 1, size = pageSize) => { 
+        dispatch(getCoinStart({ page, pageSize: size }));
+        try {
+            const response = await CoinService.getCoins(page, size); 
+            dispatch(getCoinSuccess(response)); 
+        } catch (err) {
+            console.error("Coin tarixi olishda xato:", err);
+            dispatch(getCoinFailure(err.message));
+        }
+    };
+
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            getCoin(newPage);
+        }
+    };
+
+    useEffect(() => {
+        getCoin(currentPage, pageSize); 
+    }, []); 
+
+    // Paginatsiya Tugmalari Komponenti (o'zgarishsiz)
+    const PaginationControls = () => {
+        if (totalPages <= 1 || isLoading) {
+            return null; 
+        }
+
+        const btnClass = "px-4 py-2 rounded-lg font-semibold transition duration-300 border border-indigo-600 shadow-lg";
+        const inactiveBtn = "bg-gray-700 text-gray-300 hover:bg-indigo-500/50 hover:border-indigo-500";
+        const disabledBtn = "bg-gray-800 text-gray-500 cursor-not-allowed border-gray-700 opacity-60";
+
+        return (
+            <div className="flex justify-center items-center space-x-4 mt-10">
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`${btnClass} ${currentPage === 1 ? disabledBtn : inactiveBtn}`}
+                >
+                    <FontAwesomeIcon icon={faChevronLeft} className="mr-2" /> Oldingi
+                </motion.button>
+                
+                <span className="text-white px-4 py-2 text-lg font-bold bg-gray-800 rounded-lg shadow-inner">
+                    {currentPage} / {totalPages}
+                </span>
+
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`${btnClass} ${currentPage === totalPages ? disabledBtn : inactiveBtn}`}
+                >
+                    Keyingi <FontAwesomeIcon icon={faChevronRight} className="ml-2" />
+                </motion.button>
             </div>
-          </div>
-        ))}
-      </div>
+        );
+    };
 
-      {userHistory.history.length === 0 && (
-        <p className="text-center text-gray-400 mt-8 text-xl">Hali hech qanday "CodeCoin" operatsiyalari mavjud emas.</p>
-      )}
-    </main>
-  );
+    // Yordamchi funksiya: Sababni aniqlash (o'zgarishsiz)
+    const getCoinDetails = (item) => {
+        const map = COIN_STATUS_MAP[item.status] || COIN_STATUS_MAP.other;
+        const description = item.reason || map.text;
+        const icon = map.icon; // <-- Bu siz izlayotgan icon
+        const color = map.color;
+        const type = item.amount > 0 ? 'earn' : 'spend'; 
+        
+        return { description, icon, color, type };
+    };
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.05 
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 }
+    };
+
+
+    return (
+        <main className="container mx-auto px-4 py-16">
+           <section className="text-center pt-8 pb-12">
+            <h1 className="text-5xl md:text-6xl font-black text-white mt-4 animate-slide-in-up">
+              <span style={{ background: 'linear-gradient(90deg, var(--gold), #ffbf44)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                {username}
+              </span> CodeCoin Tarixi
+            </h1>
+            
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto mt-4 animate-slide-in-up" style={{ animationDelay: '0.2s' }}>
+              Jami "CodeCoin"laringiz: 
+              <span className="text-gold font-bold text-2xl ml-2 inline-flex items-center">
+                  {totalCoins} 
+                  <FontAwesomeIcon 
+                    icon={faCoins} 
+                    className="ml-2 text-yellow-400" 
+                  />
+              </span>
+            </p>
+          </section>
+
+            {/* Yuklanish holati */}
+            {isLoading && (
+                <p className="text-center text-indigo-400 mt-8 text-xl">
+                    <FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> Coin tarixi yuklanmoqda...
+                </p>
+            )}
+
+            {/* Xato holati */}
+            {error && (
+                <p className="text-center text-red-500 mt-8 text-xl">
+                    <FontAwesomeIcon icon={faExclamationTriangle} className="mr-2" /> Xato yuz berdi: {error}
+                </p>
+            )}
+
+            {/* Tarix Ro'yxati */}
+            {!isLoading && !error && (
+                <motion.div 
+                    className="history-cards-wrapper grid grid-cols-1 gap-4 lg:gap-6"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
+                    {coins.map((item) => {
+                        const { description, icon, color, type } = getCoinDetails(item);
+                        
+                        // Rasmda ko'rsatilgan kabi rangli borderlar uchun
+                        const borderColor = type === 'earn' ? 'border-green-500' : 'border-purple-500';
+
+                        return (
+                            <motion.div
+                                key={item.id} 
+                                variants={itemVariants} 
+                                // Border rangini o'zgartiramiz: rasmda chap tomonda 
+                                className={`history-item relative p-4 rounded-xl shadow-xl transition duration-300 transform hover:scale-[1.01] bg-gray-800/80 border-l-4 ${borderColor}`}
+                            >
+                                <div className="flex items-center gap-4">
+                                    {/* Rasmda ko'rsatilgan 'uch nuqta' joyi - Endi u yerdan COIN_STATUS_MAP dan kelayotgan icon ko'rinadi */}
+                                    <div className={`icon w-14 h-14 rounded-full flex items-center justify-center text-xl shadow-inner 
+                                        ${type === 'earn' ? 'bg-green-500/10 text-green-400' : 'bg-purple-500/10 text-purple-400'} border border-gray-700/50`}>
+                                        
+                                        {/* COIN_STATUS_MAP dan kelayotgan asosiy icon */}
+                                        <FontAwesomeIcon icon={icon} /> 
+                                    </div>
+                                    
+                                    <div className="flex-grow">
+                                        {/* Birinchi qator: Sabab nomi / Sarlavha */}
+                                        <p className="text-lg font-semibold text-white">{description}</p>
+                                        {/* Ikkinchi qator: Vaqt */}
+                                        <p className="text-sm text-gray-400">
+                                            {timeAgo(item.created_at)}
+                                        </p>
+                                    </div>
+                                    {/* Coin miqdori va Sarflanish/Topilish Ikonasi */}
+                                    <span className={`amount font-bold text-2xl ${color} tracking-wide flex items-center`}>
+                                        <FontAwesomeIcon 
+                                            icon={type === 'earn' ? faArrowUp : faArrowDown} 
+                                            className={`text-xl mr-2 ${type === 'earn' ? 'text-green-400' : 'text-purple-400'}`}
+                                        />
+                                        {item.amount > 0 ? '+' : ''}{item.amount}
+                                    </span>
+                                </div>
+                            </motion.div>
+                        );
+                    })}
+                    
+                    {coins.length === 0 && !isLoading && !error && (
+                        <p className="text-center text-gray-400 mt-8 text-xl">
+                            Hali CodeCoin tarixi mavjud emas.
+                        </p>
+                    )}
+                </motion.div>
+            )}
+
+            {/* Paginatsiya Tugmalari */}
+            <PaginationControls />
+        </main>
+    );
 };
 
 export default CodeCoinHistory;

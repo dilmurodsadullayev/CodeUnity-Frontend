@@ -162,6 +162,9 @@ const NotificationDropdown = ({ openNotifications, setOpenNotifications, notific
   
   // Eng oxirgi kelgan xabarni birinchi ko'rsatish uchun saralash
   const sortedNotifications = [...notifications].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  
+  // Faqat o'qilmagan bildirishnomalar ro'yxati
+  const unreadNotificationsList = sortedNotifications.filter(notification => !notification.is_read);
 
 
   return (
@@ -206,25 +209,39 @@ const NotificationDropdown = ({ openNotifications, setOpenNotifications, notific
                 </button>
               )}
             </div>
+            
             <div className="py-1">
-              {sortedNotifications && sortedNotifications.length > 0 ? (
-              // Avval o‘qilmaganlarni ajratamiz (rasmdagi dizaynda faqat o'qilmaganlar ko'rinadi)
-              sortedNotifications
-                .filter(notification => !notification.is_read) // Faqat o'qilmaganlarni ko'rsatamiz
-                .map(notification => (
+              {notifications.length === 0 ? ( // 1. Umumiy ro'yxat bo'sh bo'lsa
+                <div className="px-4 py-6 text-center">
+                  <i className="fas fa-box-open text-4xl text-gray-600 mb-2"></i> {/* Yangi ikonka */}
+                  <p className="text-sm font-medium text-gray-400">
+                    Hali bildirishnomalar mavjud emas.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Yangi vazifalar yoki fikrlar kelganda bu yerda ko'rinadi.
+                  </p>
+                </div>
+              ) : unreadNotificationsList.length > 0 ? ( // 2. O'qilmaganlar bo'lsa, ularni ko'rsatamiz
+                unreadNotificationsList.map(notification => (
                   <NotificationItem
                     key={notification.id}
                     notification={notification}
                     handleMarkOneAsRead={handleMarkOneAsRead}
                   />
                 ))
-              ) : (
-                <p className="px-4 py-3 text-sm text-gray-400 text-center">
-                  O‘qilmagan bildirishnomalar yo‘q.
-                </p>
+              ) : ( // 3. Bildirishnomalar bor, lekin hammasi o'qilgan
+                <div className="px-4 py-6 text-center">
+                  <i className="fas fa-check-circle text-4xl text-green-500/70 mb-2"></i> {/* Yangi ikonka */}
+                  <p className="text-sm font-medium text-gray-400">
+                    Barcha bildirishnomalar o'qilgan.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Yangi xabarlar kelishini kuting.
+                  </p>
+                </div>
               )}
-
             </div>
+
             {notifications.length > 0 && (
               <div className="p-2 border-t border-gray-700 bg-gray-900/50">
                 <Link

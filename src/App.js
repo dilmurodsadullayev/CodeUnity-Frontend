@@ -1,35 +1,74 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux"; // Providerni App.js da ishlatmasdan, index.js da ishlatamiz
+import { useDispatch, useSelector } from "react-redux";
 
 import {
   Main, Navbar, Footer, Login, Register, Problems, Feedback, CodeCoin, Users,
   Profile, NotFound, ProblemDetail, ProblemCreate, ProblemSolutionUpdate,
-  CodeCoinHistory, NotificationsPage, // NotificationsPage komponentini import qiling
+  CodeCoinHistory, NotificationsPage,
   MyProblems
 } from "./components";
-// import store from "./store"; // store ni index.js da Providerga beramiz
 import AuthService from "./services/auth";
 import { logoutUser, signUserSuccess, signUserStart, signUserFailer } from "./features/auth/Auth";
-import { connectWebSocket, disconnectWebSocket } from "./middleware/notificationMiddleware"; // Middleware dan action creatorlarni import qilish
+import { connectWebSocket, disconnectWebSocket } from "./middleware/notificationMiddleware";
 
+// ====================================================================
+// WOW LOADER KOMPONENTI - AppLoader
+// ====================================================================
+
+/**
+ * Loyihaning mavzusiga mos keladigan chiroyli yuklanish animatsiyasi.
+ * Dark Mode'ni qo'llab-quvvatlaydi.
+ */
+const AppLoader = () => {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-[#0d1117] transition-colors duration-300">
+      {/* Kodga ishora qiluvchi animatsiya - < / > simvoli bilan aylanuvchi spinner */}
+      <div className="relative w-24 h-24">
+        {/* Tashqi Ring - Yumshoq pulsatsiya */}
+        <div className="absolute inset-0 border-4 border-gray-400 dark:border-gray-700 rounded-full animate-ping opacity-50"></div>
+        
+        {/* Asosiy Spinner - CodeUnity ning asosiy rangi bilan aylanadi */}
+        <div className="w-full h-full border-8 border-t-8 border-t-blue-600 dark:border-t-blue-400 border-gray-200 dark:border-gray-800 rounded-full animate-spin"></div>
+        
+        {/* Markaziy Kontent - Kod simboli */}
+        <div className="absolute inset-0 flex items-center justify-center text-4xl font-extrabold text-blue-600 dark:text-blue-400">
+          {/* SVG ikonka: < / > ga o'xshash qavslar */}
+          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+          </svg>
+        </div>
+      </div>
+      
+      {/* Yuklanish Matni */}
+      <p className="mt-8 text-2xl font-bold text-gray-900 dark:text-gray-100">
+        CodeUnity
+      </p>
+      <p className="text-md text-gray-600 dark:text-gray-400 mt-2 animate-pulse">
+        Muammolar yechimi yuklanmoqda...
+      </p>
+    </div>
+  );
+};
+
+// ====================================================================
 // PrivateRoute komponenti
+// ====================================================================
 const PrivateRoute = ({ children }) => {
   const { isLoggedIn, isLoading } = useSelector((state) => state.auth);
-  // console.log("PrivateRoute Render: isLoading =", isLoading, ", isLoggedIn =", isLoggedIn);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen dark:bg-[#0d1117] text-gray-800 dark:text-gray-200">
-        Yuklanmoqda...
-      </div>
-    );
+    // Endi AppLoader komponentini ishlatamiz
+    return <AppLoader />;
   }
 
   // Agar login bo'lmagan bo'lsa, /login ga yo'naltiramiz
   return isLoggedIn ? children : <Navigate to="/login" replace />;
 };
 
+// ====================================================================
+// AppContent komponenti
+// ====================================================================
 function AppContent() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const dispatch = useDispatch();
@@ -90,29 +129,19 @@ function AppContent() {
       }
     };
 
-    // Agar user allaqachon login bo'lmasa VA hozir loading holatida bo'lmasa, user holatini tekshirish
-    // yoki user login bo'lgan bo'lsa va loading tugagan bo'lsa, bu blokni tashlab ketish.
-    // Faqatgina dastlabki yuklanishda yoki login holati o'zgarganda tekshiramiz.
-    if (!isLoggedIn && isLoading) { // Agar hali login bo'lmagan bo'lsa va yuklanayotgan bo'lsa
+    // Autentifikatsiya holatini tekshirish mantig'i
+    if (!isLoggedIn && isLoading) { 
       checkUserStatus();
     } else if (isLoggedIn && !isLoading) {
-      // Agar allaqachon login bo'lgan bo'lsa va loading tugagan bo'lsa
-      // WebSocket ulanishini ta'minlash (agar allaqachon ulanmagan bo'lsa)
       dispatch(connectWebSocket());
     } else if (!isLoggedIn && !isLoading && !isPublicPath) {
-      // Agar login bo'lmagan bo'lsa, loading tugagan bo'lsa va public yo'lda bo'lmasa,
-      // bu holatda foydalanuvchini logout deb belgilab, WebSocketni uzamiz
       dispatch(logoutUser());
       dispatch(disconnectWebSocket());
     } else if (!isLoggedIn && !isLoading && isPublicPath) {
-      // Agar login bo'lmagan bo'lsa, loading tugagan bo'lsa va public yo'lda bo'lsa
-      // WebSocketni uzamiz, chunki login bo'lmagan userga bildirishnomalar kerak emas
       dispatch(disconnectWebSocket());
     }
 
-    // `isLoggedIn` dependency'si kerak, chunki login/logout sodir bo'lganda `useEffect` qayta ishga tushishi kerak.
-    // `isLoading` ni esa ichkarida boshqarganimiz uchun tashqarida dependency sifatida kiritmadik.
-  }, [dispatch, isLoggedIn, isLoading, location.pathname]); // location.pathname ham dependency ga qo'shildi
+  }, [dispatch, isLoggedIn, isLoading, location.pathname]);
 
   return (
     <>
@@ -177,7 +206,6 @@ function AppContent() {
 
 function App() {
   return (
-    // Providerni bu yerda ishlatish kerak, chunki AppContent ichida useSelector va useDispatch ishlatiladi
     <Router>
       <AppContent />
     </Router>

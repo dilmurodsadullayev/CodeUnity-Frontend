@@ -1,10 +1,11 @@
 import React from 'react'
+import { limitText } from '../utils/limitText'
 
 const PopularProbelmCard = ({problem, description, star, response, views}) => {
   return (
         <div className="problem-card rounded-lg p-5 flex flex-col">
-            <h3 className="text-xl font-bold text-white mb-2 hover:text-indigo-400 cursor-pointer">{problem}</h3>
-            <p className="text-gray-400 text-sm mb-4 flex-grow">{description}</p>
+            <h3 className="text-xl font-bold text-white mb-2 hover:text-indigo-400 cursor-pointer">{limitText(problem)}</h3>
+            <p className="text-gray-400 text-sm mb-4 flex-grow">{limitText(description)}</p>
             <div className="flex justify-between items-end">
                 <div className="flex flex-wrap gap-2">
                     <span className="bg-sky-500/20 text-sky-300 text-xs font-semibold px-2 py-1 rounded-full">Python</span>
