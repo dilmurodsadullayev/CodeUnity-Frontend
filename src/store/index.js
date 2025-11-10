@@ -10,6 +10,10 @@ import FeedbackReducer from '../features/feedback'
 import notificationReducer from '../features/notificationSlice'
 import notificationMiddleware from '../middleware/notificationMiddleware'
 import CoinReducer from '../features/coins'
+import ProfileReducer from '../features/profile'
+import ProjectReducer from '../features/projects'
+import PostReducer from '../features/posts'
+import RoadmapReducer from '../features/roadmap'
 
 export const store = configureStore({
   reducer: {
@@ -20,7 +24,11 @@ export const store = configureStore({
     user: UserReducer,
     feedback: FeedbackReducer,
     notifications: notificationReducer,
-    coin: CoinReducer
+    coin: CoinReducer,
+    profile: ProfileReducer,
+    project: ProjectReducer,
+    post: PostReducer,
+    roadmap: RoadmapReducer
     
   },
   middleware: (getDefaultMiddleware) =>

@@ -28,6 +28,10 @@ export { default as NotificationDropdown } from './NotificationDropdown';
 export { default as MyProblems } from './MyProblems';
 export { default as MyProblemCard } from './MyProblemCard';
 export { default as SimilarProblems } from './SimilarProblems';
+export { default as ProfileProjects } from './ProfileProjects';
+export { default as ProfilePosts } from './ProfilePosts';
+export { default as ProfileRoadmap } from './ProfileRoadmap';
+export { default as EditProfileModal } from './EditProfileModal';
 
 
 
