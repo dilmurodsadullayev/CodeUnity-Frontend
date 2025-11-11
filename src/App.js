@@ -6,7 +6,8 @@ import {
   Main, Navbar, Footer, Login, Register, Problems, Feedback, CodeCoin, Users,
   Profile, NotFound, ProblemDetail, ProblemCreate, ProblemSolutionUpdate,
   CodeCoinHistory, NotificationsPage,
-  MyProblems
+  MyProblems,
+  ProjectDetail
 } from "./components";
 import AuthService from "./services/auth";
 import { logoutUser, signUserSuccess, signUserStart, signUserFailer } from "./features/auth/Auth";
@@ -195,7 +196,8 @@ function AppContent() {
           <Route path="feedback" element={<Feedback />} />
           <Route path="codecoin" element={<CodeCoin />} />
           <Route path="users" element={<Users />} />
-          <Route path="profile" element={<Profile />} />
+          <Route path="/:username/profile" element={<Profile />} />
+          <Route path="project/:projectId/detail" element={<ProjectDetail />} />
           <Route path="codecoin-history" element={<CodeCoinHistory />} />
           <Route path="notifications" element={<NotificationsPage />} />
         </Route>

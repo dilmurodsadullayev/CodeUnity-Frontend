@@ -2,10 +2,10 @@
 import axios from './api'
 
 const ProfileService = {
-    async getProfile() { // page va pageSize parametrlarni qabul qilamiz
+    async getProfile(username) { // page va pageSize parametrlarni qabul qilamiz
         try {
             // URL ga page va page_size query parametrlarni qo'shamiz
-            const { data } = await axios.get(`/users/profile/`, { withCredentials: true });
+            const { data } = await axios.get(`/users/${username}/profile/`, { withCredentials: true });
             console.log("Bu Profile ni malumoti ", data.results);
             return data; // API javobining butunini qaytaramiz (count, next, previous, results)
         } catch (error) {
@@ -14,9 +14,9 @@ const ProfileService = {
         }
     },
 
-    async updateProfile(dataToSend) {
+    async updateProfile(username, dataToSend) {
     try {
-        const { data } = await axios.patch(`/users/profile/`, dataToSend, { withCredentials: true })
+        const { data } = await axios.patch(`/users/${username}/profile/`, dataToSend, { withCredentials: true })
         
         // Eslatma: Backend URL'ni `/users/profile/update/` ga o'zgartirdim, 
         // chunki siz ProfileUpdateAPI uchun shunday URL belgilagandingiz.

@@ -18,7 +18,7 @@ const SKILL_LEVELS = [
 const EditProfileModal = ({ profileData, isOpen, onClose }) => {
     const dispatch = useDispatch();
 
-    // Tahrirlash uchun form state'i
+    // Tahrirlash uchun form state'i (matnli maydonlar)
     const [formData, setFormData] = useState({
         first_name: '',
         last_name: '',
@@ -31,6 +31,10 @@ const EditProfileModal = ({ profileData, isOpen, onClose }) => {
         website_url: '',
         github_url: '',
     });
+
+    // Profil rasmi fayli va uning oldindan ko'rish (preview) holati
+    const [profileImageFile, setProfileImageFile] = useState(null);
+    const [profileImagePreview, setProfileImagePreview] = useState(null);
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -54,6 +58,12 @@ const EditProfileModal = ({ profileData, isOpen, onClose }) => {
                 website_url: profileData.website_url ?? '',
                 github_url: profileData.github_url ?? '',
             });
+            
+            // Mavjud profil rasmini preview sifatida o'rnatish
+            setProfileImagePreview(profileData.image || null);
+
+            // Fayl obyektini tozalash
+            setProfileImageFile(null);
         }
     }, [profileData]);
 
@@ -66,22 +76,76 @@ const EditProfileModal = ({ profileData, isOpen, onClose }) => {
         setSuccess(false);
     };
 
+    // Rasm yuklashni boshqarish funksiyasi
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setProfileImageFile(file); // Fayl obyektini state ga saqlash
+            setProfileImagePreview(URL.createObjectURL(file)); // Oldindan ko'rish uchun URL yaratish
+            setError(null);
+            setSuccess(false);
+        }
+    };
+    
+    // Rasm o'chirish funksiyasi
+    const handleImageRemove = () => {
+        // Backendga rasmni o'chirish uchun maxsus signal (masalan, "null" deb nomlangan dummy File)
+        setProfileImageFile(new File([], 'null', { type: 'application/json' })); 
+        setProfileImagePreview(null);
+        setSuccess(false);
+        setError(null);
+    };
+
     const handleSave = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
         setSuccess(false);
 
-        // API ga jo'natish uchun ma'lumotlarni tayyorlash
-        const dataToSend = {
-            ...formData,
-            // 'skills' satrini massivga aylantirish va bo'sh elementlarni olib tashlash
-            skills: formData.skills.split(',').map(s => s.trim()).filter(s => s), 
-        };
+        const isFileUpdate = profileImageFile !== null;
+        let dataToSend;
+        
+        if (isFileUpdate) {
+            // Fayl tanlangan, FormData ishlatamiz
+            dataToSend = new FormData();
+            
+            // Barcha matnli maydonlarni FormData'ga append qilamiz
+            Object.keys(formData).forEach(key => {
+                if (key !== 'skills') { // Skills ni alohida append qilamiz
+                    dataToSend.append(key, formData[key]);
+                }
+            });
+
+            // Skills (massiv sifatida, agar API shunday qabul qilsa)
+            // Vergul bilan ajratilgan satrni array elementlari sifatida yuborish
+            formData.skills.split(',').map(s => s.trim()).filter(s => s).forEach(skill => {
+                 dataToSend.append('skills', skill); 
+            });
+
+
+            // Profil rasmi faylini qo'shamiz
+            if (profileImageFile) {
+                // Agar dummy 'null' fayl bo'lsa (o'chirish)
+                if (profileImageFile.name === 'null') {
+                    dataToSend.append('image', ''); // Rasmni o'chirish signalini yuborish (API ga bog'liq)
+                } else {
+                    dataToSend.append('image', profileImageFile);
+                }
+            }
+
+        } else {
+            // Faqat matnli ma'lumotlar, JSON yuboramiz
+            dataToSend = {
+                ...formData,
+                // 'skills' satrini massivga aylantirish
+                skills: formData.skills.split(',').map(s => s.trim()).filter(s => s), 
+            };
+        }
         
         try {
             // API chaqiruvi (PATCH/PUT)
-            const response = await ProfileService.updateProfile(dataToSend); 
+            // ProfileService ni FormData ni ham, JSON ni ham ishlata oladi deb faraz qilamiz
+            const response = await ProfileService.updateProfile(profileData.username, dataToSend); 
             
             // Redux state'ni yangilash
             dispatch(getProfileSuccess(response)); 
@@ -89,7 +153,7 @@ const EditProfileModal = ({ profileData, isOpen, onClose }) => {
             setLoading(false);
             setSuccess(true);
             
-            // 1 sekunddan keyin modalni yopish (onClose orqali Profile.jsx dagi getProfile chaqiriladi)
+            // 1 sekunddan keyin modalni yopish
             setTimeout(onClose, 1000); 
 
         } catch (err) {
@@ -121,13 +185,60 @@ const EditProfileModal = ({ profileData, isOpen, onClose }) => {
                     <button 
                         onClick={onClose} 
                         className="text-gray-400 hover:text-white transition-colors p-2 rounded-full hover:bg-gray-700"
-                        type="button" // Modal ichidagi buttonlar default submit bo'lmasligi uchun
+                        type="button" 
                     >
                         <i className="fa-solid fa-times text-2xl"></i>
                     </button>
                 </div>
                 
                 <form onSubmit={handleSave} className="p-6 space-y-5">
+                    
+                    {/* Rasm yuklash guruhi */}
+                    <div className="border-b border-gray-700 pb-4 space-y-4">
+                        <h3 className="text-lg font-semibold text-indigo-400 col-span-full">
+                            <i className="fa-solid fa-camera-retro mr-2"></i>Profil Rasmi
+                        </h3>
+                        
+                        <div className="flex flex-col items-center p-3 border border-gray-700 rounded-lg bg-gray-700/30 w-fit mx-auto">
+                            <label className="text-sm font-medium text-gray-300 mb-2">Profil Rasmini yuklash</label>
+                            <div className="w-24 h-24 rounded-full overflow-hidden mb-2 border-2 border-indigo-500 bg-gray-700 flex items-center justify-center">
+                                {profileImagePreview ? (
+                                    <img 
+                                        src={profileImagePreview} 
+                                        alt="Profil Rasmi" 
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <i className="fa-solid fa-user text-3xl text-gray-500"></i>
+                                )}
+                            </div>
+                            <input
+                                type="file"
+                                id="profileImage"
+                                hidden
+                                accept="image/*"
+                                onChange={handleImageChange}
+                            />
+                            <div className="flex space-x-2 mt-2">
+                                <label 
+                                    htmlFor="profileImage"
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs py-1.5 px-3 rounded-lg cursor-pointer transition-colors"
+                                >
+                                    <i className="fa-solid fa-upload mr-1"></i> Yuklash
+                                </label>
+                                {(profileImagePreview || profileImageFile) && (
+                                    <button 
+                                        type="button"
+                                        onClick={handleImageRemove}
+                                        className="bg-red-600 hover:bg-red-700 text-white text-xs py-1.5 px-3 rounded-lg transition-colors"
+                                        title="Rasmni o'chirish"
+                                    >
+                                        <i className="fa-solid fa-trash-alt"></i> O'chirish
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                     
                     {/* Shaxsiy ma'lumotlar guruhi */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-gray-700 pb-4">
@@ -253,7 +364,7 @@ const EditProfileModal = ({ profileData, isOpen, onClose }) => {
                         <ul className="list-disc list-inside ml-2">
                             <li>**username, id, coins** (Tizim tomonidan boshqariladi)</li>
                             <li>**date\_joined** (Avtomatik sana)</li>
-                            <li>**image, cover\_image** (Rasmlar alohida joyda tahrirlanadi)</li>
+                            <li>**cover\_image** (Fon rasmi bu shaklda tahrirlanmaydi)</li>
                         </ul>
                     </div>
 

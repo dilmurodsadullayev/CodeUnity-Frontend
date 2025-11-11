@@ -179,8 +179,8 @@ const Navbar = () => {
                         </div>
 
                         <div className="py-1">
-                          <Link
-                            to="/profile"
+                          <Link 
+                          to={`/${user.username}/profile`}
                             className="block px-4 py-2 text-sm text-gray-300 hover:bg-indigo-600 hover:text-white transition-colors duration-200"
                             onClick={() => setOpenUserMenu(false)}
                           >

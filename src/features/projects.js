@@ -3,7 +3,10 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
     project_isLoading: false,
     projects: [],
-    project_error: null
+    projectDetail: null,
+    project_error: null,
+    projectDetailIsLoading: false,
+    projectDetailError: null
 }
 
 export const projectSlice  = createSlice({
@@ -19,6 +22,20 @@ export const projectSlice  = createSlice({
         },
         getProjectFailure: (state, action) => {
             state.project_error = action.payload
+        },
+
+        getProjectDetailStart: state => {
+            state.projectDetailError = true;
+            state.projectDetailError = null;
+        },
+        getProjectDetailSuccess: (state, actions) => {
+            state.projectDetailError = false;
+            state.projectDetail = actions.payload;
+            state.projectDetailError = null;
+        },
+        getProjectDetailFailure: (state, action) => {
+            state.projectDetailError = false;
+            state.projectDetailError = action.payload;
         },
         // postCommentStart: state => {
         //     state.isLoading = true
@@ -37,7 +54,11 @@ export const {
     
     getProjectStart,
     getProjectSuccess,
-    getProjectFailure
+    getProjectFailure,
+
+    getProjectDetailStart,
+    getProjectDetailSuccess,
+    getProjectDetailFailure
 
     } = projectSlice.actions
 export default projectSlice.reducer

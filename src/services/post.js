@@ -2,10 +2,10 @@
 import axios from './api'
 
 const PostService = {
-    async getPosts() { // page va pageSize parametrlarni qabul qilamiz
+    async getPosts(username) { // page va pageSize parametrlarni qabul qilamiz
         try {
             // URL ga page va page_size query parametrlarni qo'shamiz
-            const { data } = await axios.get(`/users/posts/`, { withCredentials: true });
+            const { data } = await axios.get(`/users/${username}/posts/`, { withCredentials: true });
             console.log("Bu Post ni malumoti ", data);
             return data; // API javobining butunini qaytaramiz (count, next, previous, results)
         } catch (error) {

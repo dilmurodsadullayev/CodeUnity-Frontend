@@ -1,23 +1,34 @@
 // ProfileProjects.jsx
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux'; // Redux'dan ma'lumot olish uchun
-import { getTechColorClass, getTechnologyColor } from '../utils/colorUtils'; // Utility funksiyani import qilish
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getTechnologyColor } from '../utils/colorUtils';
+// Redux actions. Mavjud deb faraz qilamiz
 import { getProjectFailure, getProjectStart, getProjectSuccess } from '../features/projects';
+import { createProjectFailure, createProjectStart, createProjectSuccess } from '../features/projects'; 
 import ProjectService from '../services/project';
+import { Link } from 'react-router-dom';
+import CreateProjectModal from './CreateProjectModal';
 
 // Redux state-ning Project qismini tanlab olish uchun selector
 const selectProjectState = (state) => state.project;
 
-const ProfileProjects = () => {
-    // Redux store'dan loyihalar ma'lumotlarini olish
+
+const ProfileProjects = ({username}) => {
     const dispatch = useDispatch()
     const { projects, project_isLoading, project_error } = useSelector(selectProjectState);
+    // Tizimga kirgan foydalanuvchini olish.
+    const { isLoggedIn, user } = useSelector((state) => state.auth); 
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false); 
+    
+    // Foydalanuvchi ushbu profilning egasimi, tekshirish
+    const isOwner = user && user.username === username;
 
 
     const getProject = async () => { 
         dispatch(getProjectStart());
         try {
-            const response = await ProjectService.getProjects(); 
+            // Asl API chaqiruvi
+            const response = await ProjectService.getProjects(username); 
             dispatch(getProjectSuccess(response)); 
         } catch (err) {
             console.error("Project olishda xato:", err);
@@ -35,10 +46,59 @@ const ProfileProjects = () => {
             <p className="text-gray-400">{message}</p>
         </div>
     );
+    
+     // =============================================================
+    // LOYIHA AMALLARI FUNKSIYALARI
+    // =============================================================
+    const handleCreateProject = () => {
+        setIsCreateModalOpen(true); // Modalni ochish
+    };
+    
+    /**
+     * Yangi loyihani backendga yuborish funksiyasi.
+     */
+    const handleProjectSubmit = async (formDataWithImages) => {
+        // dispatch(createProjectStart()); // Agar Redux ishlatsangiz
+        
+        try {
+            // ** ASOSIY API CHAQIRUVI **
+            const response = await ProjectService.createProject(formDataWithImages); 
+            
+            // dispatch(createProjectSuccess(response.data)); 
+            
+            console.log("Loyihani yaratish muvaffaqiyatli:", response.data);
+            
+            // Loyihalar ro'yxatini yangilash
+            getProject(); 
+            
+            return response.data; 
+
+        } catch (err) {
+            console.error("Yangi loyiha yaratishda xato:", err);
+            // dispatch(createProjectFailure(err.message));
+            
+            // Xatoni modalga qaytarish uchun
+            throw new Error(err.response?.data?.detail || err.message || "Loyihani yaratishda kutilmagan xato."); 
+        }
+    };
+
+    const handleEditProject = (projectId) => {
+        alert(`Loyihani tahrirlash modalini ochish: ID ${projectId}`);
+        // setIsEditModalOpen(true, projectId); 
+    };
+
+    const handleDeleteProject = (projectId) => {
+        if (window.confirm("Haqiqatan ham bu loyihani o'chirmoqchimisiz?")) {
+            alert(`Loyihani o'chirish logikasi chaqirildi: ID ${projectId}`);
+            // dispatch(deleteProject(projectId)); 
+        }
+    };
+    // =============================================================
+
 
     useEffect(() => {
-        getProject() // Loyihalar uchun API chaqiruvi - zaruratga qarab yoqish mumkin
-    }, []); 
+        getProject()
+    }, [username]); 
     
     // =============================================================
     // YUKLANISH (LOADING) HOLATI
@@ -75,82 +135,159 @@ const ProfileProjects = () => {
     }
     
     // =============================================================
-    // BO'SH HOLATI
+    // BO'SH HOLATI - **MODAL BU YERGA QO'SHILDI**
     // =============================================================
     if (!projects || projects.length === 0) {
         return (
-            <NoProjects 
-                message="Foydalanuvchida hali hech qanday loyiha mavjud emas."
-            />
+            <div className="space-y-6">
+                {isOwner && ( // Tekshiruv: Faqat egasi bo'lsa ko'rsatilsin
+                    <div className="flex justify-end">
+                        <button 
+                            onClick={handleCreateProject}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all flex items-center space-x-2 shadow-lg shadow-indigo-600/30"
+                        >
+                            <i className="fa-solid fa-plus"></i>
+                            <span>Yangi loyiha yaratish</span>
+                        </button>
+                    </div>
+                )}
+                <NoProjects 
+                    message={
+                        isOwner ? 
+                        "Sizda hali hech qanday loyiha mavjud emas. Birinchi loyihangizni yarating!" : 
+                        "Foydalanuvchida hali hech qanday loyiha mavjud emas."
+                    }
+                />
+                {/* Modalni bu yerda ko'rsatish shart, aks holda loyihalar yo'q bo'lsa ochilmaydi */}
+                 <CreateProjectModal
+                    isOpen={isCreateModalOpen}
+                    onClose={() => setIsCreateModalOpen(false)}
+                    onSubmit={handleProjectSubmit}
+                />
+            </div>
         );
     }
 
 
     // =============================================================
-    // MA'LUMOTLAR MAVJUD BO'LGAN HOLAT
+    // MA'LUMOTLAR MAVJUD BO'LGAN HOLAT - **MODAL BU YERGA QO'SHILDI**
     // =============================================================
     return (
-        <div id="projects" className="grid md:grid-cols-2 gap-6">
-            {projects.map((project) => (
-                <div key={project.id} className="project-card bg-gray-800 rounded-lg overflow-hidden flex flex-col">
-                    <div className="h-48 overflow-hidden">
-                        <img src={project?.images[0]?.image} alt="Loyiha skrinshoti" className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"/>
-                    </div>
-                    <div className="p-5 flex flex-col flex-grow">
-                        <h4 className="text-xl font-bold text-white">{project.title}</h4>
-                        <p className="text-gray-400 mt-1 mb-4 flex-grow">{project.description}</p>
+        <div className="space-y-6"> 
+            
+            {/* 1. YANGI LOYIHA YARATISH TUGMASI - Faqat egasi bo'lsa ko'rsatilsin */}
+            {isOwner && (
+                <div className="flex justify-end">
+                    <button 
+                        onClick={handleCreateProject}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all flex items-center space-x-2 shadow-lg shadow-indigo-600/30"
+                    >
+                        <i className="fa-solid fa-plus"></i>
+                        <span>Yangi loyiha yaratish</span>
+                    </button>
+                </div>
+            )}
+
+            {/* 2. LOYIHALAR GRIDI */}
+            <div id="projects" className="grid md:grid-cols-2 gap-6">
+                {projects.map((project) => (
+                    <div 
+                        key={project.id} 
+                        className="project-card bg-gray-800 rounded-lg overflow-hidden flex flex-col relative shadow-xl hover:shadow-2xl transition-shadow"
+                    >
+                        {/* A. Rasm qismi */}
+                        <div className="h-48 overflow-hidden">
+                            <img src={project?.images[0]?.image} alt="Loyiha skrinshoti" className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"/>
+                        </div>
                         
-                        <div className="flex flex-wrap gap-2 mb-4">
-                            {/* Language badge */}
-                            {project?.language_data && (
-                                <span
-                                className={`${getTechnologyColor(project.language_data)} text-xs font-semibold px-2.5 py-1 rounded-full`}
-                                >
-                                {project.language_data.name}
-                                </span>
+                        {/* B. Kontent qismi */}
+                        <div className="p-5 flex flex-col flex-grow relative"> 
+                            
+                            {/* LOYIHA AMALLARI TUGMALARI - Faqat egasi bo'lsa ko'rsatilsin */}
+                            {isOwner && (
+                                <div className="absolute top-5 right-5 flex space-x-2 z-20 bg-gray-900/50 backdrop-blur-sm p-1 rounded-lg border border-gray-700/50">
+                                    
+                                    {/* Tahrirlash Tugmasi */}
+                                    <button 
+                                        onClick={() => handleEditProject(project.id)}
+                                        title="Tahrirlash"
+                                        className="text-gray-400 hover:text-yellow-400 p-2 transition-colors rounded-md"
+                                    >
+                                        <i className="fa-solid fa-edit"></i>
+                                    </button>
+                                    
+                                    {/* O'chirish Tugmasi */}
+                                    <button 
+                                        onClick={() => handleDeleteProject(project.id)}
+                                        title="O'chirish"
+                                        className="text-gray-400 hover:text-red-500 p-2 transition-colors rounded-md"
+                                    >
+                                        <i className="fa-solid fa-trash-alt"></i>
+                                    </button>
+                                </div>
                             )}
+                            
+                            {/* Asosiy kontent */}
+                            <h4 className="text-xl font-bold text-white pr-20">{project.title}</h4> 
+                            <p className="text-gray-400 mt-1 mb-4 flex-grow">{project.description}</p>
+                            
+                            {/* Texnologiyalar (o'zgarishsiz) */}
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {/* Language badge */}
+                                {project?.language_data && (
+                                    <span
+                                    className={`${getTechnologyColor(project.language_data)} text-xs font-semibold px-2.5 py-1 rounded-full`}
+                                    >
+                                    {project.language_data.name}
+                                    </span>
+                                )}
 
-                            {/* Technology badge */}
-                            {project?.technology_data && (
-                                <span
-                                className={`${getTechnologyColor(project.technology_data)} text-xs font-semibold px-2.5 py-1 rounded-full`}
-                                >
-                                {project.technology_data.name}
-                                </span>
-                            )}
+                                {/* Technology badge */}
+                                {project?.technology_data && (
+                                    <span
+                                    className={`${getTechnologyColor(project.technology_data)} text-xs font-semibold px-2.5 py-1 rounded-full`}
+                                    >
+                                    {project.technology_data.name}
+                                    </span>
+                                )}
                             </div>
 
-                        <div className="border-t border-gray-700 pt-4 flex justify-between items-center text-gray-400">
-                          <div className="flex items-center space-x-4">
-                                {/* 1. Yulduzlar (Kontur va sariq rangda) */}
-                                <span title="Yulduzlar">
-                                    <i className="fa-regular fa-star text-yellow-400 mr-1"></i> {project.stars_count} 
-                                </span>
+                            {/* Footer va Statistikalar (o'zgarishsiz) */}
+                            <div className="border-t border-gray-700 pt-4 flex justify-between items-center text-gray-400">
+                                <div className="flex items-center space-x-4">
+                                    <span title="Yulduzlar">
+                                        <i className="fa-regular fa-star text-yellow-400 mr-1"></i> {project.stars_count} 
+                                    </span>
+                                    
+                                    <span title="Forklar">
+                                        <i className="fa-solid fa-code-fork text-gray-500 mr-1"></i> {project.collaborations_count}
+                                    </span>
+                                    
+                                    <span title="Izohlar">
+                                        <i className="fa-regular fa-comment text-gray-500 mr-1"></i> {project.comments_count}
+                                    </span>
+                                    
+                                    <span title="Ko'rishlar">
+                                        <i className="fa-regular fa-eye text-gray-500 mr-1"></i> {project.views_count}
+                                    </span>
+                                </div>
+                                <Link to={`/project/${project.id}/detail`}
+                                    className="text-indigo-400 hover:text-indigo-300 font-semibold text-sm">
+                                    Batafsil <i className="fa-solid fa-arrow-right ml-1"></i>
                                 
-                                {/* 2. Forklar (Kontur va kulrangda) */}
-                                <span title="Forklar">
-                                    {/* 'fa-code-fork' uchun 'fa-regular' versiyasi bo'lmasligi mumkin. Odatda 'fa-code-branch' ishlatiladi. */}
-                                    {/* Agar 'fa-code-fork' ni konturi bo'lmasa, uni 'fa-solid' qilib qoldirdim, yoki 'fa-regular fa-code-branch' ga o'tish kerak. */}
-                                    <i className="fa-solid fa-code-fork text-gray-500 mr-1"></i> {project.collaborations_count}
-                                </span>
-                                
-                                {/* 3. Izohlar (Kontur va kulrangda) */}
-                                <span title="Izohlar">
-                                    <i className="fa-regular fa-comment text-gray-500 mr-1"></i> {project.comments_count}
-                                </span>
-                                
-                                {/* 4. Ko'rishlar (Kontur va kulrangda) */}
-                                <span title="Ko'rishlar">
-                                    <i className="fa-regular fa-eye text-gray-500 mr-1"></i> {project.views_count}
-                                </span>
+                                </Link>
                             </div>
-                            <a href={project.detailLink} className="text-indigo-400 hover:text-indigo-300 font-semibold text-sm">
-                                Batafsil <i className="fa-solid fa-arrow-right ml-1"></i>
-                            </a>
+
                         </div>
                     </div>
-                </div>
-            ))}
+                ))}
+            </div>
+             {/* Modalni loyihalar grididan keyin, asosiy konteyner ichida ko'rsatish */}
+             <CreateProjectModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                onSubmit={handleProjectSubmit}
+            />
         </div>
     );
 };

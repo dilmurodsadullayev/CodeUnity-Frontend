@@ -1,6 +1,7 @@
 import React from 'react'
 import { FaSearch, FaChevronLeft, FaChevronRight, FaStar, FaCoins } from 'react-icons/fa'; // React Icons kutubxonasidan foydalanamiz
 import UserImage from '../assests/userImage.jpeg'
+import { Link } from 'react-router-dom';
 
 const UserCard = ({user, index}) => {
 
@@ -72,9 +73,11 @@ const UserCard = ({user, index}) => {
                 </div>
             </div>
         </div>
-        <a href="#" className={`mt-8 w-full bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 text-white font-semibold py-3 rounded-xl transition-all duration-300 text-center shadow-lg transform hover:-translate-y-0.5`}>
+        <Link
+        to = {`/${user.username}/profile/`}
+         className={`mt-8 w-full bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 text-white font-semibold py-3 rounded-xl transition-all duration-300 text-center shadow-lg transform hover:-translate-y-0.5`}>
             Profilni Ko'rish
-        </a>
+        </Link>
     </div>
   )
 }

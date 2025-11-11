@@ -13,7 +13,7 @@ import RoadmapService from '../services/roadmap';
 const selectRoadmapState = (state) => state.roadmap; // state.roadmap deb faraz qilindi.
 
 
-const ProfileRoadmap = () => {
+const ProfileRoadmap = ({username}) => {
    const dispatch = useDispatch()
 
     const { roadmaps, roadmap_isLoading, roadmap_error } = useSelector(selectRoadmapState);
@@ -51,7 +51,7 @@ const ProfileRoadmap = () => {
     const getRoadmap= async () => { 
         dispatch(getRoadMapStart());
         try {
-            const response = await RoadmapService.getRoadmap(); 
+            const response = await RoadmapService.getRoadmap(username); 
             // API javobida kelgan ma'lumotlarni to'g'ridan-to'g'ri slicega jo'natish
             dispatch(getRoadMapSuccess(response)); 
         } catch (err) {

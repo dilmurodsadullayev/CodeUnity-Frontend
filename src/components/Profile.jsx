@@ -14,6 +14,7 @@ import CoverImageEditModal from './CoverImageEditModal'; // Fon rasmi modal
 import ProfileProjects from './ProfileProjects';
 import ProfilePosts from './ProfilePosts';
 import ProfileRoadmap from './ProfileRoadmap';
+import { useParams } from 'react-router-dom';
 
 
 const Profile = () => {
@@ -23,11 +24,19 @@ const Profile = () => {
         isLoading, 
         error,
     } = useSelector((state) => state.profile);
+    const {username} = useParams()
 
     // Modalni boshqarish uchun state'lar
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isCoverModalOpen, setIsCoverModalOpen] = useState(false); 
     const [isProfileImageModalOpen, setIsProfileImageModalOpen] = useState(false); // Profil rasmi uchun modal state
+
+    const { isLoggedIn, user } = useSelector((state) => state.auth);
+        
+    
+        
+        // Foydalanuvchi ushbu profilning egasimi, tekshirish
+    const isOwner = user && user.username === username;
 
     // ... (getProfile va fullName funksiyalari o'zgarishsiz)
 
@@ -37,7 +46,7 @@ const Profile = () => {
     const getProfile = async () => { 
         dispatch(getProfileStart());
         try {
-            const response = await ProfileService.getProfile(); 
+            const response = await ProfileService.getProfile(username); 
             dispatch(getProfileSuccess(response)); 
         } catch (err) {
             console.error("Profile olishda xato:", err);
@@ -218,22 +227,28 @@ const Profile = () => {
                         <button className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-5 rounded-lg transition-all">
                             Mentorlik so'rash
                         </button>
-                         {/* FON RASMINI TAHRIRLASH TUGMASI (Yangi) */}
-                        <button 
+                       {isOwner && (
+                        <div className="flex gap-2">
+                            {/* FON RASMINI TAHRIRLASH TUGMASI */}
+                            <button 
                             onClick={() => setIsCoverModalOpen(true)}
                             className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-5 rounded-lg transition-all flex items-center space-x-2"
-                        >
+                            >
                             <i className="fa-solid fa-image"></i>
                             <span className="hidden sm:inline">Fon rasmi</span>
-                        </button>
-                        {/* TAHRIRLASH TUGMASI */}
-                        <button 
+                            </button>
+
+                            {/* TAHRIRLASH TUGMASI */}
+                            <button 
                             onClick={() => setIsEditModalOpen(true)}
                             className="bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2 px-5 rounded-lg transition-all flex items-center space-x-2"
-                        >
+                            >
                             <i className="fa-solid fa-edit"></i>
                             <span>Tahrirlash</span>
-                        </button>
+                            </button>
+                        </div>
+                        )}
+
                     </div>
                 </div>
                 
@@ -364,9 +379,9 @@ const Profile = () => {
                     </div>
                     
                     <div id="tab-content" className="space-y-4">
-                        {activeTab === 'projects' && <ProfileProjects />}
-                        {activeTab === 'posts' && <ProfilePosts />}
-                        {activeTab === 'roadmap' && <ProfileRoadmap />}
+                        {activeTab === 'projects' && <ProfileProjects username={username}/>}
+                        {activeTab === 'posts' && <ProfilePosts username={username}/>}
+                        {activeTab === 'roadmap' && <ProfileRoadmap username={username} />}
                     </div>
                 </div>
             </div>

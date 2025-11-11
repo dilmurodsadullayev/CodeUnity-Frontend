@@ -9,7 +9,7 @@ import timeAgo from '../utils/timeAgo';
 // Agar sizning slice'ingiz nomi 'post' bo'lsa
 const selectPostState = (state) => state.post; 
 
-const ProfilePosts = () => {
+const ProfilePosts = ({username}) => {
     const dispatch = useDispatch()
   
     const { posts, post_isLoading, post_error } = useSelector(selectPostState);
@@ -19,7 +19,7 @@ const ProfilePosts = () => {
     const getPost= async () => { 
         dispatch(getPostStart());
         try {
-            const response = await PostService.getPosts(); 
+            const response = await PostService.getPosts(username); 
             dispatch(getPostSuccess(response)); 
         } catch (err) {
             console.error("Post olishda xato:", err);
