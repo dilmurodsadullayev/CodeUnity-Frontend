@@ -1,8 +1,8 @@
-// CreateProjectModal.jsx
-import React, { useState } from 'react';
+// ProjectFormModal.jsx
+import React, { useEffect, useState } from 'react';
 
 // =================================================================
-// MOCK MA'LUMOTLAR (Siz bularni Redux orqali yuklab olishingiz kerak)
+// MOCK MA'LUMOTLAR (O'zgarishsiz)
 // =================================================================
 const mockLanguages = [
     { id: 1, name: 'Python' },
@@ -34,72 +34,128 @@ const mockTechnologies = [
 ];
 // =================================================================
 
+// Default boshlang'ich ma'lumotlar
+const initialFormState = {
+    name: '',
+    main_features: '',
+    description: '',
+    website_url: '',
+    language: '', // ID
+    technology: '', // ID
+};
+
+// Edit rejimida rasmlarni to'g'ri boshlash uchun funksiya
+const formatImagesForEdit = (projectImages) => {
+    if (!projectImages || projectImages.length === 0) {
+        return [{ id: Date.now(), title: '', file: null, isNew: true, url: null }];
+    }
+    // Backenddan kelgan rasmlarni formatlaymiz (url bor, file yo'q)
+    return projectImages.map(img => ({
+        id: img.id, 
+        title: img.title || '',
+        file: null, 
+        isNew: false, 
+        url: img.image 
+    }));
+};
+
+
 /**
- * Yangi loyiha yaratish uchun modal komponent.
+ * Loyiha yaratish/tahrirlash uchun modal komponenti.
  * @param {boolean} isOpen - Modalning ochiqligi holati.
  * @param {function} onClose - Modalni yopish funksiyasi.
- * @param {function} onSubmit - Forma yuborilganda chaqiriladigan funksiya (ProjectService.createProject).
+ * @param {function} onSubmit - Forma yuborilganda chaqiriladigan funksiya (Create yoki Update).
+ * @param {object|null} initialData - Agar tahrirlash rejimi bo'lsa, mavjud loyiha ma'lumotlari.
  */
-const CreateProjectModal = ({ isOpen, onClose, onSubmit }) => {
+const ProjectFormModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
     
-    // Asosiy loyiha ma'lumotlari uchun state
-    const [formData, setFormData] = useState({
-        name: '',
-        main_features: '',
-        description: '',
-        website_url: '',
-        language: '', // ID
-        technology: '', // ID
-    });
-
-    // Loyiha rasmlari uchun state: [{id: number, title: string, file: File}]
-    const [images, setImages] = useState([{ id: Date.now(), title: '', file: null }]);
+    // Loyihaning mavjudligi (tahrirlash yoki yaratish)
+    const isEditMode = !!initialData;
+    
+    // State'ni initialData yoki default holat bilan boshlash
+    const [formData, setFormData] = useState(initialFormState);
+    const [images, setImages] = useState([]);
+    
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
 
+    // initialData o'zgarganda yoki modal ochilganda state'ni sinxronlash
+    useEffect(() => {
+        if (isOpen) {
+            if (isEditMode) {
+                // Tahrirlash rejimi: Kelgan datani yuklash
+                setFormData({
+                    name: initialData.name || '',
+                    main_features: initialData.main_features || '',
+                    description: initialData.description || '',
+                    website_url: initialData.website_url || '',
+                    
+                    // !!! XATONI BARTARAF ETISH: initialData.language va initialData.technology undefined bo'lishi mumkin
+                    // Optional Chaining (?.) ishlatildi.
+                    language: String(initialData.language?.id || '') || '', 
+                    technology: String(initialData.technology?.id || '') || '',
+                });
+                setImages(formatImagesForEdit(initialData.images));
+            } else {
+                // Yaratish rejimi: State'ni tozalash
+                setFormData(initialFormState);
+                setImages([{ id: Date.now(), title: '', file: null, isNew: true, url: null }]);
+            }
+            setError(null);
+        }
+    }, [isOpen, initialData, isEditMode]); 
+
     if (!isOpen) return null;
 
-    // Asosiy maydonlardagi o'zgarishlarni boshqarish
+
+    // Asosiy maydonlardagi o'zgarishlarni boshqarish (O'zgarishsiz)
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // Dinamik rasm ma'lumotlaridagi o'zgarishlarni boshqarish
+    // Dinamik rasm ma'lumotlaridagi o'zgarishlarni boshqarish (O'zgarishsiz)
     const handleImageChange = (id, field, value) => {
         setImages(images.map(image => 
             image.id === id ? { ...image, [field]: value } : image
         ));
     };
 
-    // Yangi rasm maydonini qo'shish
+    // Yangi rasm maydonini qo'shish (O'zgarishsiz)
     const handleAddImage = () => {
-        setImages(prev => [...prev, { id: Date.now(), title: '', file: null }]);
+        setImages(prev => [...prev, { id: Date.now(), title: '', file: null, isNew: true, url: null }]); 
     };
 
-    // Rasm maydonini o'chirish
+    // Rasm maydonini o'chirish (O'zgarishsiz)
     const handleRemoveImage = (id) => {
         setImages(prev => prev.filter(image => image.id !== id));
     };
     
-    // Fayl tanlanganini boshqarish (e.target.files[0] ni oladi)
+    // Fayl tanlanganini boshqarish (O'zgarishsiz)
     const handleFileChange = (id, file) => {
          setImages(images.map(image => 
-            image.id === id ? { ...image, file: file } : image
+            image.id === id ? { ...image, file: file, url: URL.createObjectURL(file) } : image
         ));
     }
 
 
-    // Forma yuborish funksiyasi
+    // Forma yuborish funksiyasi (O'zgarishsiz)
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
         
-        // 1. Ma'lumotlarni tekshirish (qisman)
+        // 1. Ma'lumotlarni tekshirish
         if (!formData.name || !formData.language || !formData.technology || !formData.description) {
             setError("Loyiha nomi, Tili, Texnologiyasi va Tavsifi majburiy maydonlardir.");
             return;
         }
+
+        const hasImageFileOrExistingUrl = images.some(img => img.file || img.url);
+        if (!hasImageFileOrExistingUrl) {
+             setError("Loyihaning asosiy rasmi majburiy.");
+             return;
+        }
+
 
         setIsSubmitting(true);
         
@@ -113,34 +169,50 @@ const CreateProjectModal = ({ isOpen, onClose, onSubmit }) => {
             }
         });
 
-        // Rasmlarni qo'shish
+        // Rasmlarni qo'shish (CREATE va UPDATE uchun)
         images.forEach((img, index) => {
-            if (img.file) {
-                // Rasm faylini qo'shish. Backendga to'g'ri ishlashi uchun images[index]image kabi formatlash tavsiya etiladi.
+            
+            // Faqat fayl mavjud bo'lsa (yangi rasm yoki o'zgartirilgan rasm)
+            if (img.file) { 
                 projectData.append(`images[${index}]image`, img.file, img.file.name);
-                
-                // Rasm sarlavhasini qo'shish
                 projectData.append(`images[${index}]title`, img.title || `Image ${index + 1}`); 
+                
+                // Agar u mavjud rasm bo'lib, o'zgartirilgan bo'lsa (Edit rejimida)
+                if (isEditMode && !img.isNew) {
+                     projectData.append(`images[${index}]id`, img.id); // Mavjud rasm ID'si
+                }
+            } 
+            // Yoki fayl o'zgarmagan, lekin mavjud rasm bo'lsa (faqat sarlavhasi o'zgarishi mumkin)
+            else if (isEditMode && img.url && !img.isNew) {
+                projectData.append(`images[${index}]id`, img.id);
+                projectData.append(`images[${index}]title`, img.title || `Image ${index + 1}`);
             }
         });
 
         try {
-            await onSubmit(projectData); // API chaqiruvi uchun ProfileProjects ga uzatish
+            await onSubmit(projectData, initialData?.id); // initialData.id ni tahrirlash uchun yuboramiz
             
-            // Muvaffaqiyatli bo'lsa
-            onClose(); // Modalni yopish
-            // Formani tozalash (Modal yopilganda qayta ochilsa toza bo'lishi uchun)
-            setFormData({ name: '', main_features: '', description: '', website_url: '', language: '', technology: '' });
-            setImages([{ id: Date.now(), title: '', file: null }]);
+            onClose(); 
             
         } catch (err) {
-            // onSubmit funksiyasidan kelgan xatoni ushlab olish
-            setError(err.message || "Loyihani yaratishda xato yuz berdi.");
+            // Xatolar kelganda ularni modalda ko'rsatish
+            let errorMessage = err.message || "Loyihani saqlashda xato yuz berdi.";
+            if (err.response && err.response.data) {
+                if (err.response.data.name) errorMessage = `Nomi: ${err.response.data.name.join(', ')}`;
+                else if (err.response.data.images) errorMessage = `Rasmlar: ${JSON.stringify(err.response.data.images)}`; // Rasmlar xatosini yaxshiroq ko'rsatish
+                else if (err.response.data.detail) errorMessage = err.response.data.detail;
+                else errorMessage = JSON.stringify(err.response.data);
+            }
+            setError(errorMessage);
             
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    // Modal sarlavhasini tanlash
+    const title = isEditMode ? "Loyihani tahrirlash" : "Yangi loyiha yaratish";
+    const submitText = isEditMode ? "O'zgarishlarni saqlash" : "Loyihani saqlash";
 
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-75 backdrop-blur-sm flex justify-center items-center">
@@ -148,7 +220,7 @@ const CreateProjectModal = ({ isOpen, onClose, onSubmit }) => {
                 
                 {/* Modal sarlavhasi */}
                 <div className="sticky top-0 bg-gray-800 p-6 border-b border-gray-700 flex justify-between items-center z-10">
-                    <h3 className="text-2xl font-bold text-white">Yangi loyiha yaratish</h3>
+                    <h3 className="text-2xl font-bold text-white">{title}</h3>
                     <button 
                         onClick={onClose} 
                         className="text-gray-400 hover:text-white transition-colors p-2 rounded-full"
@@ -167,7 +239,7 @@ const CreateProjectModal = ({ isOpen, onClose, onSubmit }) => {
                         </div>
                     )}
 
-                    {/* 1. Asosiy Loyiha Ma'lumotlari */}
+                    {/* 1. Asosiy Loyiha Ma'lumotlari - (O'zgarishsiz) */}
                     <div className="space-y-4">
                         <label className="block text-lg font-semibold text-white border-b border-gray-700 pb-2">Asosiy ma'lumotlar</label>
                         
@@ -229,7 +301,7 @@ const CreateProjectModal = ({ isOpen, onClose, onSubmit }) => {
                         </div>
                     </div>
 
-                    {/* 2. Til va Texnologiya tanlash */}
+                    {/* 2. Til va Texnologiya tanlash - (O'zgarishsiz) */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-700">
                         {/* Til (Language) */}
                         <div>
@@ -269,7 +341,7 @@ const CreateProjectModal = ({ isOpen, onClose, onSubmit }) => {
                     </div>
 
 
-                    {/* 3. Loyiha Rasmlari (Dinamik qism) */}
+                    {/* 3. Loyiha Rasmlari (Dinamik qism - Edit uchun kengaytirildi) */}
                     <div className="space-y-4 pt-4 border-t border-gray-700">
                         <label className="block text-lg font-semibold text-white">Loyiha Rasmlari ({images.length} ta)</label>
                         
@@ -310,9 +382,23 @@ const CreateProjectModal = ({ isOpen, onClose, onSubmit }) => {
                                             onChange={(e) => handleFileChange(image.id, e.target.files[0])}
                                             accept="image/*"
                                             className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-500 file:text-white hover:file:bg-indigo-600"
-                                            required={index === 0} // Birinchi rasm majburiy bo'lsin
+                                            required={index === 0 && !image.url} 
                                         />
-                                        {image.file && <p className="text-xs text-green-400 mt-1 truncate">Tanlangan fayl: {image.file.name}</p>}
+                                        
+                                        {/* Tahrirlash rejimi uchun rasm ko'rinishi */}
+                                        {(image.file || image.url) && (
+                                            <div className="mt-2 flex items-center gap-2">
+                                                <img 
+                                                    src={image.file ? image.url : image.url} 
+                                                    alt="Preview" 
+                                                    className="w-10 h-10 object-cover rounded" 
+                                                />
+                                                <p className="text-xs text-green-400 mt-1 truncate">
+                                                    Tanlangan fayl: {image.file ? image.file.name : "Mavjud rasm"}
+                                                </p>
+                                            </div>
+                                        )}
+                                        
                                     </div>
                                 </div>
                             </div>
@@ -339,12 +425,12 @@ const CreateProjectModal = ({ isOpen, onClose, onSubmit }) => {
                             {isSubmitting ? (
                                 <>
                                     <i className="fa-solid fa-spinner fa-spin"></i>
-                                    <span>Yaratilmoqda...</span>
+                                    <span>Saqlanmoqda...</span>
                                 </>
                             ) : (
                                 <>
                                     <i className="fa-solid fa-paper-plane"></i>
-                                    <span>Loyihani saqlash</span>
+                                    <span>{submitText}</span>
                                 </>
                             )}
                         </button>
@@ -356,4 +442,4 @@ const CreateProjectModal = ({ isOpen, onClose, onSubmit }) => {
     );
 };
 
-export default CreateProjectModal;
+export default ProjectFormModal;

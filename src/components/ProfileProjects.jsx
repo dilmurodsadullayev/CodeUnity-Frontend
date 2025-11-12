@@ -202,30 +202,7 @@ const ProfileProjects = ({username}) => {
                         
                         {/* B. Kontent qismi */}
                         <div className="p-5 flex flex-col flex-grow relative"> 
-                            
-                            {/* LOYIHA AMALLARI TUGMALARI - Faqat egasi bo'lsa ko'rsatilsin */}
-                            {isOwner && (
-                                <div className="absolute top-5 right-5 flex space-x-2 z-20 bg-gray-900/50 backdrop-blur-sm p-1 rounded-lg border border-gray-700/50">
-                                    
-                                    {/* Tahrirlash Tugmasi */}
-                                    <button 
-                                        onClick={() => handleEditProject(project.id)}
-                                        title="Tahrirlash"
-                                        className="text-gray-400 hover:text-yellow-400 p-2 transition-colors rounded-md"
-                                    >
-                                        <i className="fa-solid fa-edit"></i>
-                                    </button>
-                                    
-                                    {/* O'chirish Tugmasi */}
-                                    <button 
-                                        onClick={() => handleDeleteProject(project.id)}
-                                        title="O'chirish"
-                                        className="text-gray-400 hover:text-red-500 p-2 transition-colors rounded-md"
-                                    >
-                                        <i className="fa-solid fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            )}
+                    
                             
                             {/* Asosiy kontent */}
                             <h4 className="text-xl font-bold text-white pr-20">{project.title}</h4> 

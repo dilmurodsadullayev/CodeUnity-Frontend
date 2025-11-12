@@ -2,15 +2,20 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getProjectDetailFailure, getProjectDetailStart, getProjectDetailSuccess } from '../features/projects';
 import ProjectService from '../services/project';
-import { useParams } from 'react-router-dom';
-import UserImage from '../assests/userImage.jpeg'; // Agar rasm manzili bo'lmasa
+import { useParams, useNavigate } from 'react-router-dom'; // useNavigate qo'shildi
+import UserImage from '../assests/userImage.jpeg'; 
 
 // Lokal komponentlarni import qilish
 import ProjectDiscussion from './ProjectDiscussion'; 
 import ProjectCollaboration from './ProjectCollaboration'; 
-import ProjectLoadingSkeleton from './ProjectLoadingSkeleton'; // Loading komponenti
+import ProjectLoadingSkeleton from './ProjectLoadingSkeleton'; 
 
-// ** CSS Styles **
+// === YANGI IMPORTLAR ===
+import DeleteConfirmationModal from './DeleteConfirmationModal'; // O'chirish modalini import qilish
+import ProjectFormModal from './CreateProjectModal';
+// ========================
+
+// ** CSS Styles ** (O'zgarishsiz qoldirildi)
 const styles = `
     :root {
         --dark-bg: #0d1117;
@@ -87,37 +92,30 @@ const selectProjectState = (state) => state.project;
 // Yordamchi funksiyalar
 const formatFeatureList = (featuresString) => {
     if (!featuresString) return [];
-    // Matnni vergul yoki yangi qator bo'yicha ajratishga harakat qilamiz
     const items = featuresString.split(/,\s*|\n/).filter(item => item.trim() !== '');
     return items.map(item => item.trim());
 };
 
 const ProjectDetail = () => {
-    const { projectId } = useParams()
-    const dispatch = useDispatch()
+    const { projectId } = useParams();
+    const navigate = useNavigate(); // Navigatsiya uchun
+    const dispatch = useDispatch();
     const { isLoggedIn, user } = useSelector((state) => state.auth);
             
-        
-            
-    
-
-    
-    // Hamkorlar ma'lumotlari (Bu demo ma'lumotlar endi ProjectCollaboration'ga uzatiladi)
-    const [pendingRequests] = useState([
-        { id: 1, user: 'Anakin Skywalker', role: 'Backend Developer', comment: 'APIlar bilan ishlashda katta tajribam bor.', avatar: 'https://i.pravatar.cc/150?u=anakin' },
-        { id: 2, user: 'Padme Amidala', role: 'Frontend Developer', comment: 'Interfeyslarni tez va sifatli qila olaman.', avatar: 'https://i.pravatar.cc/150?u=padme' }
-    ]);
-    const [currentCollaborators] = useState([
-        { id: 3, user: 'Obi-Wan Kenobi', role: 'DevOps Engineer', avatar: 'https://i.pravatar.cc/150?u=obiwan' }
-    ]);
+    // =============================================================
+    // ** YANGI STATE'LAR (Edit/Delete uchun) **
+    // =============================================================
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    // =============================================================
 
     const [activeIndex, setActiveIndex] = useState(0);
-    // ---------------------------------------------------
     
     const { projectDetail, projectDetailIsLoading, projectDetailError } = useSelector(selectProjectState);
-            // Foydalanuvchi ushbu profilning egasimi, tekshirish
-    const isOwner = user?.username && projectDetail?.user?.username && user.username === projectDetail.user.username;
-
+    
+    // Foydalanuvchi ushbu profilning egasimi, tekshirish
+    const isOwner = user?.id && projectDetail?.user?.id && user.id === projectDetail.user.id; // ID bo'yicha tekshirish xavfsizroq
 
     // Barcha ma'lumotlar yuklangandan so'ng, ularni oson ishlatish uchun tayyorlaymiz
     const projectData = projectDetail || {};
@@ -127,23 +125,74 @@ const ProjectDetail = () => {
     const featuresList = formatFeatureList(projectData.main_features);
 
     // ---------------------------------------------------
-    // API chaqiruvi
+    // API chaqiruvi (Loyihani yuklash)
     // ---------------------------------------------------
 
-    const getProjectDetail = async () => { 
+    const getProjectDetail = useCallback(async () => { 
         dispatch(getProjectDetailStart());
         try {
             const response = await ProjectService.projectDetail(projectId); 
             dispatch(getProjectDetailSuccess(response)); 
+            // Rasm indexini to'g'irlash
+            if (response.images && response.images.length > 0) {
+                 setActiveIndex(prev => Math.min(prev, response.images.length - 1));
+            } else {
+                 setActiveIndex(0);
+            }
         } catch (err) {
             console.error("ProjectDetail olishda xato:", err);
             dispatch(getProjectDetailFailure(err.message));
         }
-    };
+    }, [projectId, dispatch]);
 
     useEffect(() => {
         getProjectDetail()
-    }, [projectId]); 
+    }, [getProjectDetail]); 
+
+    // ---------------------------------------------------
+    // ** EDIT / DELETE FUNKSIYALARI **
+    // ---------------------------------------------------
+
+    // Loyihani tahrirlash funksiyasi (ProjectFormModal'ga uzatiladi)
+    const handleUpdateProject = async (formData, projectIdToUpdate) => {
+        try {
+            // BACKENDGA YUBORILADIGAN DATA: projectIdToUpdate, formData (FormData obyekti)
+            await ProjectService.updateProject(projectIdToUpdate, formData); 
+            setIsEditModalOpen(false);
+            // Yangilangan loyiha ma'lumotlarini qayta yuklash
+            await getProjectDetail(); 
+            // Muvaffaqiyatli xabar ko'rsatish
+            // alert("Loyiha muvaffaqiyatli tahrirlandi!"); 
+        } catch (error) {
+            console.error("Loyihani tahrirlashda xato:", error);
+            // Xatoni ProjectFormModal'ga qaytarish uchun uni tashlaymiz
+            throw error; 
+        }
+    };
+    
+    // Loyihani o'chirishni tasdiqlash
+    const handleConfirmDelete = async () => {
+        if (!projectData.id) return;
+
+        setIsDeleting(true);
+
+        try {
+            // BACKENDGA YUBORILADIGAN DATA: projectData.id
+            await ProjectService.deleteProject(projectData.id); 
+            
+            // Muvaffaqiyatli o'chirilgandan so'ng, foydalanuvchini boshqa sahifaga yo'naltirish
+            navigate(`/${user.username}/profile/`); // Masalan, foydalanuvchi profiliga
+            // alert("Loyiha muvaffaqiyatli o'chirildi!");
+
+        } catch (err) {
+            console.error("Loyihani o'chirishda xato:", err);
+            // Xatoni ko'rsatish
+            alert("Loyihani o'chirishda xato yuz berdi: " + (err.message || "Noma'lum xato")); 
+            setIsDeleteModalOpen(false); // Modalni yopish
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     // ---------------------------------------------------
 
@@ -182,20 +231,40 @@ const ProjectDetail = () => {
         <div className="project-body">
             {styleTag}
 
-            {/* Fonga blur effekt uchun Project rasmi */}
-            {/* <div className="atmospheric-bg">
-                <img src={mainImage} className="w-full h-full object-cover filter blur-xl scale-110" alt="Background Blur" />
-            </div> */}
-
             <main className="container mx-auto px-4">
                 <div className="main-content-wrapper rounded-xl shadow-2xl mb-16">
                     
                     {/* Loyiha Sarlavhasi va Statistikasi */}
                     <header className="p-6 md:p-10 border-b border-gray-700/50">
-                        <h1 className="text-4xl md:text-5xl font-black text-gradient">{projectData.name}</h1>
-                        
+                        <div className='flex justify-between items-start'>
+                            <h1 className="text-4xl md:text-5xl font-black text-gradient">{projectData.name}</h1>
+                            
+                            {/* ** EDIT VA DELETE TUGMALARI ** */}
+                            {isOwner && (
+                                <div className='flex gap-2 ml-4'>
+                                    <button 
+                                        onClick={() => setIsEditModalOpen(true)}
+                                        className="p-3 text-sm rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition duration-150 flex items-center gap-2 font-semibold"
+                                        title="Loyihani tahrirlash"
+                                    >
+                                        <i className="fas fa-edit"></i>
+                                        <span className="hidden md:inline">Tahrirlash</span>
+                                    </button>
+                                    <button 
+                                        onClick={() => setIsDeleteModalOpen(true)}
+                                        className="p-3 text-sm rounded-lg bg-red-600 hover:bg-red-700 text-white transition duration-150 flex items-center gap-2 font-semibold"
+                                        title="Loyihani o'chirish"
+                                    >
+                                        <i className="fas fa-trash-alt"></i>
+                                        <span className="hidden md:inline">O'chirish</span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
                         {/* Yutuqlar Paneli */}
                         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mt-4 text-gray-400">
+                            {/* ... (Statistikalar o'zgarishsiz) ... */}
                             <div className="flex items-center gap-2">
                                 <div className="star-rating">
                                     {Array(5).fill(0).map((_, i) => (
@@ -203,10 +272,10 @@ const ProjectDetail = () => {
                                     ))}
                                 </div>
                                 <span className="font-bold text-white text-lg">{(projectData.stars_count || 0).toFixed(1)}</span>
-                                <span className="text-sm">({(projectData.stars_count * 50 || 0).toLocaleString()} baho)</span> {/* Demo baho hisobi */}
+                                <span className="text-sm">({(projectData.stars_count * 50 || 0).toLocaleString()} baho)</span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm"><i className="fas fa-eye w-5"></i> {projectData.views_count.toLocaleString()} ko'rish</div>
-                            <div className="flex items-center gap-2 text-sm"><i className="fas fa-comments w-5"></i> {projectData.comments_count.toLocaleString()} sharh</div>
+                            <div className="flex items-center gap-2 text-sm"><i className="fas fa-eye w-5"></i> {projectData.views_count?.toLocaleString() || 0} ko'rish</div>
+                            <div className="flex items-center gap-2 text-sm"><i className="fas fa-comments w-5"></i> {projectData.comments_count?.toLocaleString() || 0} sharh</div>
                         </div>
 
                         {/* Rasm Galereyasi */}
@@ -220,6 +289,12 @@ const ProjectDetail = () => {
                                         alt={img.title || `Project Screenshot ${index + 1}`}
                                     />
                                 ))}
+                                {/* Agar rasm bo'lmasa, o'rinbosar rasm ko'rsatish */}
+                                {projectImages.length === 0 && (
+                                    <div className='absolute inset-0 flex items-center justify-center bg-gray-900'>
+                                        <i className='fas fa-image text-gray-700 text-6xl'></i>
+                                    </div>
+                                )}
                             </div>
                             <div className="flex justify-center gap-2 mt-4">
                                 {projectImages.map((_, index) => (
@@ -234,6 +309,7 @@ const ProjectDetail = () => {
                     </header>
 
                     <div className="flex flex-col lg:flex-row">
+                        {/* Asosiy Tarkib */}
                         <div className="w-full lg:w-2/3 border-r-0 lg:border-r border-gray-700/50">
                             {/* Loyiha Tavsifi */}
                             <article className="p-6 md:p-10 prose-custom max-w-none">
@@ -258,14 +334,14 @@ const ProjectDetail = () => {
                                 )}
                             </article>
 
-                            {/* Loyiha Jamoasi Bo'limi - ProjectCollaboration komponentiga o'tkazildi */}
+                            {/* Loyiha Jamoasi Bo'limi */}
                             <ProjectCollaboration 
-                                currentCollaborators={projectDetail.collaborations} // Demo ma'lumot
-                                pendingRequests={pendingRequests} // Demo ma'lumot
-                                projectOwner={author} // Real ma'lumot
-                                isOwner={isOwner} // Egasi ekanligini tekshirish lozim (hozircha true)
-                                isCollaborator={false} // Hamkor ekanligini tekshirish lozim (hozircha false)
-                                hasSentRequest={false} // So'rov yuborilganini tekshirish lozim (hozircha false)
+                                currentCollaborators={projectDetail.collaborations} 
+                                pendingRequests={[]} // Bu ma'lumotni ham backenddan olish kerak
+                                projectOwner={author} 
+                                isOwner={isOwner} 
+                                isCollaborator={false} 
+                                hasSentRequest={false} 
                             />
 
                         </div>
@@ -273,7 +349,8 @@ const ProjectDetail = () => {
                         {/* Sidebar */}
                         <aside className="w-full lg:w-1/3 p-6 md:p-10">
                             <div className="sticky-sidebar space-y-8">
-                                 <div>
+                                 {/* ... (Sidebar qismi o'zgarishsiz) ... */}
+                                  <div>
                                     <h3 className="font-bold text-white mb-3">Muallif</h3>
                                     <a href={`/profile/${author.username}`} className="flex items-center gap-3 bg-gray-800/50 hover:bg-gray-700/50 p-3 rounded-lg transition-colors">
                                         <img src={author.image || UserImage} className="w-12 h-12 rounded-full object-cover" alt={author.username} />
@@ -293,7 +370,6 @@ const ProjectDetail = () => {
                                         {projectData.technology_data && (
                                             <span className="bg-purple-600/20 text-purple-300 text-xs font-semibold px-2.5 py-1 rounded-full">{projectData.technology_data.name}</span>
                                         )}
-                                        {/* Boshqa techlar uchun qo'shimcha logic */}
                                         
                                     </div>
                                 </div>
@@ -314,10 +390,36 @@ const ProjectDetail = () => {
                         </aside>
                     </div>
                     
-                    {/* Muhokama Bo'limi - ProjectDiscussion komponentiga o'tkazildi */}
+                    {/* Muhokama Bo'limi */}
                     <ProjectDiscussion  projectId={projectId}/>
                 </div>
             </main>
+
+            {/* ======================================= */}
+            {/* ** LOYIHANI TAHRIRLASH MODALI ** */}
+            {/* ======================================= */}
+            {isOwner && (
+                <ProjectFormModal
+                    isOpen={isEditModalOpen}
+                    onClose={() => setIsEditModalOpen(false)}
+                    onSubmit={handleUpdateProject} // Tahrirlash funksiyasini yuboramiz
+                    initialData={projectData} // Tahrirlash uchun mavjud loyiha ma'lumotlarini yuboramiz
+                />
+            )}
+            
+            {/* ======================================= */}
+            {/* ** LOYIHANI O'CHIRISH MODALI ** */}
+            {/* ======================================= */}
+            {isOwner && (
+                <DeleteConfirmationModal 
+                    isOpen={isDeleteModalOpen}
+                    onClose={() => setIsDeleteModalOpen(false)}
+                    onConfirm={handleConfirmDelete} // O'chirishni tasdiqlash funksiyasi
+                    itemTitle={projectData.name}
+                    isProcessing={isDeleting}
+                />
+            )}
+
         </div>
     );
 };

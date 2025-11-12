@@ -44,6 +44,46 @@ const ProjectService = {
         }
     },
 
+   async updateProject(projectId, formData) {
+        try {
+            // !!! AXIOS.POST O'RNIGA AXIOS.PATCH ISHLATILDI !!!
+            // Tahrirlash uchun PATCH eng mos keladi, chunki u faqat qisman o'zgarishlarni yuboradi.
+            const { data } = await axios.patch(`/projects/project/${projectId}/edit/`, formData, { 
+                withCredentials: true,
+                // FormData bilan ishlaganda Content-Type: multipart/form-data
+                // bo'lishi kerak. Axios, odatda, uni avtomatik qo'yadi,
+                // lekin bu yerda yuborish zarurati yo'q (server tomonda hal bo'ladi).
+            });
+            
+            console.log("✅ Loyiha muvaffaqiyatli tahrirlandi:", data);
+            return data;
+            
+        } catch (error) {
+            if (error.response) {
+                console.error("❌ Server xatosi:", error.response.data, error.response.status);
+                // Agar backend xato xabarini yuborsa, uni qaytarish
+                throw new Error(JSON.stringify(error.response.data)); 
+            } else if (error.request) {
+                console.error("❌ So‘rov yuborildi, lekin javob kelmadi:", error.request);
+                throw new Error("Serverdan javob kelmadi. Tarmoq xatosi.");
+            } else {
+                console.error("❌ So‘rov sozlanishda xato:", error.message);
+                throw new Error(error.message);
+            }
+        }
+    },
+    async deleteProject (projectId) {
+        try {
+            const { data } = await axios.delete(`/projects/project/${projectId}/edit/`, { withCredentials: true }) 
+            console.log(data)
+            return data
+        } catch (error) {
+            console.error("Project o'chirishda xato:", error.response || error.message);
+            throw error;
+        }
+    },
+    
+
 
    async getProjectComments(projectId) { // page va pageSize parametrlarni qabul qilamiz
         try {
