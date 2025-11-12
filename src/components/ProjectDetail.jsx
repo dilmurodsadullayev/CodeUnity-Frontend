@@ -315,7 +315,7 @@ const ProjectDetail = () => {
                     </div>
                     
                     {/* Muhokama Bo'limi - ProjectDiscussion komponentiga o'tkazildi */}
-                    <ProjectDiscussion />
+                    <ProjectDiscussion  projectId={projectId}/>
                 </div>
             </main>
         </div>
