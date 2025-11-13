@@ -140,6 +140,77 @@ const ProjectService = {
             throw error;
         }
     },
+
+
+  
+    async createCollaborationRequest(projectId, requestData) {
+        try {
+            const { data } = await axios.post(`/projects/project/${projectId}/collaboration-requests/`, requestData, { withCredentials: true });
+            console.log("✅ Hamkorlik so'rovi yuborildi:", data);
+            return data;
+        } catch (error) {
+            console.error("❌ Hamkorlik so'rovi yuborishda xato:", error.response?.data || error.message);
+            throw error.response?.data || new Error(error.message);
+        }
+    },
+
+    // 👇 YANGI: Hamkorlik so'rovlarini olish funksiyasi (GET)
+    async getCollaborationRequests(projectId) {
+        try {
+            // Loyiha egasi uchun uning proyektiga kelgan so'rovlarni olib keladi
+            const url = `/projects/project/${projectId}/collaboration-requests/`;
+            const { data } = await axios.get(url, { withCredentials: true });
+            console.log("✅ Hamkorlik so'rovlari yuklandi:", data);
+            return data; // Bu so'rovlar ro'yxati bo'ladi
+        } catch (error) {
+            console.error("❌ Hamkorlik so'rovlarini yuklashda xato:", error.response?.data || error.message);
+            throw error.response?.data || new Error(error.message);
+        }
+    },
+    async getProjectCollaborators(projectId) {
+        try {
+            // Backendda yaratgan yangi URL
+            const url = `/projects/project/${projectId}/collaborators/`; 
+            const { data } = await axios.get(url, { withCredentials: true });
+            console.log("✅ Loyiha hamkorlari yuklandi:", data);
+            return data; 
+        } catch (error) {
+            console.error("❌ Loyiha hamkorlarini yuklashda xato:", error.response?.data || error.message);
+            throw error.response?.data || new Error(error.message);
+        }
+    },
+
+
+        // 👇 YANGI: So'rov statusini yangilash (Qabul qilish/Rad etish)
+    async updateCollaborationRequest(requestId, newStatus) {
+        try {
+            const url = `/projects/project/collaboration-requests/${requestId}/`;
+            // PUT orqali faqat statusni yuboramiz
+            const { data } = await axios.put(url, { status: newStatus }, { withCredentials: true });
+            console.log("✅ Hamkorlik so'rovi yangilandi:", data);
+            return data;
+        } catch (error) {
+            console.error("❌ Hamkorlik so'rovini yangilashda xato:", error.response?.data || error.message);
+            throw error.response?.data || new Error(error.message);
+        }
+    },
+
+    // 👇 YANGI: So'rovni o'chirish
+    async deleteCollaborationRequest(requestId) {
+        try {
+            const url = `/projects/project/collaboration-requests/${requestId}/`;
+            await axios.delete(url, { withCredentials: true });
+            console.log("✅ Hamkorlik so'rovi o'chirildi.");
+            return true;
+        } catch (error) {
+            console.error("❌ Hamkorlik so'rovini o'chirishda xato:", error.response?.data || error.message);
+            throw error.response?.data || new Error(error.message);
+        }
+    },
+    
+
+
+    
     
 }
 

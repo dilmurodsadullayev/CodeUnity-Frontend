@@ -13,6 +13,13 @@ const initialState = {
     projectComments: [],
     project_comment_error: null,
 
+
+     // 👇 YANGI: Hamkorlik so'rovlari uchun state
+    collaborationRequestIsLoading: false,
+    collaborationRequests: [], // Yuborilgan yoki proyekt egasi uchun kelgan so'rovlar ro'yxati
+    collaborationRequestError: null,
+    isCollaborationActionLoading: false, // Yaratish, Qabul qilish, Rad etish, O'chirish uchun
+
 }
 
 export const projectSlice  = createSlice({
@@ -59,6 +66,48 @@ export const projectSlice  = createSlice({
             state.project_comment_isLoading = false;
             state.project_comment_error = action.payload;
         },
+
+
+        getCollaborationRequestsStart: state => {
+            state.collaborationRequestIsLoading = true;
+            state.collaborationRequestError = null;
+        },
+        getCollaborationRequestsSuccess: (state, action) => {
+            state.collaborationRequestIsLoading = false;
+            state.collaborationRequests = action.payload;
+        },
+        getCollaborationRequestsFailure: (state, action) => {
+            state.collaborationRequestIsLoading = false;
+            state.collaborationRequestError = action.payload;
+        },
+
+        collaborationActionStart: state => { // Yaratish/Yangilash/O'chirish uchun
+            state.isCollaborationActionLoading = true;
+            state.collaborationRequestError = null; // Eski xatoliklarni tozalaymiz
+        },
+        collaborationActionSuccess: (state, action) => {
+            state.isCollaborationActionLoading = false;
+            // Agar so'rov yaratilgan bo'lsa, uni ro'yxatga qo'shish (ixtiyoriy)
+            // Agar yangilangan bo'lsa, ro'yxatni yangilash (ixtiyoriy)
+            // Yangilash yoki o'chirishdan so'ng ro'yxatni qayta yuklash tavsiya etiladi.
+        },
+        collaborationActionFailure: (state, action) => {
+            state.isCollaborationActionLoading = false;
+            state.collaborationRequestError = action.payload;
+        },
+
+        getCollaboratorsStart: state => {
+            state.collaboratorsIsLoading = true;
+            state.collaboratorsError = null;
+        },
+        getCollaboratorsSuccess: (state, action) => {
+            state.collaboratorsIsLoading = false;
+            state.collaborators = action.payload; // Ma'lumotni yuklash
+        },
+        getCollaboratorsFailure: (state, action) => {
+            state.collaboratorsIsLoading = false;
+            state.collaboratorsError = action.payload;
+        },
         // postCommentStart: state => {
         //     state.isLoading = true
         // },
@@ -84,7 +133,22 @@ export const {
 
     getProjectCommentStart,
     getProjectCommentSuccess,
-    getProjectCommentFailure
+    getProjectCommentFailure,
+
+
+    // 👇 YANGI Actions
+    getCollaborationRequestsStart,
+    getCollaborationRequestsSuccess,
+    getCollaborationRequestsFailure,
+    collaborationActionStart,
+    collaborationActionSuccess,
+    collaborationActionFailure,
+
+    getCollaboratorsStart,
+    getCollaboratorsSuccess,
+    getCollaboratorsFailure,
+
+
 
     } = projectSlice.actions
 export default projectSlice.reducer

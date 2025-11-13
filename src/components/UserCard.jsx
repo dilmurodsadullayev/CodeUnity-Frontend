@@ -74,7 +74,7 @@ const UserCard = ({user, index}) => {
             </div>
         </div>
         <Link
-        to = {`/${user.username}/profile/`}
+        to = {`/${user?.username}/profile/`}
          className={`mt-8 w-full bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 text-white font-semibold py-3 rounded-xl transition-all duration-300 text-center shadow-lg transform hover:-translate-y-0.5`}>
             Profilni Ko'rish
         </Link>

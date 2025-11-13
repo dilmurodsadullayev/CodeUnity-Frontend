@@ -342,6 +342,7 @@ const ProjectDetail = () => {
                                 isOwner={isOwner} 
                                 isCollaborator={false} 
                                 hasSentRequest={false} 
+                                projectId={projectId} 
                             />
 
                         </div>
