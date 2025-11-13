@@ -56,7 +56,7 @@ const UserCard = ({user, index}) => {
                 <div className="flex items-center gap-2">
                     <FaCoins className="text-amber-400 text-xl" />
                     <div>
-                        <p className="font-bold text-lg text-white">{user?.coin}</p>
+                        <p className="font-bold text-lg text-white">{user?.coins}</p>
                         <p className="text-gray-500 text-xs uppercase">Coin</p>
                     </div>
                 </div>

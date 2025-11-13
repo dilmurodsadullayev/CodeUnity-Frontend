@@ -109,3 +109,21 @@ export const getPostTypeIcon = (typeKey) => {
             return 'fa-solid fa-tag'; // Noma'lum tur uchun standart iconka
     }
 };
+
+
+export const getPostTypeDisplay = (typeKey) => {
+    switch (typeKey) {
+        case 'TEX':
+            return { name: 'Texnologiya', class: 'bg-indigo-600/50 text-indigo-300 border-indigo-500' };
+        case 'SPO':
+            return { name: 'Sport', class: 'bg-green-600/50 text-green-300 border-green-500' };
+        case 'BIZ':
+            return { name: 'Biznes', class: 'bg-yellow-600/50 text-yellow-300 border-yellow-500' };
+        case 'ENT':
+            return { name: 'O\'yin-kulgi', class: 'bg-pink-600/50 text-pink-300 border-pink-500' };
+        case 'OTH':
+            return { name: 'Boshqa', class: 'bg-gray-600/50 text-gray-300 border-gray-500' };
+        default:
+            return { name: 'Noma\'lum', class: 'bg-gray-800/50 text-gray-500 border-gray-600' };
+    }
+};

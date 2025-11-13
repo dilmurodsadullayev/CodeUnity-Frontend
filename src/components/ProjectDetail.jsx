@@ -123,6 +123,8 @@ const ProjectDetail = () => {
     const mainImage = projectImages[activeIndex]?.image || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=2070&auto=format&fit=crop';
     const author = projectData?.user || {};
     const featuresList = formatFeatureList(projectData.main_features);
+    const [isStarred, setIsStarred] = useState(false); // Foydalanuvchi bu loyihani yoqtirganmi
+
 
     // ---------------------------------------------------
     // API chaqiruvi (Loyihani yuklash)
@@ -195,6 +197,61 @@ const ProjectDetail = () => {
     };
 
     // ---------------------------------------------------
+    // ** STAR/UNSTAR FUNKSIYALARI **
+    // ---------------------------------------------------
+
+    const handleStarToggle = useCallback(async () => {
+        if (!isLoggedIn) {
+            alert("Loyihani yoqtirish uchun avval tizimga kiring!"); 
+            return;
+        }
+        
+        // Optimistik yangilash uchun joriy holatni saqlab qolamiz
+        const currentIsStarred = isStarred;
+        const currentStarsCount = projectDetail.stars_count || 0;
+        const willBeStarred = !currentIsStarred; 
+        const newStarsCountOptimistic = willBeStarred ? currentStarsCount + 1 : currentStarsCount - 1;
+
+        // 1. Optimistik Yangilash (UI tezkor javob berishi uchun)
+        setIsStarred(willBeStarred);
+        dispatch(getProjectDetailSuccess({ 
+            ...projectDetail, 
+            stars_count: newStarsCountOptimistic,
+            is_starred_by_user: willBeStarred
+        }));
+
+        try {
+            // 2. API chaqiruvi (toggleProjectStar endi hamma ishni qiladi)
+            const response = await ProjectService.toggleProjectStar(projectId);
+            
+            // 3. API javobi bilan state'ni yakuniy yangilash (Agar optimistik count noto'g'ri bo'lsa to'g'irlash uchun)
+            // Backenddan keladigan ma'lumotlar: {is_starred_by_user, stars_count, detail}
+            
+            // Backendning haqiqiy holatini statega qo'yish
+            setIsStarred(response.is_starred_by_user);
+            dispatch(getProjectDetailSuccess({ 
+                ...projectDetail, 
+                stars_count: response.stars_count,
+                is_starred_by_user: response.is_starred_by_user
+            }));
+
+        } catch (error) {
+            console.error("Star/Unstar qilishda xato:", error);
+            
+            // Xato bo'lsa, holatni orqaga qaytarish (Rollback)
+            setIsStarred(currentIsStarred); // Avvalgi holatga qaytarish
+            dispatch(getProjectDetailSuccess({ 
+                ...projectDetail, 
+                stars_count: currentStarsCount, // Avvalgi count'ga qaytarish
+                is_starred_by_user: currentIsStarred
+            }));
+            
+            alert("Amalni bajarishda xato yuz berdi. Iltimos, qayta urinib ko'ring.");
+        }
+    }, [isStarred, isLoggedIn, projectId, projectDetail, dispatch]);
+
+
+    // ---------------------------------------------------
 
     const styleTag = <style dangerouslySetInnerHTML={{ __html: styles }} />;
 
@@ -264,16 +321,32 @@ const ProjectDetail = () => {
 
                         {/* Yutuqlar Paneli */}
                         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mt-4 text-gray-400">
-                            {/* ... (Statistikalar o'zgarishsiz) ... */}
+                            
+                            {/* ** YANGI STAR BOSISH BO'LIMI ** */}
                             <div className="flex items-center gap-2">
-                                <div className="star-rating">
-                                    {Array(5).fill(0).map((_, i) => (
-                                        <label key={i} className={i < (projectData.stars_count || 0) ? 'active' : ''}>★</label>
-                                    ))}
+                                {/* Faqat Tizimga kirgan foydalanuvchilar uchun Star tugmasini ko'rsatish */}
+                                {isLoggedIn && (
+                                    <button
+                                        onClick={handleStarToggle}
+                                        className={`flex items-center gap-2 p-3 rounded-lg transition-colors duration-200 text-sm font-semibold ${
+                                            isStarred ? 'bg-yellow-600 hover:bg-yellow-700 text-white shadow-lg shadow-yellow-600/30' : 'bg-gray-700/50 hover:bg-gray-600/50 text-gray-300'
+                                        }`}
+                                        title={isStarred ? "Yoqtirishni bekor qilish" : "Loyihani yoqtirish"}
+                                    >
+                                        <i className={`fas fa-star text-lg ${isStarred ? 'text-white' : 'text-yellow-500'}`}></i>
+                                        <span className="hidden sm:inline">{isStarred ? "Yoqilgan" : "Yoqtirish"}</span>
+                                    </button>
+                                )}
+                                
+                                {/* Star / Yoqtirish soni statistikasi (Yangi dizayn) */}
+                                <div className="flex items-center gap-2 text-sm">
+                                    <i className="fas fa-star text-lg text-yellow-500"></i>
+                                    <span className="font-bold text-white text-lg">{(projectData.stars_count || 0).toLocaleString()}</span>
+                                    <span className="text-sm text-gray-400">Yoqish</span>
                                 </div>
-                                <span className="font-bold text-white text-lg">{(projectData.stars_count || 0).toFixed(1)}</span>
-                                <span className="text-sm">({(projectData.stars_count * 50 || 0).toLocaleString()} baho)</span>
                             </div>
+                            {/* ** YANGI STAR BOSISH BO'LIMI TUGADI ** */}
+
                             <div className="flex items-center gap-2 text-sm"><i className="fas fa-eye w-5"></i> {projectData.views_count?.toLocaleString() || 0} ko'rish</div>
                             <div className="flex items-center gap-2 text-sm"><i className="fas fa-comments w-5"></i> {projectData.comments_count?.toLocaleString() || 0} sharh</div>
                         </div>

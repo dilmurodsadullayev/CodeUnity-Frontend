@@ -1,0 +1,73 @@
+/* PostDetail.css */
+
+:root {
+    --dark-bg: #0d1117;
+    --dark-bg-secondary: #161b22;
+    --border-color: rgba(193, 205, 219, 0.2);
+    --border-color-hover: rgba(79, 70, 229, 0.7);
+    --text-primary: #c9d1d9;
+    --indigo: #4f46e5;
+    --pink: #ec4899;
+}
+.post-body { /* Barcha kontent uchun umumiy class */
+    font-family: 'Inter', sans-serif;
+    background-color: var(--dark-bg);
+    color: var(--text-primary);
+}
+.atmospheric-bg-icon {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 40rem; color: rgba(255, 255, 255, 0.02); z-index: -1;
+    animation: slow-spin 60s linear infinite;
+}
+@keyframes slow-spin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+.main-content-wrapper {
+    background: rgba(13, 17, 23, 0.7); backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color); border-radius: 1rem;
+    margin-top: 5rem; margin-bottom: 5rem;
+}
+.prose-custom { color: var(--text-primary); line-height: 1.7; }
+.prose-custom h3 { color: #fff; margin-top: 1.5em; margin-bottom: 0.5em; }
+.prose-custom code { color: #f472b6; background-color: rgba(236, 72, 150, 0.1); padding: 2px 5px; border-radius: 4px; font-weight: 600; }
+.code-block { background-color: #010409; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; margin-top: 1rem; }
+.code-block-header { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; background-color: #161b22; border-bottom: 1px solid var(--border-color); font-size: 0.875rem; }
+.code-block pre { margin: 0; padding: 1rem; font-family: monospace; overflow-x: auto; }
+
+/* ----- REDDIT-STYLE SHARHLAR TIZIMI ----- */
+.comment-container {
+    position: relative;
+}
+.comment-thread-line {
+    position: absolute;
+    left: 24px; /* Avatar markaziga to'g'rilash */
+    top: 60px; /* Avatardan pastroqda boshlash */
+    width: 2px;
+    background-color: var(--border-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+/* Chiziqning pastki qismini to'g'rilash */
+.comment-container:not(:has(.comment-reply)) .comment-thread-line {
+     height: 0; 
+}
+.comment-container:has(.comment-reply) .comment-thread-line {
+    bottom: 16px;
+}
+.comment-thread-line:hover {
+    background-color: var(--border-color-hover);
+}
+.comment-reply {
+    padding-left: 1.5rem; /* Ichkariga surish */
+    margin-left: 24px;
+    position: relative;
+}
+/* Javobni ota-sharhga bog'laydigan gorizontal chiziq */
+.comment-reply::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 32px; /* Avatar markaziga */
+    width: 1.5rem; /* Ichkariga surish masofasi */
+    height: 2px;
+    background-color: var(--border-color);
+}

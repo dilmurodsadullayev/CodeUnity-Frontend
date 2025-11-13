@@ -7,7 +7,8 @@ import {
   Profile, NotFound, ProblemDetail, ProblemCreate, ProblemSolutionUpdate,
   CodeCoinHistory, NotificationsPage,
   MyProblems,
-  ProjectDetail
+  ProjectDetail,
+  PostDetail
 } from "./components";
 import AuthService from "./services/auth";
 import { logoutUser, signUserSuccess, signUserStart, signUserFailer } from "./features/auth/Auth";
@@ -200,6 +201,7 @@ function AppContent() {
           <Route path="project/:projectId/detail" element={<ProjectDetail />} />
           <Route path="codecoin-history" element={<CodeCoinHistory />} />
           <Route path="notifications" element={<NotificationsPage />} />
+          <Route path="/:username/post/:slug/" element={<PostDetail />} />
         </Route>
       </Routes>
     </>

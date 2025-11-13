@@ -207,7 +207,25 @@ const ProjectService = {
             throw error.response?.data || new Error(error.message);
         }
     },
-    
+    async toggleProjectStar(projectId) {
+        try {
+           
+            const { data } = await axios.post(`/projects/project/${projectId}/star_toggle/`, {}, { withCredentials: true });
+            
+            console.log(`✅ Loyiha Star holati yangilandi: ${data.is_starred_by_user ? 'Yoqildi' : 'O\'chirildi'}`, data);
+            
+            // Backenddan keladigan javobda: {detail, is_starred_by_user, stars_count} bo'ladi
+            return data; 
+
+        } catch (error) {
+            if (error.response) {
+                console.error("❌ Star/Unstar server xatosi:", error.response.data, error.response.status);
+            } else {
+                console.error("❌ Star/Unstar so‘rovda xato:", error.message);
+            }
+            throw error;
+        }
+    },
 
 
     

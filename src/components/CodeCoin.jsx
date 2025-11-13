@@ -36,6 +36,16 @@ const CodeCoin = () => {
                 <i className="fas fa-arrow-up-right-dots text-green-400"></i>"CodeCoin"larni Qanday Ishlash Mumkin?
               </h2>
               <div className="mt-6 space-y-3">
+                
+                {/* 🌟 YANGI: POST YOZISH */}
+                <div className="info-item flex items-center gap-4 p-3 rounded-lg">
+                  <div className="icon w-12 h-12 rounded-lg flex items-center justify-center bg-green-500/10 text-green-300 text-xl">
+                    <i className="fas fa-edit"></i>
+                  </div>
+                  <p className="flex-grow text-gray-300">Yangi maqola / Post yozish</p>
+                  <span className="font-bold text-white">+20 coin</span>
+                </div>
+                
                 <div className="info-item flex items-center gap-4 p-3 rounded-lg">
                   <div className="icon w-12 h-12 rounded-lg flex items-center justify-center bg-green-500/10 text-green-300 text-xl">
                     <i className="fas fa-pen-nib"></i>
@@ -43,6 +53,25 @@ const CodeCoin = () => {
                   <p className="flex-grow text-gray-300">Javob yozish</p>
                   <span className="font-bold text-white">+5 coin</span>
                 </div>
+                
+                {/* 🌟 YANGI: POSTGA LIKE OLISH */}
+                <div className="info-item flex items-center gap-4 p-3 rounded-lg">
+                  <div className="icon w-12 h-12 rounded-lg flex items-center justify-center bg-green-500/10 text-green-300 text-xl">
+                    <i className="fas fa-heart"></i>
+                  </div>
+                  <p className="flex-grow text-gray-300">Har bir olingan Post Like (❤) uchun (Post egasiga)</p>
+                  <span className="font-bold text-white">+3 coin</span>
+                </div>
+                
+                {/* 🌟 YANGI: ROADMAPGA LIKE OLISH */}
+                <div className="info-item flex items-center gap-4 p-3 rounded-lg">
+                  <div className="icon w-12 h-12 rounded-lg flex items-center justify-center bg-green-500/10 text-green-300 text-xl">
+                    <i className="fas fa-map-marked-alt"></i>
+                  </div>
+                  <p className="flex-grow text-gray-300">Roadmap'ingizga har bir yoqtirish uchun (Roadmap egasiga)</p>
+                  <span className="font-bold text-white">+5 coin</span>
+                </div>
+                
                 <div className="info-item flex items-center gap-4 p-3 rounded-lg">
                   <div className="icon w-12 h-12 rounded-lg flex items-center justify-center bg-green-500/10 text-green-300 text-xl">
                     <i className="fas fa-crown"></i>
@@ -54,7 +83,7 @@ const CodeCoin = () => {
                   <div className="icon w-12 h-12 rounded-lg flex items-center justify-center bg-green-500/10 text-green-300 text-xl">
                     <i className="fas fa-star"></i>
                   </div>
-                  <p className="flex-grow text-gray-300">Har bir olingan yulduzcha (⭐) uchun</p>
+                  <p className="flex-grow text-gray-300">Har bir olingan yulduzcha (⭐) uchun (Loyiha egasiga)</p>
                   <span className="font-bold text-white">+10 coin</span>
                 </div>
                 <div className="info-item flex items-center gap-4 p-3 rounded-lg">
