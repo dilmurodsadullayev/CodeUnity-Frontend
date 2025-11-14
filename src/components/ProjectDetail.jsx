@@ -120,7 +120,7 @@ const ProjectDetail = () => {
     // Barcha ma'lumotlar yuklangandan so'ng, ularni oson ishlatish uchun tayyorlaymiz
     const projectData = projectDetail || {};
     const projectImages = projectData?.images || [];
-    const mainImage = projectImages[activeIndex]?.image || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=2070&auto=format&fit=crop';
+    const mainImage = projectImages[activeIndex]?.image || UserImage;
     const author = projectData?.user || {};
     const featuresList = formatFeatureList(projectData.main_features);
     const [isStarred, setIsStarred] = useState(false); // Foydalanuvchi bu loyihani yoqtirganmi

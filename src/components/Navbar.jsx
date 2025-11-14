@@ -1,31 +1,27 @@
-// src/components/Navbar.js
-
 import React, { useState, useRef, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux'; // <-- useDispatch hali ham kerak, agar boshqa joyda ishlatilsa.
+import { useSelector, useDispatch } from 'react-redux'; // <-- useDispatch qo'shildi
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from "framer-motion";
 import UserImage from '../assests/userImage.jpeg'; // Default user image
 import NotificationDropdown from './NotificationDropdown';
+import { logoutUser } from '../features/auth/Auth'; // <-- Logout action import qilindi
+import AuthService from '../services/auth';
 
 const Navbar = () => {
   const [openUserMenu, setOpenUserMenu] = useState(false);
-  const [openNotifications, setOpenNotifications] = useState(false); // State qoldirildi
+  const [openNotifications, setOpenNotifications] = useState(false);
+  
   const { isLoggedIn, user } = useSelector((state) => state.auth);
-  // notifications faqat NotificationDropdown ga prop sifatida berilmaydi, lekin log uchun qoldi:
   const { notifications } = useSelector((state) => state.notifications); 
   console.log("Notification lar ", notifications)
   
-  // useDispatch agar faqat mark as read uchun ishlatilgan bo'lsa, NotificationDropdown ga ko'chdi.
-  // Lekin logout uchun kerak bo'lishi mumkin.
-  // const dispatch = useDispatch(); 
+  const dispatch = useDispatch(); // <-- Dispatch qo'shildi
 
   const userMenuRef = useRef(null);
-  const notificationsRef = useRef(null); // Ref qoldirildi
+  const notificationsRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
   const baseUrl = "http://127.0.0.1:8000";
-
-  // Mock Notification Data O'CHIRIB TASHLANDI
 
   const isActive = (path) => location.pathname === path;
 
@@ -34,9 +30,6 @@ const Navbar = () => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setOpenUserMenu(false);
       }
-      // Notifications mantiqi NotificationDropdown da bo'lsa ham,
-      // umumiy yopish mantiqi bu yerda qolishi mumkin yoki NotificationDropdown ga to'liq ko'chirilishi kerak.
-      // Hozirgi holatda bu yerda qoldirildi.
       if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
         setOpenNotifications(false);
       }
@@ -48,23 +41,35 @@ const Navbar = () => {
     };
   }, []);
 
-  const handleLogout = () => {
-    console.log('Logout clicked');
-    // Implement your actual logout logic here (e.g., dispatch an action)
-    setOpenUserMenu(false);
-    navigate('/login');
+  const handleLogout = async () => { // <-- Logout funksiyasi async qilindi
+    console.log('Logout clicked. Attempting to logout...');
+    setOpenUserMenu(false); // Menyuni yopish
+
+    try {
+        // 1. Serverga so'rov yuborish (RefreshTokenni bekor qilish va cookie'larni o'chirish)
+        await AuthService.userLogout(); 
+
+        // 2. Redux holatini tozalash
+        dispatch(logoutUser());
+        
+        // 3. Login sahifasiga yo'naltirish
+        navigate('/login');
+        console.log("Logout successful.");
+
+    } catch (error) {
+        // Xato bo'lsa ham (masalan, internet yo'q), Redux holatini tozalash kerak
+        console.error("Logoutda xato yuz berdi, lekin Redux holati tozalanadi:", error);
+        dispatch(logoutUser());
+        navigate('/login');
+    }
   };
   
-  // markNotificationAsRead O'CHIRILDI / NotificationDropdown ga ko'chdi
-
   const navLinks = [
     { path: "/feedback", iconClass: "fas fa-comments", text: "Feedback" },
     { path: "/problems", iconClass: "fas fa-puzzle-piece", text: "Problems" },
     { path: "/users", iconClass: "fas fa-users", text: "Users" },
     { path: "/codecoin", iconClass: "fas fa-coins", text: "CodeCoin" },
   ];
-
-  // unreadNotificationsCount NotificationDropdown ga ko'chdi
 
   const dropdownVariants = {
     hidden: { opacity: 0, y: -10, scale: 0.95 },
@@ -104,6 +109,7 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {isLoggedIn ? (
               <>
+                {/* Coin Display */}
                 <Link
                   to={'/codecoin-history'}
                   className="hidden sm:flex items-center space-x-2 bg-gray-800/50 border border-yellow-500/30 rounded-full p-1 pr-3 cursor-pointer hover:border-yellow-500/60 transition-colors"
@@ -128,6 +134,7 @@ const Navbar = () => {
                     className="flex items-center gap-2 focus:outline-none group"
                     aria-label="Foydalanuvchi menyusi"
                   >
+                    {/* User Image or Default */}
                     {user?.image ? (
                       <img
                         src={`${baseUrl}${user.image}`}
@@ -160,6 +167,7 @@ const Navbar = () => {
                         animate="visible"
                         exit="exit"
                       >
+                        {/* User Info */}
                         <div className="flex items-center gap-3 p-3 border-b border-gray-700">
                           <img
                             src={user?.image ? `${baseUrl}${user.image}` : UserImage}
@@ -178,6 +186,7 @@ const Navbar = () => {
                           </div>
                         </div>
 
+                        {/* Dropdown Links */}
                         <div className="py-1">
                           <Link 
                           to={`/${user.username}/profile`}
@@ -196,6 +205,7 @@ const Navbar = () => {
 
                         </div>
 
+                        {/* Logout Button */}
                         <div className="py-1 border-t border-gray-700">
                           <button
                             onClick={handleLogout}

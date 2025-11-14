@@ -236,7 +236,7 @@ const ProjectDiscussion = ({projectId}) => {
             {/* Yangi sharh qo'shish qismi - (O'zgarishsiz) */}
             <div className="flex items-start gap-4 mb-10 p-4 border border-gray-800 rounded-xl bg-gray-950/50"> 
                 <img 
-                    src={user?.image ?? 'https://i.pravatar.cc/150?u=current_user'} 
+                    src={user?.image ?? UserImage} 
                     className="w-12 h-12 rounded-full object-cover flex-shrink-0 border-2 border-indigo-500" 
                     alt="Current User" 
                 />

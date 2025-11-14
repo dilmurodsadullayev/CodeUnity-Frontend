@@ -44,6 +44,18 @@ const AuthService = {
         }
     },
 
+    async userLogout() {
+        try {
+            // Serverda logout endpointi bo'lishi kerak. U JWTni bekor qilib, cookie'larni o'chiradi.
+            const response = await axios.post("/users/logout/"); 
+            return response.data;
+        } catch (error) {
+             console.error("Logout xatosi:", error.response?.data || error.message);
+             // Xato bo'lsa ham frontendda holatni o'zgartirish kerak, chunki cookie o'chishi kerak
+             throw error;
+        }
+    },
+
     /**
      * Joriy foydalanuvchi ma'lumotlarini olish (AccessToken orqali)
      * @returns {object} - User ma'lumotlari
