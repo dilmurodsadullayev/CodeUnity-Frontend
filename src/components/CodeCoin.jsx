@@ -161,7 +161,7 @@ const CodeCoin = () => {
                       <div className="icon w-12 h-12 rounded-lg flex items-center justify-center bg-purple-500/10 text-purple-300 text-xl">
                         <i className="fas fa-arrow-up-from-bracket"></i>
                       </div>
-                      <p>"Savolimni tepaga chiqarish"</p>
+                      <p>"Tezkor Muammo yuklash"</p>
                     </div>
                     <div className="info-item flex items-center gap-4 p-3 rounded-lg">
                       <div className="icon w-12 h-12 rounded-lg flex items-center justify-center bg-purple-500/10 text-purple-300 text-xl">

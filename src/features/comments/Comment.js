@@ -23,8 +23,11 @@ export const commentSlice  = createSlice({
         postCommentStart: state => {
             state.isLoading = true
         },
-        postCommentSuccess: (state) => {
-            state.isLoading = false
+        postCommentSuccess: (state, action) => {
+            state.isLoading = false;
+            // Yangi kommentni ro'yxatning boshiga qo'shish (unshift) 
+            // yoki oxiriga qo'shish (push)
+            state.comments.unshift(action.payload); 
         },
         postCommentFailure: (state) => {
             state.isLoading = false

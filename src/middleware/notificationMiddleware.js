@@ -82,18 +82,18 @@ const notificationMiddleware = (store) => {
   };
 
   const onMessage = (event) => {
-    try {
-      const message = JSON.parse(event.data);
-      console.log("DEBUG [WS]: Received message from WebSocket:", message);
+       try {
+        const message = JSON.parse(event.data);
+        console.log("DEBUG [WS]: Received message from WebSocket:", message);
 
-      if (message.type === "initial_notifications") {
-        store.dispatch(setNotifications(message.notifications));
-        console.log(`DEBUG [WS]: Dispatching setNotifications with ${message.notifications.length} items.`);
-      } else {
-         // Real-time bildirishnoma kelganda
-         store.dispatch(addNotification(message));
-         console.log("DEBUG [WS]: Dispatching addNotification.");
-      }
+        if (message.type === "initial_notifications") {
+            store.dispatch(setNotifications(message.notifications));
+        } else {
+            // XATO SHU YERDA!
+            // Bu qism "initial_notifications" dan boshqa HAR QANDAY xabarni
+            // yangi bildirishnoma deb qabul qilib, ro'yxatga qo'shib yuboryapti.
+            store.dispatch(addNotification(message));
+        }
 
     } catch (e) {
       console.error("DEBUG [WS]: Failed to parse WebSocket message:", e);

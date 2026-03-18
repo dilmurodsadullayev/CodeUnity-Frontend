@@ -49,7 +49,7 @@ const UserCard = ({user, index}) => {
                 <div className="flex items-center gap-2">
                     <FaStar className="text-yellow-400 text-xl" />
                     <div>
-                        <p className="font-bold text-lg text-white">{user?.rating}</p>
+                        <p className="font-bold text-lg text-white">{user?.total_rating}</p>
                         <p className="text-gray-500 text-xs uppercase">Reyting</p>
                     </div>
                 </div>

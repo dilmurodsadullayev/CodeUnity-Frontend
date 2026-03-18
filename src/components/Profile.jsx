@@ -79,10 +79,10 @@ const Profile = () => {
         position: profile?.position, 
         skill_level: profile?.skill_level,
         company: profile?.company, 
-        rating: profile?.rating ?? "124K", 
+        rating: profile?.total_rating ?? "0", 
         codeCoin: profile?.coins,
-        subscribers: "2,150",
-        projectsCount: "42",
+        problemCount: profile?.problems_count ?? "0",
+        projectsCount: profile?.projects_count ?? "0",
         location: profile?.address ?? "Hali mavjud emas",
         website: profile?.website_url,
         github: profile?.github_url,
@@ -263,8 +263,8 @@ const Profile = () => {
                         <p className="text-3xl font-black stat-gradient-text">{currentUser.codeCoin}</p>
                     </div>
                     <div className="bg-gray-800/80 text-center p-4">
-                        <p className="text-sm text-gray-400">Obunachilar</p>
-                        <p className="text-3xl font-black stat-gradient-text">{currentUser.subscribers}</p>
+                        <p className="text-sm text-gray-400">Muammolar</p>
+                        <p className="text-3xl font-black stat-gradient-text">{currentUser.problemCount}</p>
                     </div>
                     <div className="bg-gray-800/80 text-center p-4">
                         <p className="text-sm text-gray-400">Loyihalar</p>

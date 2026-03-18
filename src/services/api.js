@@ -1,8 +1,13 @@
+// api.js
 import axios from 'axios'
 
-// To'liq URL o'rniga faqat yo'lni ishlatamiz.
-// React proksi '/api' bilan boshlangan so'rovlarni "http://127.0.0.1:8000" ga yo'naltiradi.
-axios.defaults.baseURL = "/api"
-axios.defaults.withCredentials = true
+const instance = axios.create({
+    baseURL: "/api",
+    withCredentials: true, // Cookie-larni yuborish uchun
+    
+    // CSRF sozlamalari:
+    xsrfCookieName: 'csrftoken', // Django tomonidan o'rnatilgan cookie nomi
+    xsrfHeaderName: 'X-CSRFToken', // Django kutayotgan Header nomi
+});
 
-export default axios
+export default instance;

@@ -54,35 +54,40 @@ const ProfilePosts = ({username}) => {
     }, [username]); 
 
     // 🌟 YANGI: POST YARATISH FUNKSIYASI
-    const handleCreatePost = useCallback(async (postData) => {
-        if (!isCurrentUser) return; 
+    const handleCreatePost = useCallback(async (postDataFromModal) => {
+    if (!isCurrentUser) return; 
 
-        // 1. Jarayonni boshlash
-        dispatch(createPostStart()); 
+    dispatch(createPostStart()); 
+    
+    try {
+        // 1. Service'ga username va modal'dan kelgan obyektni yuboramiz
+        const newPost = await PostService.createPost(username, postDataFromModal);
         
-        try {
-            // 2. APIga yuborish
-            // Backend mantiqiga ko'ra, username'ni yuborish kerak emas.
-            // Agar backendda: /posts/post/create/ ishlatilsa.
-            const newPost = await PostService.createPost(username, postData); 
-            
-            // 3. Muvaffaqiyatli bo'lsa, state'ni yangilash
-            dispatch(createPostSuccess(newPost)); 
-            
-            // 4. Modalni yopish 
-            setIsModalOpen(false); 
-            
-            return true; 
+        // 2. Muvaffaqiyatli bo'lsa
+        dispatch(createPostSuccess(newPost)); 
+        setIsModalOpen(false); 
+        
+        // 3. Postlar ro'yxatini yangilab qo'yish (ixtiyoriy, lekin yaxshi amaliyot)
+        // getPost(); 
 
-        } catch (error) {
-            // 5. Xato bo'lsa, state'ni yangilash
-            const errorMessage = JSON.parse(error.message)?.detail || error.message || "Post yaratishda kutilmagan xato";
-            dispatch(createPostFailure(errorMessage));
-            
-            // Xatoni yuqoriga tashlash (modalda ko'rsatish uchun)
-            throw new Error(errorMessage); 
+        return true; 
+    } catch (error) {
+        let serverErrors;
+        try {
+            serverErrors = JSON.parse(error.message);
+        } catch (e) {
+            serverErrors = { detail: error.message };
         }
-    }, [username, isCurrentUser, dispatch]); 
+        
+        // Xatolikni chiroyli ko'rsatish (title va content xatolarini birlashtiramiz)
+        const msg = serverErrors.title ? `Sarlavha: ${serverErrors.title[0]}` : 
+                    serverErrors.content ? `Mazmun: ${serverErrors.content[0]}` : 
+                    serverErrors.detail || "Xato yuz berdi";
+
+        dispatch(createPostFailure(msg));
+        throw new Error(msg); 
+    }
+}, [username, isCurrentUser, dispatch]);
 
 
     // ... (getPostTypeDisplayName va NoPosts kabi mavjud funksiyalar)

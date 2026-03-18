@@ -2,15 +2,23 @@
 import axios from './api'
 
 const UserService = {
-    async getUsers(page = 1, pageSize = 8) { // page va pageSize parametrlarni qabul qilamiz
+    async getUsers(page = 1, pageSize = 8, search = '', ordering = 'Reyting') {
         try {
-            // URL ga page va page_size query parametrlarni qo'shamiz
-            const { data } = await axios.get(`/users/?page=${page}&page_size=${pageSize}`, { withCredentials: true });
-            console.log("Bu Userni malumoti ", data.results);
-            return data; // API javobining butunini qaytaramiz (count, next, previous, results)
+            // Parametrlarni yig'amiz
+            const params = new URLSearchParams({
+                page: page,
+                page_size: pageSize,
+                ordering: ordering
+            });
+            
+            if (search) params.append('search', search);
+
+            const { data } = await axios.get(`/users/?${params.toString()}`, { withCredentials: true });
+            console.log(data)
+            return data; 
         } catch (error) {
             console.error("Users olishda xato:", error.response || error.message);
-            throw error; // Xatoni yuqoriga uzatish
+            throw error;
         }
     },
     

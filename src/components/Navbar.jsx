@@ -7,14 +7,14 @@ import NotificationDropdown from './NotificationDropdown';
 import { logoutUser } from '../features/auth/Auth'; // <-- Logout action import qilindi
 import AuthService from '../services/auth';
 
+
 const Navbar = () => {
   const [openUserMenu, setOpenUserMenu] = useState(false);
   const [openNotifications, setOpenNotifications] = useState(false);
   
   const { isLoggedIn, user } = useSelector((state) => state.auth);
   const { notifications } = useSelector((state) => state.notifications); 
-  console.log("Notification lar ", notifications)
-  
+
   const dispatch = useDispatch(); // <-- Dispatch qo'shildi
 
   const userMenuRef = useRef(null);
@@ -65,6 +65,7 @@ const Navbar = () => {
   };
   
   const navLinks = [
+    { path: "/projects", iconClass: "fas fa-diagram-project", text: "Projects" },
     { path: "/feedback", iconClass: "fas fa-comments", text: "Feedback" },
     { path: "/problems", iconClass: "fas fa-puzzle-piece", text: "Problems" },
     { path: "/users", iconClass: "fas fa-users", text: "Users" },

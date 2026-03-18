@@ -13,6 +13,9 @@ import ProjectLoadingSkeleton from './ProjectLoadingSkeleton';
 // === YANGI IMPORTLAR ===
 import DeleteConfirmationModal from './DeleteConfirmationModal'; // O'chirish modalini import qilish
 import ProjectFormModal from './CreateProjectModal';
+
+
+import ProjectBoost from './ProjectBoost'; // Yangi komponent
 // ========================
 
 // ** CSS Styles ** (O'zgarishsiz qoldirildi)
@@ -424,6 +427,15 @@ const ProjectDetail = () => {
                         <aside className="w-full lg:w-1/3 p-6 md:p-10">
                             <div className="sticky-sidebar space-y-8">
                                  {/* ... (Sidebar qismi o'zgarishsiz) ... */}
+
+                                   {/* 🔥 MANA SHU YERGA BOOST COMPONENTINI QO'YAMIZ */}
+                                {isOwner && (
+                                    <ProjectBoost 
+                                        projectId={projectData.id} 
+                                        projectName={projectData.name} 
+                                        userCoins={user.coins} 
+                                    />
+                                )}
                                   <div>
                                     <h3 className="font-bold text-white mb-3">Muallif</h3>
                                     <a href={`/profile/${author.username}`} className="flex items-center gap-3 bg-gray-800/50 hover:bg-gray-700/50 p-3 rounded-lg transition-colors">

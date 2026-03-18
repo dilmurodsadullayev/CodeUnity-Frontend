@@ -138,16 +138,16 @@ const Feedback = () => {
     const title = "Fikrlar Markazi";
 
     return (
-        <div className="aurora-section">
+        <div className="aurora-section p-4">
             <div className="aurora-bg">
                 <div className="aurora-1"></div>
                 <div className="aurora-2"></div>
             </div>
 
             <main className="relative z-10">
-                {/* 1. DRAMATIK HERO SECTION */}
-                <section className="min-h-screen flex flex-col items-center justify-center text-center p-4">
-                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white mb-4">
+                {/* 1. HERO SECTION - min-h-screen olib tashlandi va paddinglar sozlandi */}
+                <section className="pt-32 pb-12 flex flex-col items-center text-center p-4">
+                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6">
                         {title.split('').map((char, i) => (
                             <span
                                 key={i}
@@ -163,37 +163,16 @@ const Feedback = () => {
                     </p>
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all transform hover:scale-105 shadow-lg shadow-indigo-500/20 animate-slide-in"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-10 rounded-lg text-lg transition-all transform hover:scale-105 shadow-lg shadow-indigo-500/20 animate-slide-in"
                         style={{ animationDelay: '0.9s' }}
                     >
                         <i className="fas fa-plus-circle mr-2"></i> Fikr Qo'shish
                     </button>
                 </section>
 
-                {/* 2. "TAKTIL" FILTR PANELI (hozircha izohda) */}
-                {/* <div className="sticky top-4 z-20 flex justify-center p-4">
-                    <div className="relative flex items-center gap-2 p-1.5 bg-black/20 rounded-xl">
-                        <div
-                            className="absolute h-[80%] rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
-                            style={indicatorStyle}
-                        ></div>
-                        {tabs.map((tab, index) => (
-                            <button
-                                key={index}
-                                ref={el => tabRefs.current[index] = el}
-                                onClick={() => setActiveTab(index)}
-                                className={`relative z-10 flex-1 py-2 px-4 rounded-md text-sm md:text-base font-semibold transition-colors ${
-                                    activeTab === index ? 'text-white' : 'text-gray-400 hover:text-white'
-                                }`}
-                            >
-                                {tab}
-                            </button>
-                        ))}
-                    </div>
-                </div> */}
 
-                {/* 3. TIMELINE KONTEYNERI */}
-                <div className="container mx-auto px-4 py-16">
+                {/* 3. TIMELINE KONTEYNERI - py-16 dan pt-4 ga o'zgartirildi */}
+                <div className="container mx-auto px-4 pt-4 pb-16">
                     {isLoading && (
                         <div className="text-center text-gray-400 text-xl py-10">
                             <i className="fas fa-spinner fa-spin text-4xl mb-4 text-blue-500"></i>
@@ -209,7 +188,8 @@ const Feedback = () => {
                     )}
 
                     {!isLoading && !error && (
-                        <div className="timeline-container flex flex-col items-stretch gap-y-16">
+                        <div className="timeline-container flex flex-col items-stretch gap-y-10"> 
+                            {/* gap-y-16 ni gap-y-10 ga qisqartirdik */}
                             {feedbacks && feedbacks.length > 0 ? (
                                 feedbacks.slice(0, visibleItems).map((feedback, i) => (
                                     <div
@@ -220,7 +200,7 @@ const Feedback = () => {
                                         <FeedbackCard
                                             feedback={feedback}
                                             onEdit={handleEditFeedback}
-                                            onDeleteSuccess={handleDeleteFeedbackSuccess} // Yangi propni uzatish
+                                            onDeleteSuccess={handleDeleteFeedbackSuccess}
                                         />
                                     </div>
                                 ))
@@ -236,7 +216,7 @@ const Feedback = () => {
 
                     {/* Ko'proq Yuklash Tugmasi */}
                     {feedbacks && feedbacks.length > visibleItems && (
-                        <div className="text-center mt-16">
+                        <div className="text-center mt-12">
                             <button
                                 onClick={() => setVisibleItems(prev => prev + 3)}
                                 className="bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors"
@@ -248,7 +228,6 @@ const Feedback = () => {
                 </div>
             </main>
 
-            {/* Fikr Qoldirish / Tahrirlash uchun Modal Oyna */}
             <FeedbackModal
                 isOpen={isModalOpen}
                 onClose={closeModal}

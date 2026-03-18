@@ -13,20 +13,22 @@ const CommentForm = () => {
     const navigate = useNavigate()
 
     const formSubmit = async (e) => {
-        e.preventDefault()
-        const comment = {message}
-        console.log(comment)
-        dispatch(postCommentStart())
+        e.preventDefault();
+        if (!message.trim()) return; // Bo'sh xabar yubormaslik uchun
+
+        dispatch(postCommentStart());
         try {
-            const response = await CommentService.postComment(message)
-            dispatch(postCommentSuccess(response))
-            console.log(response)
-            navigate('/')
+            const response = await CommentService.postComment(message);
+            // response ichida yangi yaratilgan komment ob'ekti bo'lishi kerak
+            dispatch(postCommentSuccess(response));
+            
+            setMessage(''); // 1. Formani tozalash
+            // navigate('/') // 2. Buni olib tashlaymiz, sahifa yangilanmasligi uchun
         } catch (error) {
-            dispatch(postCommentFailure())  
-            console.log(error)
+            dispatch(postCommentFailure());
+            console.log(error);
         }
-    }
+    };
 
   return (
         <div className="max-w-3xl mx-auto mb-16 bg-[#161b22] border border-[#30363d] rounded-lg p-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>

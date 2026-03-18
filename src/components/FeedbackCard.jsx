@@ -10,12 +10,13 @@ const FeedbackCard = ({ feedback, onEdit, onDeleteSuccess }) => { // onDeleteSuc
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // O'chirish modalini boshqarish holati
 
     const BASEURL = "http://127.0.0.1:8000/";
+    console.log(feedback.user.image)
     const userAvatar = feedback.user.image
-        ? `${BASEURL}${feedback.user.image}`
+        ? `${feedback.user.image}`
         : UserImagePlaceholder;
 
     const screenshotUrl = feedback.screenshot
-        ? `${BASEURL}${feedback.screenshot}`
+        ? `${feedback.screenshot}`
         : null;
 
     const getFeedbackTypeDisplay = (type) => {

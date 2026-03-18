@@ -8,8 +8,9 @@ import {
   CodeCoinHistory, NotificationsPage,
   MyProblems,
   ProjectDetail,
-  PostDetail
+  PostDetail, Projects
 } from "./components";
+
 import AuthService from "./services/auth";
 import { logoutUser, signUserSuccess, signUserStart, signUserFailer } from "./features/auth/Auth";
 import { connectWebSocket, disconnectWebSocket } from "./middleware/notificationMiddleware";
@@ -198,6 +199,7 @@ function AppContent() {
           <Route path="codecoin" element={<CodeCoin />} />
           <Route path="users" element={<Users />} />
           <Route path="/:username/profile" element={<Profile />} />
+          <Route path="projects" element={<Projects />} />
           <Route path="project/:projectId/detail" element={<ProjectDetail />} />
           <Route path="codecoin-history" element={<CodeCoinHistory />} />
           <Route path="notifications" element={<NotificationsPage />} />

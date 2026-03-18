@@ -34,80 +34,9 @@ export const UserSlice = createSlice({
             state.error = action.payload;
             state.users = []; // Xato bo'lganda ham problems ni bo'sh massivga o'rnatish
             state.count = 0;     // count ni ham 0 ga o'rnatish
-        },
+        }
 
-        // getLanguagesStart: state => {
-        //     state.isLoading = true;
-        //     state.error = null;
-        // },
-        // getLanguagesSuccess: (state, actions) => {
-        //     state.isLoading = false;
-        //     state.languages = actions.payload;
-        //     state.error = null;
-        // },
-        // getLanguagesFailure: (state, action) => {
-        //     state.isLoading = false;
-        //     state.error = action.payload;
-        // },
-
-        // postProblemStart: state => {
-        //     state.isLoading = true;
-        //     state.error = null;
-        // },
-        // posProblemtSuccess: (state) => {
-        //     state.isLoading = false;
-        //     state.error = null;
-        // },
-        // postProblemFailure: (state, action) => {
-        //     state.isLoading = false;
-        //     state.error = action.payload || 'Error posting problem';
-        // },
-
-        // getProblemDetailStart: state => {
-        //     state.isLoading = true;
-        //     state.error = null;
-        // },
-        // getProblemDetailSuccess: (state, actions) => {
-        //     state.isLoading = false;
-        //     state.problemDetail = actions.payload;
-        //     state.error = null;
-        // },
-        // getProblemDetailFailure: (state, action) => {
-        //     state.isLoading = false;
-        //     state.error = action.payload;
-        // },
-
-        // postProblemStarStart: state => {
-        //     state.isLoading = true;
-        //     state.error = null;
-        // },
-        // postProblemStarSuccess: (state, action) => {
-        //     state.isLoading = false;
-        //     if (state.problemDetail) {
-        //         state.problemDetail.star = action.payload.star;
-        //     }
-        //     state.error = null;
-        // },
-        // postProblemStarFailure: (state, action) => {
-        //     state.isLoading = false;
-        //     state.error = action.payload || 'Error adding star';
-        // },
-
-        // deleteProblemStarStart: state => {
-        //     state.isLoading = true;
-        //     state.error = null;
-        // },
-        // deleteProblemStarSuccess: (state, action) => {
-        //     state.isLoading = false;
-        //     if (state.problemDetail) {
-        //         state.problemDetail.star = action.payload.star;
-        //     }
-        //     state.error = null;
-        // },
-        // deleteProblemStarFailure: (state, action) => {
-        //     state.isLoading = false;
-        //     state.error = action.payload || 'Error removing star';
-        // },
+   
     }
 });
 

@@ -1,223 +1,214 @@
-import React, { useEffect, useState } from 'react';
-import { FaSearch, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { FaSearch, FaChevronLeft, FaChevronRight, FaUsers, FaGhost, FaCircleNotch } from 'react-icons/fa';
 import UserCard from './UserCard';
-import UserService from '../services/user'; // To'g'ri import qilinganiga ishonch hosil qiling
+import UserService from '../services/user'; 
 import { getUserStart, getUserSuccess, getUserFailure } from '../features/users';
 import { useDispatch, useSelector } from 'react-redux';
 
 const Users = () => {
+    const dispatch = useDispatch();
+    
+    // --- LOCAL STATE ---
     const [searchTerm, setSearchTerm] = useState('');
-    const [filter, setFilter] = useState('Reyting'); // 'Yangi', 'Reyting', 'Faol'
+    const [filter, setFilter] = useState('Reyting'); 
     const [currentPage, setCurrentPage] = useState(1);
-    const [usersPerPage] = useState(8); // Har sahifada ko'rsatiladigan foydalanuvchilar soni
+    const [usersPerPage] = useState(8);
 
+    // --- REDUX STATE ---
     const { 
-        users: paginatedUsersData, // API'dan kelgan butun paginatsiya obyekti
+        users: paginatedData, 
         isLoading, 
         error 
     } = useSelector((state) => state.user);
 
-    const dispatch = useDispatch();
+    // --- 🌟 MA'LUMOTLARNI TO'G'RI AJRATIB OLISH (Failsafe) ---
+    // Loglarda ko'ringan muammoni hal qiladi: agar data massiv bo'lsa ham, obyekt bo'lsa ham ishlaydi
+    const usersList = useMemo(() => {
+        if (!paginatedData) return [];
+        // Agar Backend'dan to'g'ridan-to'g'ri massiv kelsa
+        if (Array.isArray(paginatedData)) return paginatedData;
+        // Agar Paginatsiya obyekti kelsa (.results ichida)
+        return paginatedData.results || [];
+    }, [paginatedData]);
 
-    // API'dan kelgan foydalanuvchilar ro'yxati (results array)
-    const users = paginatedUsersData || []; 
-    // Jami foydalanuvchilar soni
-    const totalUsersCount = paginatedUsersData.count || 0;
-    // Keyingi sahifa URL
-    const nextUrl = paginatedUsersData.next;
-    // Oldingi sahifa URL
-    const previousUrl = paginatedUsersData.previous;
-
-    const getUsers = async (page = 1, pageSize = 8) => { // pageSize ni qabul qiladigan qildik
-        dispatch(getUserStart());
-        try {
-            const response = await UserService.getUsers(page, pageSize); // pageSize ni UserServicega uzatyapmiz
-            dispatch(getUserSuccess(response)); 
-        } catch (err) {
-            console.error("Foydalanuvchilarni olishda xato:", err);
-            dispatch(getUserFailure(err.message));
-        }
-    };
-
-    useEffect(() => {
-        getUsers(currentPage, usersPerPage); // usersPerPage uzatilyapti
-    }, [currentPage, usersPerPage]);
-
-    // Qidiruv va filter bo'yicha saralash faqat joriy sahifadagi ma'lumotlarga qo'llaniladi
-    const filteredAndSortedUsers = users
-        .filter(user => {
-            const matchesSearchTerm = 
-                user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (user.first_name && user.first_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                (user.last_name && user.last_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                (user.skills && user.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())));
-            return matchesSearchTerm;
-        })
-        .sort((a, b) => {
-            if (filter === 'Reyting') {
-                const ratingA = a.rating?.rating || a.rating || 0; 
-                const ratingB = b.rating?.rating || b.rating || 0;
-                return ratingB - ratingA; 
-            } else if (filter === 'Yangi') {
-                return b.id - a.id; 
-            } else if (filter === 'Faol') {
-                // Faollik bo'yicha saralash uchun API dan tegishli ma'lumot kelishi kerak (masalan, last_login)
-                return 0; // Hozircha o'zgartirishsiz qoldirilgan
-            }
-            return 0;
-        });
-    console.log(filteredAndSortedUsers);
-    
-
-    // Paginatsiya logikasi
+    const totalUsersCount = paginatedData?.count || usersList.length || 0;
     const totalPages = Math.ceil(totalUsersCount / usersPerPage);
 
-    const paginate = (pageNumber) => {
-        if (pageNumber < 1 || pageNumber > totalPages) return;
-        setCurrentPage(pageNumber);
+    // --- API FETCH FUNKSIYASI ---
+    const fetchUsers = useCallback(async (page, search, ordering) => {
+        dispatch(getUserStart());
+        try {
+            // Backend'ga barcha filtrlarni yuboramiz (Global Search uchun)
+            const response = await UserService.getUsers(page, usersPerPage, search, ordering);
+            dispatch(getUserSuccess(response)); 
+            
+            // Sahifa o'zgarganda tepaga yumshoq skroll qilish
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (err) {
+            console.error("Foydalanuvchilarni yuklashda xato:", err);
+            dispatch(getUserFailure(err.message));
+        }
+    }, [dispatch, usersPerPage]);
+
+    // --- DEBOUNCE EFFECT ---
+    // Foydalanuvchi yozayotganda serverni qiynamaslik uchun 500ms kutish
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchUsers(currentPage, searchTerm, filter);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm, filter, currentPage, fetchUsers]);
+
+    // --- HANDLERS ---
+    const handleFilterChange = (newFilter) => {
+        setFilter(newFilter);
+        setCurrentPage(1); 
     };
 
-    const handleNextPage = () => {
-        if (nextUrl) {
-            setCurrentPage(prev => prev + 1);
-        }
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
+        setCurrentPage(1); 
     };
 
-    const handlePreviousPage = () => {
-        if (previousUrl) {
-            setCurrentPage(prev => prev - 1);
-        }
-    };
-
-    // Sahifa raqamlari qatorini generatsiya qilish (avvalgidek qoladi)
-    const pageNumbers = [];
-    if (totalPages <= 7) { 
-        for (let i = 1; i <= totalPages; i++) {
-            pageNumbers.push(i);
-        }
-    } else { 
-        if (currentPage <= 4) {
-            for (let i = 1; i <= 5; i++) pageNumbers.push(i);
-            pageNumbers.push('...');
-            pageNumbers.push(totalPages);
-        } else if (currentPage > totalPages - 4) {
-            pageNumbers.push(1);
-            pageNumbers.push('...');
-            for (let i = totalPages - 4; i <= totalPages; i++) pageNumbers.push(i);
+    // --- PAGINATION LOGIC ---
+    const pageNumbers = useMemo(() => {
+        const pages = [];
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
         } else {
-            pageNumbers.push(1);
-            pageNumbers.push('...');
-            for (let i = currentPage - 1; i <= currentPage + 1; i++) pageNumbers.push(i);
-            pageNumbers.push('...');
-            pageNumbers.push(totalPages);
+            if (currentPage <= 4) {
+                pages.push(1, 2, 3, 4, 5, '...', totalPages);
+            } else if (currentPage > totalPages - 4) {
+                pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+            } else {
+                pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+            }
         }
-    }
+        return pages;
+    }, [currentPage, totalPages]);
 
     return (
-        <main className="min-h-screen bg-gray-950 text-white py-12">
-            <div className="container mx-auto px-4 max-w-7xl">
-                <section className="mb-12">
-                    <div className="text-center mb-10">
-                        <h1 className="text-5xl md:text-6xl font-extrabold mb-4 leading-tight">
-                            Bizning <span className="bg-gradient-to-r from-indigo-500 to-purple-600 text-transparent bg-clip-text">Hamjamiyatimiz</span>
-                        </h1>
-                        <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-                            Platformamizni bilim va tajriba bilan boyitayotgan, izlanuvchan dasturchilar bilan tanishing. Ularning profillarini ko'ring va ularga qo'shiling.
-                        </p>
+        <main className="min-h-screen bg-gray-950 text-white py-12 px-4 selection:bg-indigo-500/30">
+            <div className="container mx-auto max-w-7xl">
+                
+                {/* 1. Header Section */}
+                <header className="text-center mb-16">
+                    <div className="inline-flex items-center px-4 py-1.5 mb-6 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-bold tracking-widest uppercase">
+                        <FaUsers className="mr-2" /> {totalUsersCount} ta hamjamiyat a'zosi
                     </div>
+                    <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight">
+                        Bizning <span className="bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500 text-transparent bg-clip-text">Hamjamiyat</span>
+                    </h1>
+                    <p className="text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
+                        Bilim ulashuvchi va bir-birini qo'llab-quvvatlovchi eng faol dasturchilar bilan tanishing.
+                    </p>
+                </header>
 
-                    <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-4 items-center mb-12 p-4 rounded-xl bg-gray-900 shadow-xl">
-                        <div className="relative flex-grow w-full md:w-auto">
-                            <FaSearch className="text-gray-500 absolute top-1/2 left-4 -translate-y-1/2 text-lg" />
+                {/* 2. Control Panel (Search & Filter) */}
+                <div className="max-w-5xl mx-auto mb-12">
+                    <div className="flex flex-col md:flex-row gap-4 p-3 bg-gray-900/40 backdrop-blur-xl border border-gray-800 rounded-3xl shadow-2xl">
+                        {/* Search Input */}
+                        <div className="relative flex-grow">
+                            <FaSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" />
                             <input
                                 type="text"
-                                placeholder="Ism yoki ko'nikma bo'yicha qidirish (masalan, Python)..."
-                                className="w-full bg-gray-800 border border-gray-700 rounded-full py-3 pl-12 pr-6 text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 shadow-inner"
+                                placeholder="Ism, ko'nikma yoki foydalanuvchi nomi..."
+                                className="w-full bg-gray-800/40 border border-gray-700/50 rounded-2xl py-4 pl-14 pr-6 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-gray-600"
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onChange={handleSearchChange}
                             />
                         </div>
-                        <div className="flex-shrink-0 flex items-center gap-2 p-1 bg-gray-800 rounded-full text-sm border border-gray-700 shadow-md">
-                            <button
-                                className={`filter-btn px-5 py-2 rounded-full font-semibold ${filter === 'Yangi' ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-700'} transition-all duration-300`}
-                                onClick={() => setFilter('Yangi')}
-                            >
-                                Yangi
-                            </button>
-                            <button
-                                className={`filter-btn px-5 py-2 rounded-full font-semibold ${filter === 'Reyting' ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-700'} transition-all duration-300`}
-                                onClick={() => setFilter('Reyting')}
-                            >
-                                Reyting
-                            </button>
-                            <button
-                                className={`filter-btn px-5 py-2 rounded-full font-semibold ${filter === 'Faol' ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-700'} transition-all duration-300`}
-                                onClick={() => setFilter('Faol')}
-                            >
-                                Faol
-                            </button>
+
+                        {/* Filter Buttons */}
+                        <div className="flex bg-gray-800/60 p-1.5 rounded-2xl border border-gray-700/30">
+                            {['Reyting', 'Yangi', 'Faol'].map((item) => (
+                                <button
+                                    key={item}
+                                    onClick={() => handleFilterChange(item)}
+                                    className={`px-8 py-3 rounded-xl font-bold text-sm transition-all duration-300 ${
+                                        filter === item 
+                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/40' 
+                                        : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                                    }`}
+                                >
+                                    {item}
+                                </button>
+                            ))}
                         </div>
                     </div>
-                </section>
+                    {searchTerm && !isLoading && (
+                        <p className="mt-4 text-center text-gray-500 animate-fade-in">
+                            Qidiruv bo'yicha <span className="text-indigo-400 font-bold">{totalUsersCount}</span> ta natija topildi.
+                        </p>
+                    )}
+                </div>
 
-                <section className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mt-3">
+                {/* 3. User Grid Section */}
+                <section className="grid grid-cols-2 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 min-h-[450px] mt-12">
                     {isLoading ? (
-                        Array.from({ length: usersPerPage }).map((_, index) => (
-                            <UserCard key={`loading-${index}`} isLoading={true} />
+                        // Skeletal Loader
+                        Array.from({ length: usersPerPage }).map((_, i) => (
+                            <UserCard key={`loading-${i}`} isLoading={true} />
                         ))
                     ) : error ? (
-                        <div className="col-span-full text-center text-red-500 text-xl py-10">
-                            Ma'lumotlarni yuklashda xato yuz berdi: {error}
+                        <div className="col-span-full py-20 text-center">
+                            <div className="bg-red-500/5 border border-red-500/10 text-red-400 p-8 rounded-3xl inline-block">
+                                <p className="font-bold text-lg mb-2">Xatolik yuz berdi</p>
+                                <p className="text-sm opacity-70">{error}</p>
+                            </div>
                         </div>
-                    ) : filteredAndSortedUsers.length === 0 ? (
-                        <div className="col-span-full text-center text-gray-400 text-xl py-10">
-                            Hech qanday foydalanuvchi topilmadi.
+                    ) : usersList.length === 0 ? (
+                        <div className="col-span-full py-24 text-center">
+                            <FaGhost className="mx-auto text-6xl text-gray-800 mb-6" />
+                            <p className="text-gray-500 text-xl font-medium">Hech qanday foydalanuvchi topilmadi.</p>
                         </div>
                     ) : (
-                        filteredAndSortedUsers.map((user) => (
+                        // Foydalanuvchilar Ro'yxati
+                        usersList.map((user) => (
                             <UserCard key={user.id} user={user} isLoading={false} />
                         ))
                     )}
                 </section>
 
-                {/* Paginatsiya qismi */}
-                {totalPages > 1 && (
-                    <div className="flex justify-center items-center mt-16 space-x-3">
+                {/* 4. Pagination Section */}
+                {!isLoading && totalPages > 1 && (
+                    <nav className="flex justify-center items-center mt-20 gap-3">
                         <button
-                            onClick={handlePreviousPage}
-                            disabled={!previousUrl}
-                            className={`w-10 h-10 flex items-center justify-center rounded-full ${!previousUrl ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gray-800 hover:bg-indigo-600'} transition-colors text-white text-lg shadow-md`}
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-gray-900 border border-gray-800 hover:border-indigo-500 disabled:opacity-20 transition-all shadow-xl text-indigo-400"
                         >
                             <FaChevronLeft />
                         </button>
 
-                        {pageNumbers.map((num, index) => (
-                            <React.Fragment key={index}>
-                                {num === '...' ? (
-                                    <span className="text-gray-400 text-xl">...</span>
-                                ) : (
-                                    <button
-                                        onClick={() => paginate(num)}
-                                        className={`w-10 h-10 flex items-center justify-center rounded-full ${currentPage === num ? 'bg-indigo-600 text-white font-bold shadow-lg' : 'bg-gray-800 hover:bg-indigo-600 text-white'} transition-colors text-lg`}
-                                    >
-                                        {num}
-                                    </button>
-                                )}
-                            </React.Fragment>
-                        ))}
+                        <div className="flex items-center gap-2">
+                            {pageNumbers.map((num, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => typeof num === 'number' && setCurrentPage(num)}
+                                    className={`w-12 h-12 rounded-2xl font-bold transition-all border ${
+                                        currentPage === num 
+                                        ? 'bg-indigo-600 text-white border-transparent shadow-lg shadow-indigo-600/30 scale-110' 
+                                        : 'bg-gray-900 border border-gray-800 text-gray-500 hover:border-gray-600'
+                                    } ${num === '...' ? 'cursor-default pointer-events-none border-none' : ''}`}
+                                >
+                                    {num}
+                                </button>
+                            ))}
+                        </div>
 
                         <button
-                            onClick={handleNextPage}
-                            disabled={!nextUrl}
-                            className={`w-10 h-10 flex items-center justify-center rounded-full ${!nextUrl ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gray-800 hover:bg-indigo-600'} transition-colors text-white text-lg shadow-md`}
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-gray-900 border border-gray-800 hover:border-indigo-500 disabled:opacity-20 transition-all shadow-xl text-indigo-400"
                         >
                             <FaChevronRight />
                         </button>
-                    </div>
+                    </nav>
                 )}
             </div>
         </main>
     );
-}
+};
 
 export default Users;

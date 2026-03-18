@@ -227,6 +227,34 @@ const ProjectService = {
         }
     },
 
+    async getAllProjects(params = {}) {
+        try {
+            // params ichida search, language, technology bo'lishi mumkin
+            const { data } = await axios.get(`/projects/all/`, { 
+                params: params, 
+                withCredentials: true 
+            });
+            return data;
+        } catch (error) {
+            console.error("Global loyihalarni olishda xato:", error);
+            throw error;
+        }
+    },
+
+    // src/services/project.js ichiga qo'shing
+    async boostProject(projectId, planId) {
+        try {
+            const { data } = await axios.post(`/projects/project/${projectId}/boost/`, 
+                { plan_id: planId }, 
+                { withCredentials: true }
+            );
+            return data;
+        } catch (error) {
+            console.error("Boost xatosi:", error.response?.data || error.message);
+            throw error.response?.data || error;
+        }
+    },
+
 
     
     

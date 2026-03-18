@@ -108,6 +108,24 @@ export const projectSlice  = createSlice({
             state.collaboratorsIsLoading = false;
             state.collaboratorsError = action.payload;
         },
+
+        boostProjectStart: (state) => {
+            state.isBoosting = true;
+            state.boostError = null;
+        },
+        boostProjectSuccess: (state, action) => {
+            state.isBoosting = false;
+            // Loyiha detail ma'lumotlarini yangilab qo'yamiz (yangi balans va boost vaqti)
+            if (state.projectDetail && state.projectDetail.id === action.payload.project_id) {
+                state.projectDetail.boost_expires_at = action.payload.boost_expires_at;
+                state.projectDetail.is_boosted = true;
+            }
+        },
+        boostProjectFailure: (state, action) => {
+            state.isBoosting = false;
+            state.boostError = action.payload;
+        },
+
         // postCommentStart: state => {
         //     state.isLoading = true
         // },
@@ -147,6 +165,10 @@ export const {
     getCollaboratorsStart,
     getCollaboratorsSuccess,
     getCollaboratorsFailure,
+
+    boostProjectStart,
+    boostProjectSuccess,
+    boostProjectFailure 
 
 
 

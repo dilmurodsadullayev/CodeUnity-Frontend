@@ -1,4 +1,4 @@
-// PostService.js
+// Post.js
 import axios from './api' // axios instansiyangizni import qiladi
 
 const PostService = {
@@ -16,22 +16,21 @@ const PostService = {
     },
     
     // 2. POST YARATISH (Create)
-    async createPost(postData) {
+    async createPost(username, postData) { 
         try {
-            // POST /posts/post/create/ ga moslashtiramiz (username backendda request.user dan olinadi)
-            // Agar sizning backend URL'ingiz `/users/{username}/posts/` bo'lsa, username'ni olib tashlash kerak (yoki PostDetailAPI.post'ga moslashtiring)
-            // Men /posts/post/create/ ga mos qilib to'g'irladim.
-            const { data } = await axios.post(`/posts/post/create/`, postData, { withCredentials: true }); 
-            console.log("✅ Post muvaffaqiyatli yaratildi:", data);
+            console.log("Service'ga kelgan ma'lumot:", postData); 
+            
+            // Axios'ga ikkinchi argument sifatida aynan postData obyektini beramiz
+            const { data } = await axios.post(`/users/post/create/`, postData); 
+            
             return data;
         } catch (error) {
             if (error.response) {
-                console.error("❌ Server xatosi (Post yaratish):", error.response.data, error.response.status);
-                throw new Error(JSON.stringify(error.response.data)); 
-            } else {
-                console.error("❌ So‘rovda xato (Post yaratish):", error.message);
-                throw new Error("Post yaratishda kutilmagan xato yuz berdi.");
+                // Serverdan kelgan xatolikni (title: required kabi) konsolga chiqarish
+                console.error("Serverdan qaytgan xato:", error.response.data);
+                throw new Error(JSON.stringify(error.response.data));
             }
+            throw new Error("Post yaratishda kutilmagan xato.");
         }
     },
     
