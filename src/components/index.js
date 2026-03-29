@@ -35,6 +35,7 @@ export { default as EditProfileModal } from './EditProfileModal';
 export { default as ProjectDetail } from './ProjectDetail';
 export { default as PostDetail } from './PostDetail';
 export { default as Projects } from './Projects';
+export { default as ProfileBadges } from './ProfileBadges';
 
 
 

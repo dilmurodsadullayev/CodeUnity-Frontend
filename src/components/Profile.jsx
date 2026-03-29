@@ -5,7 +5,7 @@ import ProfileService from '../services/profile';
 import UserImage from '../assests/userImage.jpeg'
 import { formatPrettyDate } from '../utils/formatDate';
 import { getTechColorClass } from '../utils/colorUtils'; // Utility funksiyani import qilish
-
+import { Star, Coins, AlertCircle, FolderKanban, CheckCircle } from "lucide-react";
 // Yangi yaratilgan modal komponentlarni import qilish
 import EditProfileModal from './EditProfileModal'; 
 import CoverImageEditModal from './CoverImageEditModal'; // Fon rasmi modal
@@ -15,6 +15,7 @@ import ProfileProjects from './ProfileProjects';
 import ProfilePosts from './ProfilePosts';
 import ProfileRoadmap from './ProfileRoadmap';
 import { useParams } from 'react-router-dom';
+import ProfileBadges from './ProfileBadges'; // Import qilish
 
 
 const Profile = () => {
@@ -82,6 +83,7 @@ const Profile = () => {
         rating: profile?.total_rating ?? "0", 
         codeCoin: profile?.coins,
         problemCount: profile?.problems_count ?? "0",
+        solutionCount: profile?.solution_count ?? "0",
         projectsCount: profile?.projects_count ?? "0",
         location: profile?.address ?? "Hali mavjud emas",
         website: profile?.website_url,
@@ -89,12 +91,7 @@ const Profile = () => {
         memberSince: formatPrettyDate(profile?.date_joined),
         aboutMe: profile?.about_me,
         skills: profile?.skills ?? ["Hali Mavjud emas"],
-        badges: [
-          { emoji: "🏆", title: "Top 10 Dasturchi", text: "Top 10" },
-          { emoji: "🧪", title: "Beta Tester", text: "Beta Tester" },
-          { emoji: "📅", title: "1 Yillik A'zo", text: "Veteran" },
-          { emoji: "🐍", title: "Python Ustasi", text: "Pythonista" },
-        ],
+       
     };
     
     
@@ -253,23 +250,54 @@ const Profile = () => {
                 </div>
                 
                 {/* Reyting va stats bloki (o'zgarishsiz) */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-gray-700/50">
-                    <div className="bg-gray-800/80 text-center p-4">
+                {/* Reyting va stats bloki */}
+<div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-gray-700/50 rounded-2xl overflow-hidden shadow-lg">
+    
+                    {/* Reyting */}
+                    <div className="bg-gray-800/80 text-center p-4 hover:bg-gray-700/80 transition">
+                        <Star className="mx-auto mb-2 text-yellow-400" size={22} />
                         <p className="text-sm text-gray-400">Reyting</p>
-                        <p className="text-3xl font-black stat-gradient-text">{currentUser.rating}</p>
+                        <p className="text-3xl font-black stat-gradient-text">
+                            {currentUser.rating}
+                        </p>
                     </div>
-                    <div className="bg-gray-800/80 text-center p-4">
+
+                    {/* CodeCoin */}
+                    <div className="bg-gray-800/80 text-center p-4 hover:bg-gray-700/80 transition">
+                        <Coins className="mx-auto mb-2 text-green-400" size={22} />
                         <p className="text-sm text-gray-400">CodeCoin</p>
-                        <p className="text-3xl font-black stat-gradient-text">{currentUser.codeCoin}</p>
+                        <p className="text-3xl font-black stat-gradient-text">
+                            {currentUser.codeCoin}
+                        </p>
                     </div>
-                    <div className="bg-gray-800/80 text-center p-4">
+
+                    {/* Muammolar */}
+                    <div className="bg-gray-800/80 text-center p-4 hover:bg-gray-700/80 transition">
+                        <AlertCircle className="mx-auto mb-2 text-red-400" size={22} />
                         <p className="text-sm text-gray-400">Muammolar</p>
-                        <p className="text-3xl font-black stat-gradient-text">{currentUser.problemCount}</p>
+                        <p className="text-3xl font-black stat-gradient-text">
+                            {currentUser.problemCount}
+                        </p>
                     </div>
-                    <div className="bg-gray-800/80 text-center p-4">
+
+                    {/* Solutions (NEW 🔥) */}
+                    <div className="bg-gray-800/80 text-center p-4 hover:bg-gray-700/80 transition">
+                        <CheckCircle className="mx-auto mb-2 text-blue-400" size={22} />
+                        <p className="text-sm text-gray-400">Yechimlar</p>
+                        <p className="text-3xl font-black stat-gradient-text">
+                            {currentUser.solutionCount}
+                        </p>
+                    </div>
+
+                    {/* Loyihalar */}
+                    <div className="bg-gray-800/80 text-center p-4 hover:bg-gray-700/80 transition">
+                        <FolderKanban className="mx-auto mb-2 text-purple-400" size={22} />
                         <p className="text-sm text-gray-400">Loyihalar</p>
-                        <p className="text-3xl font-black stat-gradient-text">{currentUser.projectsCount}</p>
+                        <p className="text-3xl font-black stat-gradient-text">
+                            {currentUser.projectsCount}
+                        </p>
                     </div>
+
                 </div>
             </div>
 
@@ -341,18 +369,9 @@ const Profile = () => {
                         </div>
                     </div>
 
-                    {/* Nishonlar qismi (o'zgarishsiz) */}
-                    <div className="bg-gray-800 p-5 rounded-lg shadow-lg">
-                        <h3 className="text-xl font-bold text-white mb-4">Nishonlar</h3>
-                        <div className="grid grid-cols-4 gap-4 text-center">
-                            {currentUser.badges.map((badge, index) => (
-                                <div key={index}>
-                                    <span className="text-4xl" title={badge.title}>{badge.emoji}</span>
-                                    <p className="text-xs mt-1 text-gray-400">{badge.text}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                        <ProfileBadges username={username} />
+                                
+                     
                 </aside>
                 
                 {/* Tablar qismi (o'zgarishsiz) */}
