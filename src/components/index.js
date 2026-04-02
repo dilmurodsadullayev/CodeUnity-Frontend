@@ -36,6 +36,7 @@ export { default as ProjectDetail } from './ProjectDetail';
 export { default as PostDetail } from './PostDetail';
 export { default as Projects } from './Projects';
 export { default as ProfileBadges } from './ProfileBadges';
+export { default as SocialCallback } from './SocialCallback';
 
 
 

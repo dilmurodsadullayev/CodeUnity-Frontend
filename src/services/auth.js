@@ -22,6 +22,22 @@ const AuthService = {
     },
 
     /**
+     * Social Login (Google yoki GitHub)
+     * @param {string} provider - 'google' yoki 'github'
+     * @param {string} code - Provayderdan qaytgan vaqtinchalik kod
+     */
+    async socialLogin(provider, code) {
+        try {
+            // Backendda ochgan endpointlarimiz: /api/auth/google/ va /api/auth/github/
+            const response = await axios.post(`/users/auth/${provider}/`, { code });
+            return response.data;
+        } catch (error) {
+            console.error(`${provider} login xatosi:`, error.response?.data || error.message);
+            throw error;
+        }
+    },
+
+    /**
      * Yangi foydalanuvchini ro'yxatdan o'tkazish (Register) amalini bajaradi.
      * @param {object} userData - { username, email, password, password2 }
      * @returns {object} - API javobi (avtomatik kirishdan so'ng)

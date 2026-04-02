@@ -8,7 +8,7 @@ import {
   CodeCoinHistory, NotificationsPage,
   MyProblems,
   ProjectDetail,
-  PostDetail, Projects
+  PostDetail, Projects, SocialCallback
 } from "./components";
 
 import AuthService from "./services/auth";
@@ -159,6 +159,13 @@ function AppContent() {
           <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'dark' : ''} bg-[#0d1117]`}>
             {isLoggedIn ? <Navigate to="/" replace /> : <Register />}
           </div>
+        } />
+
+          {/* Social Login Callback Route */}
+        <Route path="/callback/:provider" element={
+           <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'dark' : ''} bg-[#0d1117]`}>
+             <SocialCallback />
+           </div>
         } />
 
         {/* Not Found sahifasi */}

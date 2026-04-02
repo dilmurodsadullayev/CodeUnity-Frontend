@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, Link } from 'react-router-dom'; // Link to'g'ri import qilindi
-import './Login.css'; // YANGI CSS fayli import qilindi
+import { useNavigate, Link } from 'react-router-dom';
+import './Login.css';
 import { signUserFailer, signUserStart, signUserSuccess } from '../features/auth/Auth';
 import AuthService from '../services/auth';
+// Ijtimoiy login URL-larini import qilamiz
+import { GOOGLE_AUTH_URL, GITHUB_AUTH_URL } from '../services/config';
 
 const selectAuthState = (state) => state.auth;
 
 const Login = () => {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
-    const [isPasswordVisible, setIsPasswordVisible] = useState(false); // Parolni ko'rsatish/yashirish holati
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
     const dispatch = useDispatch()
     const {isLoading, isLoggedIn, error} = useSelector(selectAuthState) 
@@ -18,19 +20,18 @@ const Login = () => {
     
     const passwordInputType = isPasswordVisible ? 'text' : 'password';
 
+    // Standart Login Handler
     const loginHandler  = async e => {
         e.preventDefault()
         dispatch(signUserStart())
 
         try {
-            const response = await AuthService.userLogin({username,password})
-        
+            const response = await AuthService.userLogin({username, password})
             dispatch(signUserSuccess(response.user)) 
             navigate('/')
         } catch (err) {
             console.error("Login error:", err.response); 
-            
-            const errorMessage = err.response?.data?.msg || err.response?.data?.detail || "Kiritilgan ma'lumotlar noto'g'ri. Iltimos, qayta urinib ko'ring.";
+            const errorMessage = err.response?.data?.msg || err.response?.data?.detail || "Kiritilgan ma'lumotlar noto'g'ri.";
             
             if (err.response?.status === 401) {
                  dispatch(signUserFailer("Foydalanuvchi nomi yoki parol noto'g'ri."));
@@ -40,15 +41,20 @@ const Login = () => {
         }
     }
 
+    // Ijtimoiy login tugmalari bosilganda ishlaydigan funksiya
+    const handleSocialLogin = (url) => {
+        // Foydalanuvchini Google yoki GitHub login sahifasiga yuboradi
+        window.location.href = url;
+    };
+
     useEffect(() => {
         if (isLoggedIn){
             navigate('/')
         }
-        }, [isLoggedIn, navigate])
+    }, [isLoggedIn, navigate])
     
 
     return (
-        // Konteyner CSS dan olinadi
         <div className="login-page-container"> 
             <div className="animate-fade-in w-full max-w-md p-8 space-y-6 bg-[#161b22] rounded-xl shadow-2xl border border-[#30363d]">
                 <div className="text-center">
@@ -62,21 +68,28 @@ const Login = () => {
                     <p className="text-gray-400 mt-2">Jamiyatga qaytganingiz bilan!</p>
                 </div>
 
-                {/* Xato Xabari (DEBUG) */}
+                {/* Xato Xabari */}
                 {error && typeof error === 'string' && (
                     <div className="bg-red-900/50 text-red-300 p-3 rounded-lg border border-red-700 text-sm">
                         {error}
                     </div>
                 )}
 
-
-                {/* Social Login */}
+                {/* Social Login Buttons */}
                 <div className="grid grid-cols-2 gap-4">
-                    <button className="social-btn w-full flex items-center justify-center py-2.5 rounded-lg">
+                    <button 
+                        type="button"
+                        onClick={() => handleSocialLogin(GITHUB_AUTH_URL)}
+                        className="social-btn w-full flex items-center justify-center py-2.5 rounded-lg hover:bg-[#30363d] transition-colors"
+                    >
                         <i className="fab fa-github mr-2"></i> GitHub
                     </button>
-                    <button className="social-btn w-full flex items-center justify-center py-2.5 rounded-lg">
-                        <i className="fab fa-google mr-2"></i> Google
+                    <button 
+                        type="button"
+                        onClick={() => handleSocialLogin(GOOGLE_AUTH_URL)}
+                        className="social-btn w-full flex items-center justify-center py-2.5 rounded-lg hover:bg-[#30363d] transition-colors"
+                    >
+                        <i className="fab fa-google mr-2 text-red-400"></i> Google
                     </button>
                 </div>
 
@@ -107,7 +120,7 @@ const Login = () => {
                     <div>
                         <div className="flex justify-between items-center">
                             <label htmlFor="password" className="text-sm font-medium text-gray-300">Parol</label>
-                            <Link to="#" className="text-sm text-indigo-400 hover:underline">Parolni unutdingizmi?</Link> {/* a o'rniga Link ishlatildi */}
+                            <Link to="#" className="text-sm text-indigo-400 hover:underline">Parolni unutdingizmi?</Link>
                         </div>
                         <div className="relative mt-1">
                             <i className="fas fa-lock text-gray-500 absolute top-1/2 left-3 -translate-y-1/2"></i>
@@ -121,7 +134,6 @@ const Login = () => {
                                 className="input-dark w-full pl-10 pr-10 py-2.5 rounded-lg" 
                                 placeholder="••••••••" />
                             
-                            {/* Parolni ko'rsatish/yashirish tugmasi */}
                             <button
                                 type="button"
                                 onClick={() => setIsPasswordVisible(prev => !prev)}
