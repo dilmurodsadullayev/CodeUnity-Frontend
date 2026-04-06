@@ -3,9 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Outlet, Navigate, useLocation }
 import { useDispatch, useSelector } from "react-redux";
 
 import {
-  Main, Navbar, Footer, Login, Register, Problems, Feedback, CodeCoin, Users,
+  Main, Navbar, Footer, Login, Register, Problems, Feedback, FCoin, Users,
   Profile, NotFound, ProblemDetail, ProblemCreate, ProblemSolutionUpdate,
-  CodeCoinHistory, NotificationsPage,
+  FCoinHistory, NotificationsPage,
   MyProblems,
   ProjectDetail,
   PostDetail, Projects, SocialCallback
@@ -14,6 +14,9 @@ import {
 import AuthService from "./services/auth";
 import { logoutUser, signUserSuccess, signUserStart, signUserFailer } from "./features/auth/Auth";
 import { connectWebSocket, disconnectWebSocket } from "./middleware/notificationMiddleware";
+
+import { motion } from 'framer-motion';
+import FSocietyLogo from './assests/logo/f_society.png'; // Logotip yo'li
 
 // ====================================================================
 // WOW LOADER KOMPONENTI - AppLoader
@@ -25,31 +28,101 @@ import { connectWebSocket, disconnectWebSocket } from "./middleware/notification
  */
 const AppLoader = () => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-[#0d1117] transition-colors duration-300">
-      {/* Kodga ishora qiluvchi animatsiya - < / > simvoli bilan aylanuvchi spinner */}
-      <div className="relative w-24 h-24">
-        {/* Tashqi Ring - Yumshoq pulsatsiya */}
-        <div className="absolute inset-0 border-4 border-gray-400 dark:border-gray-700 rounded-full animate-ping opacity-50"></div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#05070a] overflow-hidden relative">
+      
+      {/* --- BACKGROUND GLOW EFFECT --- */}
+      <div className="absolute w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] animate-pulse"></div>
+
+      <div className="relative flex flex-col items-center">
         
-        {/* Asosiy Spinner - CodeUnity ning asosiy rangi bilan aylanadi */}
-        <div className="w-full h-full border-8 border-t-8 border-t-blue-600 dark:border-t-blue-400 border-gray-200 dark:border-gray-800 rounded-full animate-spin"></div>
-        
-        {/* Markaziy Kontent - Kod simboli */}
-        <div className="absolute inset-0 flex items-center justify-center text-4xl font-extrabold text-blue-600 dark:text-blue-400">
-          {/* SVG ikonka: < / > ga o'xshash qavslar */}
-          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
-          </svg>
+        {/* --- LOGO ANIMATION SECTION --- */}
+        <div className="relative w-40 h-40 md:w-56 md:h-56 flex items-center justify-center">
+          
+          {/* Outer Rotating Ring (Hi-Tech Style) */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
+            className="absolute inset-0 border-t-2 border-b-2 border-indigo-500/30 rounded-full"
+          ></motion.div>
+
+          {/* Inner Fast Rotating Ring */}
+          <motion.div
+            animate={{ rotate: -360 }}
+            transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+            className="absolute inset-4 border-r-2 border-l-2 border-indigo-400 rounded-full shadow-[0_0_20px_rgba(99,102,241,0.5)]"
+          ></motion.div>
+
+          {/* Central Logo with Glitch and Glow */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ 
+              scale: [0.9, 1.05, 1],
+              opacity: 1,
+              filter: [
+                "drop-shadow(0 0 10px rgba(99,102,241,0.5))",
+                "drop-shadow(0 0 30px rgba(99,102,241,0.8))",
+                "drop-shadow(0 0 10px rgba(99,102,241,0.5))"
+              ]
+            }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity, 
+              ease: "easeInOut" 
+            }}
+            className="z-10"
+          >
+            <img 
+              src={FSocietyLogo} 
+              alt="F.Society Logo" 
+              className="w-32 h-32 md:w-44 md:h-44 object-contain"
+            />
+          </motion.div>
+
+          {/* Scanning Line Effect */}
+          <motion.div 
+            animate={{ top: ['0%', '100%', '0%'] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            className="absolute left-0 right-0 h-[2px] bg-indigo-500/50 shadow-[0_0_15px_#6366f1] z-20"
+          ></motion.div>
+        </div>
+
+        {/* --- TEXT SECTION --- */}
+        <div className="mt-12 text-center">
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl md:text-5xl font-black tracking-[0.2em] text-white uppercase italic"
+          >
+            F.<span className="text-indigo-500 animate-pulse">Society</span>
+          </motion.h1>
+
+          <div className="flex items-center justify-center space-x-2 mt-4">
+            {/* Typing Animation for Subtext */}
+            <motion.p 
+              animate={{ opacity: [0, 1, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="text-indigo-400 font-mono text-sm md:text-base tracking-widest uppercase"
+            >
+              Initializing system scan...
+            </motion.p>
+          </div>
+
+          {/* Progress Bar Container */}
+          <div className="w-64 h-1 bg-gray-900 mt-6 rounded-full overflow-hidden border border-gray-800">
+            <motion.div 
+              initial={{ x: "-100%" }}
+              animate={{ x: "100%" }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+              className="w-full h-full bg-gradient-to-r from-transparent via-indigo-500 to-transparent"
+            ></motion.div>
+          </div>
+        </div>
+
+        {/* --- DECORATIVE BINARY CODE (Optional) --- */}
+        <div className="absolute -bottom-20 opacity-5 font-mono text-xs text-indigo-500 select-none hidden md:block">
+            01010100 01101000 01100101 00100000 01110111 01101111 01110010 01101100 01100100 00100000 01101001 01110011 00100000 01101111 01110101 01110010 01110011
         </div>
       </div>
-      
-      {/* Yuklanish Matni */}
-      <p className="mt-8 text-2xl font-bold text-gray-900 dark:text-gray-100">
-        CodeUnity
-      </p>
-      <p className="text-md text-gray-600 dark:text-gray-400 mt-2 animate-pulse">
-        Muammolar yechimi yuklanmoqda...
-      </p>
     </div>
   );
 };
@@ -203,12 +276,12 @@ function AppContent() {
           <Route path="problem/:id/solution/:solutionId/edit" element={<ProblemSolutionUpdate />} />
           <Route path="problem/:id/detail" element={<ProblemDetail />} />
           <Route path="feedback" element={<Feedback />} />
-          <Route path="codecoin" element={<CodeCoin />} />
+          <Route path="fcoin" element={<FCoin />} />
           <Route path="users" element={<Users />} />
           <Route path="/:username/profile" element={<Profile />} />
           <Route path="projects" element={<Projects />} />
           <Route path="project/:projectId/detail" element={<ProjectDetail />} />
-          <Route path="codecoin-history" element={<CodeCoinHistory />} />
+          <Route path="fcoin-history" element={<FCoinHistory />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="/:username/post/:slug/" element={<PostDetail />} />
         </Route>

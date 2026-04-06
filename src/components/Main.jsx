@@ -4,6 +4,7 @@ import PopularProbelmCard from './PopularProbelmCard';
 import ProblemService from '../services/problems';
 import { useDispatch, useSelector } from 'react-redux';
 import { getPopularProblemStart, getPopularProblemSuccess, getProblemStart, getProblemSuccess } from '../features/problems/Problems';
+import FCoinIcon from '../assests/coin/fcoin.png';
 
 const Main = () => {
     const dispatch = useDispatch()
@@ -42,7 +43,7 @@ const Main = () => {
                     Muammoni <span className="hero-gradient-text">yechimga</span><br/>aylantiring.
                 </h1>
                 <p className="text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 mb-8 fade-in-up" style={{ animationDelay: '0.2s' }}>
-                    Eng murakkab xatoliklardan tortib, yangi g'oyalargacha — CodeUnity sizning ishonchli hamrohingiz. Savol bering, yordam oling va mahoratingizni keyingi bosqichga olib chiqing.
+                    Eng murakkab xatoliklardan tortib, yangi g'oyalargacha — F.Society sizning ishonchli hamrohingiz. Savol bering, yordam oling va mahoratingizni keyingi bosqichga olib chiqing.
                 </p>
                 <div className="flex justify-center lg:justify-start space-x-4 fade-in-up" style={{ animationDelay: '0.4s' }}>
                     <a href="/problem-create" className="btn-primary text-white font-bold py-3 px-8 rounded-lg text-lg">
@@ -162,12 +163,16 @@ const Main = () => {
                     </div>
                     {/* <!-- Step 2 --> */}
                     <div className="flex flex-col items-center">
-                        <div className="w-24 h-24 rounded-full bg-yellow-500/20 flex items-center justify-center mb-4 border-2 border-yellow-500">
-                            <i className="fa-solid fa-coins text-4xl text-yellow-300"></i>
-                        </div>
-                        <h3 className="text-2xl font-bold text-white mb-2">2. "CodeCoin" Ishlab Toping</h3>
-                        <p className="text-gray-400">Har bir foydali harakatingiz uchun reyting ballari va "CodeCoin"lar bilan taqdirlanasiz.</p>
-                    </div>
+                                <div className="w-24 h-24 rounded-full bg-yellow-500/20 flex items-center justify-center mb-4 border-2 border-yellow-500 overflow-hidden">
+                                    <img 
+                                        src={FCoinIcon} 
+                                        alt="FCoin" 
+                                        className="h-14 w-14 object-contain drop-shadow-[0_0_10px_rgba(234,179,8,0.6)]" 
+                                    />
+                                </div>
+                                <h3 className="text-2xl font-bold text-white mb-2">2. "**FCoin**" Ishlab Toping</h3>
+                                <p className="text-gray-400">Har bir foydali harakatingiz uchun reyting ballari va "**FCoin**"lar bilan taqdirlanasiz.</p>
+                            </div>
                     {/* <!-- Step 3 --> */}
                     <div className="flex flex-col items-center">
                         <div className="w-24 h-24 rounded-full bg-pink-500/20 flex items-center justify-center mb-4 border-2 border-pink-500">

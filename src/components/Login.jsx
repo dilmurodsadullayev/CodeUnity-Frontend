@@ -4,8 +4,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import './Login.css';
 import { signUserFailer, signUserStart, signUserSuccess } from '../features/auth/Auth';
 import AuthService from '../services/auth';
-// Ijtimoiy login URL-larini import qilamiz
 import { GOOGLE_AUTH_URL, GITHUB_AUTH_URL } from '../services/config';
+
+// Logotipni import qilish
+import FSocietyLogo from '../assests/logo/f_society.png';
 
 const selectAuthState = (state) => state.auth;
 
@@ -41,9 +43,8 @@ const Login = () => {
         }
     }
 
-    // Ijtimoiy login tugmalari bosilganda ishlaydigan funksiya
+    // Ijtimoiy login funksiyasi
     const handleSocialLogin = (url) => {
-        // Foydalanuvchini Google yoki GitHub login sahifasiga yuboradi
         window.location.href = url;
     };
 
@@ -55,23 +56,31 @@ const Login = () => {
     
 
     return (
-        <div className="login-page-container"> 
-            <div className="animate-fade-in w-full max-w-md p-8 space-y-6 bg-[#161b22] rounded-xl shadow-2xl border border-[#30363d]">
+        <div className="login-page-container flex items-center justify-center min-h-screen bg-[#0d1117] px-4"> 
+            <div className="animate-fade-in w-full max-w-md p-8 space-y-6 bg-[#161b22] rounded-2xl shadow-2xl border border-[#30363d]">
+                
+                {/* --- LOGO VA SARLAVHA --- */}
                 <div className="text-center">
-                    <Link to="/" className="inline-flex items-center space-x-2">
-                        <i className="fa-solid fa-code-fork text-indigo-400 text-3xl"></i>
-                        <span className="text-2xl font-bold text-white">Code<span className="text-indigo-400">Unity</span></span>
+                    <Link to="/" className="inline-flex flex-col items-center group">
+                        <img 
+                            src={FSocietyLogo} 
+                            alt="F.Society Logo" 
+                            className="h-24 w-auto object-contain transition-transform duration-500 group-hover:rotate-[360deg]" 
+                        />
+                        <span className="text-3xl font-black text-white mt-2 tracking-tighter">
+                            F.<span className="text-indigo-500">Society</span>
+                        </span>
                     </Link>
-                    <h1 className="text-3xl font-bold hero-gradient-text mt-4">
-                        Hisobga Kirish
+                    <h1 className="text-2xl font-bold text-gray-200 mt-6 uppercase tracking-widest">
+                        Xush kelibsiz
                     </h1>
-                    <p className="text-gray-400 mt-2">Jamiyatga qaytganingiz bilan!</p>
+                    <p className="text-gray-500 mt-1 text-sm">Jamiyatga qaytganingiz bilan!</p>
                 </div>
 
                 {/* Xato Xabari */}
                 {error && typeof error === 'string' && (
-                    <div className="bg-red-900/50 text-red-300 p-3 rounded-lg border border-red-700 text-sm">
-                        {error}
+                    <div className="bg-red-900/30 text-red-400 p-3 rounded-xl border border-red-800/50 text-sm text-center">
+                        <i className="fas fa-exclamation-circle mr-2"></i> {error}
                     </div>
                 )}
 
@@ -80,83 +89,85 @@ const Login = () => {
                     <button 
                         type="button"
                         onClick={() => handleSocialLogin(GITHUB_AUTH_URL)}
-                        className="social-btn w-full flex items-center justify-center py-2.5 rounded-lg hover:bg-[#30363d] transition-colors"
+                        className="flex items-center justify-center py-3 bg-[#0d1117] text-white border border-[#30363d] rounded-xl hover:bg-[#30363d] transition-all font-bold text-sm shadow-lg"
                     >
-                        <i className="fab fa-github mr-2"></i> GitHub
+                        <i className="fab fa-github mr-2 text-lg"></i> GitHub
                     </button>
                     <button 
                         type="button"
                         onClick={() => handleSocialLogin(GOOGLE_AUTH_URL)}
-                        className="social-btn w-full flex items-center justify-center py-2.5 rounded-lg hover:bg-[#30363d] transition-colors"
+                        className="flex items-center justify-center py-3 bg-[#0d1117] text-white border border-[#30363d] rounded-xl hover:bg-[#30363d] transition-all font-bold text-sm shadow-lg"
                     >
-                        <i className="fab fa-google mr-2 text-red-400"></i> Google
+                        <i className="fab fa-google mr-2 text-lg text-red-500"></i> Google
                     </button>
                 </div>
 
-                <div className="flex items-center justify-center space-x-2">
-                    <span className="h-px w-16 bg-gray-600"></span>
-                    <span className="text-gray-500 font-normal">yoki</span>
-                    <span className="h-px w-16 bg-gray-600"></span>
+                <div className="flex items-center justify-center space-x-3">
+                    <span className="h-px w-full bg-gray-800"></span>
+                    <span className="text-gray-600 text-xs font-black uppercase tracking-tighter">yoki</span>
+                    <span className="h-px w-full bg-gray-800"></span>
                 </div>
 
                 {/* Login Form */}
-                <form className="space-y-4" onSubmit={loginHandler}>
+                <form className="space-y-5" onSubmit={loginHandler}>
                     <div>
-                        <label htmlFor="username" className="text-sm font-medium text-gray-300">Username</label>
-                        <div className="relative mt-1">
-                            <i className="fas fa-user text-gray-500 absolute top-1/2 left-3 -translate-y-1/2"></i>
+                        <label htmlFor="username" className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Username</label>
+                        <div className="relative mt-1.5">
+                            <i className="fas fa-user text-gray-600 absolute top-1/2 left-4 -translate-y-1/2"></i>
                             <input
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 type="text"
                                 id="username"
-                                name="username"
                                 required 
-                                className="input-dark w-full pl-10 pr-3 py-2.5 rounded-lg" 
-                                placeholder="username_123" 
+                                className="w-full bg-[#0d1117] border border-[#30363d] text-white pl-12 pr-4 py-3.5 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all" 
+                                placeholder="foydalanuvchi_nomi" 
                             />
                         </div>
                     </div>
+
                     <div>
                         <div className="flex justify-between items-center">
-                            <label htmlFor="password" className="text-sm font-medium text-gray-300">Parol</label>
-                            <Link to="#" className="text-sm text-indigo-400 hover:underline">Parolni unutdingizmi?</Link>
+                            <label htmlFor="password" className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Parol</label>
+                            <Link to="#" className="text-xs text-indigo-400 hover:text-indigo-300 font-bold">Unutdingizmi?</Link>
                         </div>
-                        <div className="relative mt-1">
-                            <i className="fas fa-lock text-gray-500 absolute top-1/2 left-3 -translate-y-1/2"></i>
+                        <div className="relative mt-1.5">
+                            <i className="fas fa-lock text-gray-600 absolute top-1/2 left-4 -translate-y-1/2"></i>
                             <input
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 id="password"
-                                name="password" 
                                 type={passwordInputType} 
                                 required 
-                                className="input-dark w-full pl-10 pr-10 py-2.5 rounded-lg" 
+                                className="w-full bg-[#0d1117] border border-[#30363d] text-white pl-12 pr-12 py-3.5 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all" 
                                 placeholder="••••••••" />
                             
                             <button
                                 type="button"
                                 onClick={() => setIsPasswordVisible(prev => !prev)}
-                                className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 hover:text-indigo-400 transition-colors"
-                                title={isPasswordVisible ? "Parolni yashirish" : "Parolni ko'rsatish"}
+                                className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-600 hover:text-indigo-400 transition-colors"
                             >
                                 <i className={`fa-solid ${isPasswordVisible ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                             </button>
                         </div>
                     </div>
+
                     <button 
                         type="submit" 
                         disabled={isLoading} 
-                        className="w-full btn-primary font-semibold py-3 rounded-lg text-white"
+                        className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 text-white font-black py-4 rounded-xl transition-all shadow-xl shadow-indigo-600/20 active:scale-[0.98] uppercase tracking-widest text-sm"
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner fa-spin mr-2"></i> : null}
-                        {isLoading ? "Kirilmoqda..." : "Kirish"}
+                        {isLoading ? (
+                            <><i className="fa-solid fa-spinner fa-spin mr-2"></i> Kirilmoqda...</>
+                        ) : (
+                            "Tizimga Kirish"
+                        )}
                     </button>
                 </form>
 
-                <p className="text-center text-sm text-gray-400">
+                <p className="text-center text-sm text-gray-500 pt-2">
                     Hisobingiz yo'qmi?
-                    <Link to="/register" className="font-medium text-indigo-400 hover:underline ml-1">
+                    <Link to="/register" className="font-black text-indigo-400 hover:text-indigo-300 ml-2 transition-colors">
                         Ro'yxatdan o'ting
                     </Link>
                 </p>

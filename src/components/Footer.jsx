@@ -52,7 +52,7 @@ const Footer = () => {
 
           {/* O'ng tomon: Huquqlar */}
           <div className="text-center md:text-right">
-            <p className="text-gray-500">&copy; 2025 CodeUnity.</p>
+            <p className="text-gray-500">&copy; 2025 F.Society.</p>
             <p className="text-gray-500">Barcha huquqlar himoyalangan.</p>
           </div>
 

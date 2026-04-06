@@ -4,57 +4,60 @@ import { useNavigate, Link } from 'react-router-dom';
 import './Register.css'; 
 import { signUserStart, signUserFailer, signUserSuccess } from '../features/auth/Auth';
 import AuthService from '../services/auth';
+import { GOOGLE_AUTH_URL, GITHUB_AUTH_URL } from '../services/config';
+
+// Logotipni import qilish
+import FSocietyLogo from '../assests/logo/f_society.png';
 
 // Redux holatlarini tanlash uchun funksiya
 const selectAuthState = (state) => state.auth;
 
-
 // =================================================================
-// 1. FIELD KOMPONENTI (MUSTAQIL, RE-RENDER MUAMMOSINI HAL QILISH UCHUN)
+// 1. FIELD KOMPONENTI (MUSTAQIL, DIZAYN TO'G'IRLANGAN)
 // =================================================================
 const FieldWithIcon = ({ id, label, iconClass, type, placeholder, value, onChange, error }) => {
-    // Parol turini boshqarish uchun local state
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const inputType = type === 'password' && isPasswordVisible ? 'text' : type;
-    
-    // Parol maydoni bo'lsa, ko'zni ko'rsatish
     const isPasswordField = type === 'password';
 
     return (
         <div>
-            <label htmlFor={id} className="text-sm font-medium text-gray-300">{label}</label>
-            <div className="relative mt-1">
-                <i className={`${iconClass} text-gray-500 absolute top-1/2 left-3 -translate-y-1/2`}></i>
+            <label htmlFor={id} className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">
+                {label}
+            </label>
+            <div className="relative mt-1.5">
+                <i className={`${iconClass} text-gray-600 absolute top-1/2 left-4 -translate-y-1/2`}></i>
                 <input 
                     id={id} 
                     name={id} 
-                    type={inputType} // Ko'rsatish holatiga qarab type o'zgaradi
+                    type={inputType} 
                     required 
-                    className={`input-dark w-full pl-10 pr-10 py-2.5 rounded-lg ${error ? 'border-red-500 focus:border-red-500' : ''}`} 
+                    className={`w-full bg-[#0d1117] border ${error ? 'border-red-500' : 'border-[#30363d]'} text-white pl-12 pr-12 py-3.5 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-gray-700`} 
                     placeholder={placeholder}
                     value={value}
                     onChange={onChange}
                 />
                 
-                {/* Parolni ko'rsatish/yashirish tugmasi */}
                 {isPasswordField && (
                     <button
                         type="button"
                         onClick={() => setIsPasswordVisible(prev => !prev)}
-                        className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 hover:text-indigo-400 transition-colors"
-                        title={isPasswordVisible ? "Parolni yashirish" : "Parolni ko'rsatish"}
+                        className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-600 hover:text-indigo-400 transition-colors"
                     >
                         <i className={`fa-solid ${isPasswordVisible ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                     </button>
                 )}
             </div>
-            {error && <p className="text-red-400 text-xs mt-1">{Array.isArray(error) ? error[0] : error}</p>}
+            {error && <p className="text-red-500 text-[10px] font-bold mt-1 ml-1 uppercase tracking-tighter">
+                {Array.isArray(error) ? error[0] : error}
+            </p>}
         </div>
     );
 };
+
 // =================================================================
-
-
+// 2. ASOSIY REGISTER KOMPONENTI
+// =================================================================
 const Register = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -100,24 +103,16 @@ const Register = () => {
         return Object.keys(errors).length === 0;
     }
 
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        if (!validateForm()) {
-            return; 
-        }
+        if (!validateForm()) return; 
 
         dispatch(signUserStart());
-        
         try {
             const response = await AuthService.userRegister(formData);
-            
             dispatch(signUserSuccess(response.user));
-
         } catch (err) {
             console.error("Ro'yxatdan o'tish xatosi:", err.response?.data || err.message);
-            
             const serverErrors = err.response?.data || { detail: "Kutilmagan xato yuz berdi." };
             
             if (serverErrors.username || serverErrors.email || serverErrors.password || serverErrors.password2) {
@@ -128,44 +123,62 @@ const Register = () => {
             }
         }
     };
-    
+
+    const handleSocialLogin = (url) => {
+        window.location.href = url;
+    };
 
     return (
-        <div className="register-page-container"> 
-            <div className="animate-fade-in w-full max-w-md p-8 space-y-6 bg-[#161b22] rounded-xl shadow-2xl border border-[#30363d]">
+        <div className="register-page-container flex items-center justify-center min-h-screen bg-[#0d1117] px-4 py-12"> 
+            <div className="animate-fade-in w-full max-w-md p-8 space-y-6 bg-[#161b22] rounded-2xl shadow-2xl border border-[#30363d]">
+                
+                {/* --- LOGO VA SARLAVHA --- */}
                 <div className="text-center">
-                    <Link to="/" className="inline-flex items-center space-x-2">
-                        <i className="fa-solid fa-code-fork text-indigo-400 text-3xl"></i>
-                        <span className="text-2xl font-bold text-white">Code<span className="text-indigo-400">Unity</span></span>
+                    <Link to="/" className="inline-flex flex-col items-center group">
+                        <img 
+                            src={FSocietyLogo} 
+                            alt="F.Society Logo" 
+                            className="h-20 w-auto object-contain transition-transform duration-500 group-hover:rotate-[360deg]" 
+                        />
+                        <span className="text-2xl font-black text-white mt-2 tracking-tighter">
+                            F.<span className="text-indigo-500">Society</span>
+                        </span>
                     </Link>
-                    <h1 className="text-3xl font-bold hero-gradient-text mt-4">
-                        Hisob Yaratish
+                    <h1 className="text-2xl font-bold hero-gradient-text mt-6">
+                        Yangi Hisob Yaratish
                     </h1>
-                    <p className="text-gray-400 mt-2">Bugun yangi nimalar o'rganamiz?</p>
+                    <p className="text-gray-500 mt-1 text-sm font-medium">Jamiyatimizga xush kelibsiz!</p>
                 </div>
 
                 {/* Global Xato Xabari */}
                 {error && typeof error === 'string' && (
-                    <div className="bg-red-900/50 text-red-300 p-3 rounded-lg border border-red-700 text-sm">
-                        {error}
+                    <div className="bg-red-900/30 text-red-400 p-3 rounded-xl border border-red-800/50 text-sm text-center">
+                        <i className="fas fa-exclamation-circle mr-2"></i> {error}
                     </div>
                 )}
 
-
-                {/* Social Login */}
+                {/* Social Login Buttons */}
                 <div className="grid grid-cols-2 gap-4">
-                    <button type="button" className="social-btn w-full flex items-center justify-center py-2.5 rounded-lg">
-                        <i className="fab fa-github mr-2"></i> GitHub
+                    <button 
+                        type="button" 
+                        onClick={() => handleSocialLogin(GITHUB_AUTH_URL)}
+                        className="flex items-center justify-center py-3 bg-[#0d1117] text-white border border-[#30363d] rounded-xl hover:bg-[#30363d] transition-all font-bold text-sm shadow-lg"
+                    >
+                        <i className="fab fa-github mr-2 text-lg"></i> GitHub
                     </button>
-                    <button type="button" className="social-btn w-full flex items-center justify-center py-2.5 rounded-lg">
-                        <i className="fab fa-google mr-2"></i> Google
+                    <button 
+                        type="button" 
+                        onClick={() => handleSocialLogin(GOOGLE_AUTH_URL)}
+                        className="flex items-center justify-center py-3 bg-[#0d1117] text-white border border-[#30363d] rounded-xl hover:bg-[#30363d] transition-all font-bold text-sm shadow-lg"
+                    >
+                        <i className="fab fa-google mr-2 text-lg text-red-500"></i> Google
                     </button>
                 </div>
 
-                <div className="flex items-center justify-center space-x-2">
-                    <span className="h-px w-16 bg-gray-600"></span>
-                    <span className="text-gray-500 font-normal">yoki email orqali</span>
-                    <span className="h-px w-16 bg-gray-600"></span>
+                <div className="flex items-center justify-center space-x-3">
+                    <span className="h-px w-full bg-gray-800"></span>
+                    <span className="text-gray-600 text-[10px] font-black uppercase tracking-tighter whitespace-nowrap">yoki email orqali</span>
+                    <span className="h-px w-full bg-gray-800"></span>
                 </div>
 
                 {/* Register Form */}
@@ -176,7 +189,7 @@ const Register = () => {
                         label="Username"
                         iconClass="fas fa-user"
                         type="text"
-                        placeholder="Noyob ism tanlang"
+                        placeholder="foydalanuvchi_nomi"
                         value={formData.username}
                         onChange={handleChange}
                         error={formErrors.username}
@@ -184,10 +197,10 @@ const Register = () => {
 
                     <FieldWithIcon
                         id="email"
-                        label="Email"
+                        label="Email manzili"
                         iconClass="fas fa-envelope"
                         type="email"
-                        placeholder="sizning@email.com"
+                        placeholder="misol@f.soc"
                         value={formData.email}
                         onChange={handleChange}
                         error={formErrors.email}
@@ -207,9 +220,9 @@ const Register = () => {
                     <FieldWithIcon
                         id="password2"
                         label="Parolni tasdiqlash"
-                        iconClass="fas fa-lock"
+                        iconClass="fas fa-shield-check"
                         type="password"
-                        placeholder="Parolni qayta kiriting"
+                        placeholder="Qayta kiriting"
                         value={formData.password2}
                         onChange={handleChange}
                         error={formErrors.password2}
@@ -218,18 +231,21 @@ const Register = () => {
                     <button 
                         type="submit" 
                         disabled={isLoading}
-                        className="w-full btn-primary font-semibold py-3 rounded-lg text-white" 
+                        className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 text-white font-black py-4 rounded-xl transition-all shadow-xl shadow-indigo-600/20 active:scale-[0.98] uppercase tracking-widest text-sm"
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner fa-spin mr-2"></i> : null}
-                        {isLoading ? "Ro'yxatdan O'tilmoqda..." : "Ro'yxatdan o'tish"}
+                        {isLoading ? (
+                            <><i className="fa-solid fa-spinner fa-spin mr-2"></i> Yaratilmoqda...</>
+                        ) : (
+                            "Hisob Yaratish"
+                        )}
                     </button>
                 </form>
 
-                <p className="text-center text-sm text-gray-400">
+                <p className="text-center text-sm text-gray-500 pt-2">
                     Hisobingiz bormi?
-                    <Link to="/login" className="font-medium text-indigo-400 hover:underline ml-1">
-                    Kirish
-                </Link>
+                    <Link to="/login" className="font-black text-indigo-400 hover:text-indigo-300 ml-2 transition-colors">
+                        Kirish
+                    </Link>
                 </p>
             </div>
         </div>

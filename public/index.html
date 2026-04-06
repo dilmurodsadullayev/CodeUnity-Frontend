@@ -3,7 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CodeUnity</title>
+  <meta name="description" content="F.Society - Muammolarni yechimga aylantiring">
+  
+  <!-- SAHIFA SARLAVHASI -->
+  <title>F.Society | Fix Society</title>
+
+  <!-- FAVICON (Brauzer tabidagi rasm) -->
+  <!-- Eslatma: f_society.png rasmini 'public' papkasiga ham nusxalab qo'ying -->
+  <link rel="icon" type="image/png" href="/f_society.png">
+  <link rel="apple-touch-icon" href="/f_society.png">
+
+  <!-- Sahifa yuklanganda oq rang miltillab ketmasligi uchun boshlang'ich stil -->
+  <style>
+    body {
+      background-color: #0d1117;
+      margin: 0;
+    }
+  </style>
+
   <link rel="stylesheet" href="./Main.css">
     
   <!-- Tailwind CSS (CDN orqali) -->
@@ -17,11 +34,15 @@
   <!-- Font Awesome for Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
-<body class="overflow-x-hidden">
-  <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+<body class="overflow-x-hidden bg-[#0d1117] text-[#c9d1d9] font-['Inter']">
   
-</body>
+  <noscript>Ushbu ilovani ishga tushirish uchun JavaScript-ni yoqing.</noscript>
+  
+  <!-- React ilovasi uchun root element -->
+  <div id="root"></div>
+
+  <!-- Alpine JS -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
+</body>
 </html>

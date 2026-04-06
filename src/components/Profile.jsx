@@ -5,7 +5,8 @@ import ProfileService from '../services/profile';
 import UserImage from '../assests/userImage.jpeg'
 import { formatPrettyDate } from '../utils/formatDate';
 import { getTechColorClass } from '../utils/colorUtils'; // Utility funksiyani import qilish
-import { Star, Coins, AlertCircle, FolderKanban, CheckCircle } from "lucide-react";
+import { Star, AlertCircle, FolderKanban, CheckCircle } from "lucide-react";
+import FCoinIcon from '../assests/coin/fcoin.png'; // FCoin rasmi
 // Yangi yaratilgan modal komponentlarni import qilish
 import EditProfileModal from './EditProfileModal'; 
 import CoverImageEditModal from './CoverImageEditModal'; // Fon rasmi modal
@@ -264,7 +265,12 @@ const Profile = () => {
 
                     {/* CodeCoin */}
                     <div className="bg-gray-800/80 text-center p-4 hover:bg-gray-700/80 transition">
-                        <Coins className="mx-auto mb-2 text-green-400" size={22} />
+                        {/* Lucide-react iconi o'rniga rasm */}
+                        <img 
+                            src={FCoinIcon} 
+                            alt="CodeCoin" 
+                            className="mx-auto mb-2 w-6 h-6 object-contain" // w-6 h-6 (24px) o'lcham va markazlash
+                        />
                         <p className="text-sm text-gray-400">CodeCoin</p>
                         <p className="text-3xl font-black stat-gradient-text">
                             {currentUser.codeCoin}

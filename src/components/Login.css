@@ -1,90 +1,124 @@
-/* Google Fonts (Inter) - agar global style'da yo'q bo'lsa */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap'); */
 
-/* --- Global Konstanta Stil --- */
 :root {
-    --dark-bg: #0d1117; /* Asosiy fon */
-    --dark-bg-secondary: #161b22; /* Karta foni */
-    --border-color: #30363d; /* Chegara rangi */
-    --text-primary: #c9d1d9;
-    --text-secondary: #8b949e;
-    --indigo: #4f46e5; /* Asosiy rang: Indigo-600 */
-    --indigo-hover: #4338ca; /* Indigo-700 */
-    --purple: #c084fc;
+    --dark-bg: #0d1117;           /* Eng to'q fon (page) */
+    --card-bg: #161b22;           /* Karta foni */
+    --input-bg: #0d1117;          /* Input foni */
+    --border-color: #30363d;      /* Standart chegara */
+    --border-hover: #484f58;      /* Hover holatidagi chegara */
+    --text-primary: #f0f6fc;      /* Oq matn */
+    --text-secondary: #8b949e;    /* Kulrang matn */
+    --indigo-primary: #6366f1;    /* Indigo-500 */
+    --indigo-glow: rgba(99, 102, 241, 0.4);
 }
 
-/* --- Container va Sahifa Stili --- */
+/* --- Sahifa asosi --- */
 .login-page-container {
     font-family: 'Inter', sans-serif;
+    background-color: var(--dark-bg);
+    color: var(--text-primary);
+    min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    width: 100%;
-    /* Rasmga mos keladigan fonga ega bo'lish uchun */
-    background-color: var(--dark-bg); 
-    color: var(--text-primary);
-    padding: 20px;
+    padding: 1.5rem;
 }
 
-/* --- Maxsus UI Elementlari --- */
+/* --- Animatsiyalar --- */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
+.animate-fade-in {
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* --- Sarlavha Gradienti --- */
 .hero-gradient-text {
-    /* "Hisobga Kirish" sarlavhasi uchun */
-    background: linear-gradient(90deg, var(--indigo), var(--purple));
+    background: linear-gradient(135deg, #fff 0%, var(--text-secondary) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
 }
 
+/* --- Input Stili --- */
 .input-dark {
-    /* Input maydonlari uchun */
-    background-color: var(--dark-bg-secondary); /* Karta rangiga mos kelishi kerak */
+    background-color: var(--input-bg);
     border: 1px solid var(--border-color);
     color: var(--text-primary);
-    transition: all 0.2s ease-in-out;
-}
-.input-dark:focus {
-    /* Input maydoni fokuslanganda */
-    border-color: var(--indigo);
     outline: none;
-    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3); /* Indigo-600 ning soyasi */
-    background-color: #0d1117; /* Rasmga ko'ra, fokusda fon rang biroz o'zgarishi mumkin */
+    transition: all 0.2s ease;
 }
 
-.btn-primary {
-    /* Asosiy tugma ("Kirish") */
-    background: #6d28d9; /* Rasmga biroz mos keladigan to'q binafsha rang */
-    transition: all 0.3s ease;
-    /* Rasmda to'liq yuzaga yopishgan, shuning uchun maxsus padding yo'q */
+.input-dark:focus {
+    border-color: var(--indigo-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
-.btn-primary:hover {
-    background: #5b21aa; /* To'qroq binafsha */
-    box-shadow: 0 0 15px rgba(109, 40, 217, 0.6);
+
+/* --- Tugmalar (Buttons) --- */
+.btn-primary {
+    background-color: var(--indigo-primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #4f46e5; /* Indigo-600 */
+    box-shadow: 0 0 20px var(--indigo-glow);
     transform: translateY(-1px);
 }
+
+.btn-primary:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
 .btn-primary:disabled {
-    background: #a78bfa; /* Binafsha-300 */
+    opacity: 0.6;
     cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
 }
 
+/* --- Ijtimoiy Tugmalar (Social Buttons) --- */
 .social-btn {
-    /* Social Login tugmalari */
-    background-color: var(--dark-bg-secondary);
+    background-color: var(--input-bg);
     border: 1px solid var(--border-color);
-    transition: all 0.2s ease;
     color: var(--text-primary);
-}
-.social-btn:hover {
-    border-color: #4b5563; 
-    background-color: #1f2937;
+    font-weight: 600;
+    transition: all 0.2s ease;
 }
 
-@keyframes fade-in {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+.social-btn:hover {
+    background-color: #21262d;
+    border-color: var(--border-hover);
+    transform: translateY(-1px);
 }
-.animate-fade-in {
-    animation: fade-in 0.5s ease-out forwards;
+
+/* --- Form elementlari orasidagi "yoki" chizig'i --- */
+.divider-line {
+    height: 1px;
+    background-color: var(--border-color);
+    flex-grow: 1;
+}
+
+/* --- Responsivlik (Kichik ekranlar uchun) --- */
+@media (max-width: 480px) {
+    .animate-fade-in {
+        padding: 1.5rem;
+    }
+    
+    .hero-gradient-text {
+        font-size: 1.75rem;
+    }
+}
+
+/* --- Qo'shimcha effekt: Logotip hover --- */
+.group:hover img {
+    filter: drop-shadow(0 0 15px var(--indigo-glow));
 }
