@@ -74,7 +74,7 @@ const FCoin = () => {
             className="mt-6 inline-block px-6 py-2 rounded-full bg-indigo-900/30 border border-indigo-500/30 backdrop-blur-sm"
           >
             <p className="text-indigo-300 font-mono text-sm uppercase tracking-widest">
-              <span className="font-black text-white">FCoin</span> (FixCoin) — F.Society tizimining ichki yoqilg'isi
+              <span className="font-black text-white">FCoin</span> (FixCoin) — FSociety tizimining ichki yoqilg'isi
             </p>
           </motion.div>
 

@@ -82,7 +82,7 @@ const Profile = () => {
         skill_level: profile?.skill_level,
         company: profile?.company, 
         rating: profile?.total_rating ?? "0", 
-        codeCoin: profile?.coins,
+        FCoin: profile?.coins,
         problemCount: profile?.problems_count ?? "0",
         solutionCount: profile?.solution_count ?? "0",
         projectsCount: profile?.projects_count ?? "0",
@@ -268,12 +268,12 @@ const Profile = () => {
                         {/* Lucide-react iconi o'rniga rasm */}
                         <img 
                             src={FCoinIcon} 
-                            alt="CodeCoin" 
+                            alt="FCoin" 
                             className="mx-auto mb-2 w-6 h-6 object-contain" // w-6 h-6 (24px) o'lcham va markazlash
                         />
-                        <p className="text-sm text-gray-400">CodeCoin</p>
+                        <p className="text-sm text-gray-400">FCoin</p>
                         <p className="text-3xl font-black stat-gradient-text">
-                            {currentUser.codeCoin}
+                            {currentUser.FCoin}
                         </p>
                     </div>
 

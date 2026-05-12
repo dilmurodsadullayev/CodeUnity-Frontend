@@ -37,7 +37,7 @@ const Projects = () => {
                 {/* --- HEADER SECTION --- */}
                 <div className="text-center mb-16 space-y-4">
                     <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter">
-                        CODE<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600">UNITY</span> PROJECTS
+                        F<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600">Society</span> PROJECTS
                     </h1>
                     <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto font-medium">
                         O'zbekistonning eng iqtidorli dasturchilari tomonidan yaratilgan ochiq manbali loyihalar olami.

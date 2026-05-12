@@ -35,7 +35,7 @@ const FCoinHistory = () => {
     } = useSelector((state) => state.coin);
 
     // Ism va jami coinlar
-    const username = authUser?.username || (coins.length > 0 ? coins[0].user.username : 'F.Society');
+    const username = authUser?.username || (coins.length > 0 ? coins[0].user.username : 'FSociety');
     const totalCoins = authUser?.coins ?? (coins.length > 0 ? coins[0].user.coins : 0);
 
     const totalPages = Math.ceil(count / pageSize);

@@ -152,6 +152,8 @@ const NotificationsPage = () => {
             {filteredNotifications.length > 0 ? (
               filteredNotifications.map((notification) => {
                 const { icon, colorClass, text, userImage, userName, problemUrl } = getNotificationDetails(notification);
+                console.log(userImage)
+                console.log(notification)
 
                 return (
                   <motion.div

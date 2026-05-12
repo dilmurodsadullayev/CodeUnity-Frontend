@@ -68,7 +68,7 @@ const Login = () => {
                             className="h-24 w-auto object-contain transition-transform duration-500 group-hover:rotate-[360deg]" 
                         />
                         <span className="text-3xl font-black text-white mt-2 tracking-tighter">
-                            F.<span className="text-indigo-500">Society</span>
+                            F<span className="text-indigo-500">Society</span>
                         </span>
                     </Link>
                     <h1 className="text-2xl font-bold text-gray-200 mt-6 uppercase tracking-widest">

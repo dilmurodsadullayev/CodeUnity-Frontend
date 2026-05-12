@@ -93,7 +93,7 @@ const AppLoader = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl md:text-5xl font-black tracking-[0.2em] text-white uppercase italic"
           >
-            F.<span className="text-indigo-500 animate-pulse">Society</span>
+            F<span className="text-indigo-500 animate-pulse">Society</span>
           </motion.h1>
 
           <div className="flex items-center justify-center space-x-2 mt-4">

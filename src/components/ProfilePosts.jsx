@@ -35,7 +35,8 @@ const ProfilePosts = ({username}) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     
     // Foydalanuvchi o'z profilidami?
-    const isCurrentUser = isLoggedIn && user?.username === username;
+    const isCurrentUser = isLoggedIn && 
+    user?.username?.toLowerCase() === username?.toLowerCase();
 
 
     const getPost = async () => { 
@@ -146,13 +147,40 @@ const ProfilePosts = ({username}) => {
     }
     
     if (!posts || posts.length === 0) {
-        return (
+    return (
+        <>
+            <div className="flex justify-end mb-4">
+                {isCurrentUser && (
+                    <button 
+                        onClick={() => setIsModalOpen(true)}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                        <i className="fas fa-plus-circle"></i> Yangi Post
+                    </button>
+                )}
+            </div>
+
+            {create_error && isModalOpen === false && (
+                <div className="p-3 bg-red-900/50 text-red-400 rounded-lg mb-4 border border-red-700">
+                    <p className="font-semibold">
+                        Post yaratishda xato: {create_error}
+                    </p>
+                </div>
+            )}
+
             <NoPosts 
                 message="Foydalanuvchi hali biron bir maqola chop etmagan yoki savollarga javob bermagan."
             />
-        );
-    }
 
+            <CreatePostModal 
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSubmit={handleCreatePost} 
+                isSubmitting={create_isLoading} 
+            />
+        </>
+    );
+}
 
     // =============================================================
     // MA'LUMOTLAR MAVJUD BO'LGAN HOLAT

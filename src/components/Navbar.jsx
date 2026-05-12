@@ -80,7 +80,7 @@ const Navbar = () => {
             
             <div className="relative flex flex-col justify-center overflow-hidden h-12 pr-6">
               <span className="text-2xl md:text-3xl font-black text-white transition-all duration-500 transform group-hover:-translate-y-full group-hover:opacity-0 tracking-tighter">
-                F.<span className="text-indigo-500">Society</span>
+                F<span className="text-indigo-500">Society</span>
               </span>
               
               <span className="absolute text-2xl md:text-3xl font-black text-indigo-400 transition-all duration-500 transform translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 whitespace-nowrap tracking-tighter">
@@ -113,18 +113,29 @@ const Navbar = () => {
               <>
                 {/* FCoin Display */}
                 <Link
-                  to={'/fcoin-history'}
-                  className="hidden sm:flex items-center space-x-2 bg-gray-800/60 border border-gray-700 rounded-full py-1 px-4 hover:border-yellow-500/50 transition-all group"
+                  to="/fcoin-history"
+                  className="hidden sm:flex items-center gap-2 bg-gray-900/70 border border-yellow-500/20 rounded-full py-1.5 pl-2 pr-4 hover:border-yellow-400/60 hover:bg-gray-800/80 transition-all duration-300 group shadow-lg"
                 >
-                  <motion.img 
-                      whileHover={{ scale: 1.15 }}
-                      src={FCoinIcon} 
-                      alt="FCoin" 
-                      className="h-11 w-11 md:h-12 md:w-12 object-contain drop-shadow-[0_0_10px_rgba(234,179,8,0.6)]" 
-                  />
-                  <span className="font-black text-yellow-500 text-xl md:text-2xl tracking-tighter">
-                    {user?.coins || 0}
-                  </span>
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 8 }}
+                    className="relative flex items-center justify-center h-10 w-10 rounded-full bg-yellow-500/10 border border-yellow-400/30 shadow-[0_0_18px_rgba(234,179,8,0.35)]"
+                  >
+                    <img
+                      src={FCoinIcon}
+                      alt="FCoin"
+                      className="h-7 w-7 object-contain drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]"
+                    />
+
+                    <span className="absolute inset-0 rounded-full bg-yellow-400/10 blur-md -z-10"></span>
+                  </motion.div>
+
+                  <div className="flex flex-col leading-none">
+                    
+
+                    <span className="font-black text-yellow-400 text-lg md:text-xl tracking-tight">
+                      {user?.coins || 0}
+                    </span>
+                  </div>
                 </Link>
 
                 {/* Notifications */}
@@ -138,14 +149,23 @@ const Navbar = () => {
                 <div className="relative" ref={userMenuRef}>
                   <button
                     onClick={() => setOpenUserMenu(!openUserMenu)}
-                    className="flex items-center gap-2 outline-none group"
+                    className="flex items-center gap-2 sm:gap-3 outline-none group bg-gray-800/50 border border-gray-700 rounded-full py-1 pl-1 pr-2 sm:pr-4 hover:border-indigo-500/60 hover:bg-gray-800 transition-all"
                   >
-                    {/* BU YERDA rounded-full QILINDI */}
                     <img
                       src={user?.image ? `${baseUrl}${user.image}` : UserImage}
                       alt="User"
                       className="h-10 w-10 md:h-12 md:w-12 rounded-full border-2 border-gray-700 group-hover:border-indigo-500 transition-all object-cover shadow-xl"
                     />
+
+                    <span className="block text-xs sm:text-sm font-bold text-white max-w-[70px] sm:max-w-[120px] truncate group-hover:text-indigo-400 transition-colors">
+                      @{user?.username || "user"}
+                    </span>
+
+                    <i
+                      className={`hidden sm:block fas fa-chevron-down text-xs text-gray-500 transition-transform duration-300 ${
+                        openUserMenu ? "rotate-180" : ""
+                      }`}
+                    ></i>
                   </button>
 
                   <AnimatePresence>
