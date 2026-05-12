@@ -10,7 +10,7 @@ const CommentSection = () => {
     const { isLoggedIn, user } = useSelector((state) => state.auth);
     const { comments, isLoading } = useSelector((state) => state.comment);
     const dispatch = useDispatch();
-    const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://127.0.0.1:8000";
+    const BASE_URL = window.location.origin;
 
     const getComments = async () => {
         dispatch(getCommentStart());

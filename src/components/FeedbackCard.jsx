@@ -9,7 +9,7 @@ const FeedbackCard = ({ feedback, onEdit, onDeleteSuccess }) => { // onDeleteSuc
     const [isVerifiedUser] = useState(true);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // O'chirish modalini boshqarish holati
 
-    const BASEURL = "http://127.0.0.1:8000/";
+    const BASEURL = window.location.origin;
     console.log(feedback.user.image)
     const userAvatar = feedback.user.image
         ? `${feedback.user.image}`
