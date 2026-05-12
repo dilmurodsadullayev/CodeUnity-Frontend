@@ -123,8 +123,10 @@ const notificationMiddleware = (store) => {
     store.dispatch(setLoading(true));
     
     // Brauzer hozirda qaysi host/portdan yuklangan bo'lsa, o'sha manzilni ishlatamiz.
-    const currentHost = window.location.host.split(':')[0]; 
-    const wsUrl = `ws://${currentHost}:8000/ws/notifications/`; // Portni 8000 qilib belgilash
+    // const currentHost = window.location.host.split(':')[0]; 
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+
+    const wsUrl = `${protocol}://${window.location.host}/ws/notifications/`;
     
     console.log(`DEBUG [WS]: Attempting to connect to ${wsUrl}`);
     
