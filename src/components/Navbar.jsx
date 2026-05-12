@@ -25,7 +25,7 @@ const Navbar = () => {
   const notificationsRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const baseUrl = "http://127.0.0.1:8000";
+  const baseUrl = window.location.origin;
 
   const isActive = (path) => location.pathname === path;
 
