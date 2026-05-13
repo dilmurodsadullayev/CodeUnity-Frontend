@@ -7,7 +7,7 @@ import CommentService from '../services/comments';
 
 const CommentForm = () => {
     const { loggedIn, user } = useSelector((state) => state.auth);
-    const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://127.0.0.1:8000";
+    const BASE_URL = window.location.origin;
     const [message, setMessage] = useState('')
     const dispatch = useDispatch()
     const navigate = useNavigate()
@@ -35,16 +35,17 @@ const CommentForm = () => {
             
             <div className="flex items-start space-x-4">
                
-                 {user?.image?(
-                    <img
-                        src={`${BASE_URL}${user.image}`}
-                        alt="User Avatar" 
-                        className="w-12 h-12 rounded-full mt-1"/>
-                    ):(
-                        <img 
-                        src={UserImage}
-                            alt="User Avatar" className="w-12 h-12 rounded-full mt-1"/>
-                    )}
+                 <img
+                    src={
+                        user?.image
+                            ? user.image.startsWith("http")
+                                ? user.image
+                                : `${window.location.origin}${user.image}`
+                            : UserImage
+                    }
+                    alt="User Avatar"
+                    className="w-12 h-12 rounded-full mt-1 object-cover"
+                />
                 <div className="w-full">
                      <form onSubmit={formSubmit}>
                         <textarea

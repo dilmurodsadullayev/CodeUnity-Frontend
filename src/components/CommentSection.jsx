@@ -21,6 +21,17 @@ const CommentSection = () => {
             console.log(error);
         }
     };
+    const getImageUrl = (image) => {
+        if (!image) return UserImage;
+
+        // Agar allaqachon full URL bo‘lsa
+        if (image.startsWith("http")) {
+            return image;
+        }
+
+        // Relative bo‘lsa
+        return `${window.location.origin}${image}`;
+    };
 
     useEffect(() => {
         getComments();
@@ -95,21 +106,18 @@ const CommentItem = ({ comment, timeAgo, BASE_URL }) => {
 
     return (
         <div className="problem-card p-5 rounded-lg flex space-x-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-            {comment?.user?.image ? (
                 <img
-                    src={`${BASE_URL}${comment.user.image}`}
+                    src={
+                        comment?.user?.image
+                            ? comment.user.image.startsWith("http")
+                                ? comment.user.image
+                                : `${window.location.origin}${comment.user.image}`
+                            : UserImage
+                    }
                     alt="User Avatar"
                     className="w-12 h-12 rounded-full mt-1 object-cover"
                 />
-            ) : (
-                <img
-                    src={UserImage}
-                    alt="User Avatar"
-                    className="w-12 h-12 rounded-full mt-1 object-cover"
-                />
-
-            )}
-            <div className="w-full">
+                        <div className="w-full">
                 <div className="flex items-center space-x-3">
                     <h4 className="font-bold text-white text-lg">{comment?.user?.username}</h4>
                     <span className="text-xs text-gray-500">{timeAgo(comment?.created_at)}</span>
