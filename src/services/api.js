@@ -1,8 +1,11 @@
 // api.js
 import axios from 'axios'
+import { API_URL } from "../services/config";
 
 const instance = axios.create({
-    baseURL: "/api",
+    // baseURL: "/api",
+    baseURL: API_URL,
+    
     withCredentials: true, // Cookie-larni yuborish uchun
     
     // CSRF sozlamalari:
