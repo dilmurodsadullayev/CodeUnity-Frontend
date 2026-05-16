@@ -3,8 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { 
     createRoadMapStart, createRoadMapSuccess, createRoadMapFailure,
     updateRoadMapStart, updateRoadMapSuccess, updateRoadMapFailure
-} from '../features/roadmap';
-import RoadmapService from '../services/roadmap';
+} from '../../features/roadmap';
+import RoadmapService from '../../services/roadmap';
 
 const selectRoadmapState = (state) => state.roadmap;
 

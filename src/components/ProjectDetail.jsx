@@ -1,511 +1,665 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { getProjectDetailFailure, getProjectDetailStart, getProjectDetailSuccess } from '../features/projects';
-import ProjectService from '../services/project';
-import { useParams, useNavigate } from 'react-router-dom'; // useNavigate qo'shildi
-import UserImage from '../assests/userImage.jpeg'; 
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
-// Lokal komponentlarni import qilish
-import ProjectDiscussion from './ProjectDiscussion'; 
-import ProjectCollaboration from './ProjectCollaboration'; 
-import ProjectLoadingSkeleton from './ProjectLoadingSkeleton'; 
+import {
+    getProjectDetailFailure,
+    getProjectDetailStart,
+    getProjectDetailSuccess,
+} from "../features/projects";
 
-// === YANGI IMPORTLAR ===
-import DeleteConfirmationModal from './DeleteConfirmationModal'; // O'chirish modalini import qilish
-import ProjectFormModal from './CreateProjectModal';
+import ProjectService from "../services/project";
 
+import UserImage from "../assests/userImage.jpeg";
 
-import ProjectBoost from './ProjectBoost'; // Yangi komponent
-// ========================
+import ProjectDiscussion from "./ProjectDiscussion";
+import ProjectCollaboration from "./ProjectCollaboration";
+import ProjectLoadingSkeleton from "./ProjectLoadingSkeleton";
+import DeleteConfirmationModal from "./DeleteConfirmationModal";
+import ProjectFormModal from "./profile/CreateProjectModal";
+import ProjectBoost from "./ProjectBoost";
 
-// ** CSS Styles ** (O'zgarishsiz qoldirildi)
-const styles = `
-    :root {
-        --dark-bg: #0d1117;
-        --dark-bg-secondary: #161b22;
-        --border-color: rgba(193, 205, 219, 0.2);
-        --text-primary: #c9d1d9;
-        --indigo: #4f46e5;
-        --purple: #a855f7;
-        --gold: #f59e0b;
-    }
-    .project-body {
-        font-family: 'Inter', sans-serif;
-        background-color: var(--dark-bg);
-        color: var(--text-primary);
-    }
-    .atmospheric-bg {
-        position: absolute;
-        top: 0; left: 0; right: 0; height: 600px;
-        overflow: hidden;
-        z-index: -1;
-    }
-    .atmospheric-bg::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(to top, var(--dark-bg) 10%, transparent 100%);
-    }
-    .main-content-wrapper {
-        background: rgba(13, 17, 23, 0.7);
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--border-color);
-        margin-top: 200px;
-    }
-    .sticky-sidebar {
-        position: sticky;
-        top: 80px;
-    }
-    .prose-custom { color: #a6adbb; line-height: 1.7; }
-    .prose-custom h2 { color: #f0f6fc; margin-top: 2em; margin-bottom: 1em; padding-bottom: 0.3em; border-bottom: 1px solid var(--border-color); }
-    .prose-custom h3 { color: #e6edf3; margin-top: 1.5em; margin-bottom: 0.5em; }
-    .prose-custom strong { color: #fff; }
-    .prose-custom a { color: var(--indigo); text-decoration: none; font-weight: 600; }
-    .prose-custom a:hover { text-decoration: underline; }
-    .prose-custom ul > li { padding-left: 1em; margin-top: 0.5em; }
-    .prose-custom ul > li::marker { color: var(--indigo); }
-    .prose-custom code { color: #f472b6; background-color: rgba(236, 72, 150, 0.1); padding: 2px 5px; border-radius: 4px; font-weight: 600; }
-    .prose-custom blockquote {
-        border-left: 4px solid var(--indigo);
-        padding-left: 1.5rem;
-        margin-left: 0;
-        font-style: italic;
-        color: #d1d5db;
-    }
-    .star-rating { display: inline-flex; }
-    .star-rating label {
-        font-size: 1.75rem; 
-        color: #4b5563; 
-        cursor: pointer;
-        transition: color 0.2s ease;
-    }
-    .star-rating label.active {
-        color: var(--gold);
-    }
-    .text-gradient {
-        background-clip: text;
-        -webkit-background-clip: text;
-        color: transparent;
-        background-image: linear-gradient(to right, #6366f1, #a855f7);
-    }
-`;
+import {
+    AlertTriangle,
+    Code2,
+    Eye,
+    ExternalLink,
+    Github,
+    ImageIcon,
+    Loader2,
+    MessageCircle,
+    Pencil,
+    Rocket,
+    ShieldCheck,
+    Sparkles,
+    Star,
+    Trash2,
+    UserRound,
+} from "lucide-react";
 
 const selectProjectState = (state) => state.project;
 
-// Yordamchi funksiyalar
 const formatFeatureList = (featuresString) => {
     if (!featuresString) return [];
-    const items = featuresString.split(/,\s*|\n/).filter(item => item.trim() !== '');
-    return items.map(item => item.trim());
+
+    return String(featuresString)
+        .split(/,\s*|\n/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+};
+
+const getImageUrl = (image) => {
+    if (!image) return UserImage;
+    if (typeof image === "string" && image.startsWith("http")) return image;
+    return `${window.location.origin}${image}`;
+};
+
+const getProjectTitle = (project) => {
+    return project?.name || project?.title || "Noma’lum loyiha";
+};
+
+const getAuthorName = (author) => {
+    const fullName = `${author?.first_name || ""} ${author?.last_name || ""}`.trim();
+    return fullName || author?.username || "Noma’lum user";
+};
+
+const StatPill = ({ icon: Icon, label, value, className = "" }) => {
+    return (
+        <div
+            className={`inline-flex items-center gap-2 rounded-2xl border border-gray-700/70 bg-gray-900/70 px-4 py-2.5 text-sm font-bold text-gray-300 shadow-lg shadow-black/20 ${className}`}
+        >
+            <Icon size={17} />
+            <span className="text-white">{value}</span>
+            <span className="text-gray-500">{label}</span>
+        </div>
+    );
+};
+
+const TechBadge = ({ children, type = "indigo" }) => {
+    const classes = {
+        blue: "border-blue-400/30 bg-blue-500/10 text-blue-300",
+        purple: "border-purple-400/30 bg-purple-500/10 text-purple-300",
+        indigo: "border-indigo-400/30 bg-indigo-500/10 text-indigo-300",
+    };
+
+    return (
+        <span
+            className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-black ${classes[type]}`}
+        >
+            {children}
+        </span>
+    );
 };
 
 const ProjectDetail = () => {
     const { projectId } = useParams();
-    const navigate = useNavigate(); // Navigatsiya uchun
+    const navigate = useNavigate();
     const dispatch = useDispatch();
+
     const { isLoggedIn, user } = useSelector((state) => state.auth);
-            
-    // =============================================================
-    // ** YANGI STATE'LAR (Edit/Delete uchun) **
-    // =============================================================
+
+    const {
+        projectDetail,
+        projectDetailIsLoading,
+        projectDetailError,
+    } = useSelector(selectProjectState);
+
+    const [activeIndex, setActiveIndex] = useState(0);
+    const [isStarred, setIsStarred] = useState(false);
+    const [isStarLoading, setIsStarLoading] = useState(false);
+
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    // =============================================================
 
-    const [activeIndex, setActiveIndex] = useState(0);
-    
-    const { projectDetail, projectDetailIsLoading, projectDetailError } = useSelector(selectProjectState);
-    
-    // Foydalanuvchi ushbu profilning egasimi, tekshirish
-    const isOwner = user?.id && projectDetail?.user?.id && user.id === projectDetail.user.id; // ID bo'yicha tekshirish xavfsizroq
-
-    // Barcha ma'lumotlar yuklangandan so'ng, ularni oson ishlatish uchun tayyorlaymiz
     const projectData = projectDetail || {};
-    const projectImages = projectData?.images || [];
-    const mainImage = projectImages[activeIndex]?.image || UserImage;
+    const projectImages = Array.isArray(projectData?.images) ? projectData.images : [];
     const author = projectData?.user || {};
-    const featuresList = formatFeatureList(projectData.main_features);
-    const [isStarred, setIsStarred] = useState(false); // Foydalanuvchi bu loyihani yoqtirganmi
+    const featuresList = useMemo(
+        () => formatFeatureList(projectData?.main_features),
+        [projectData?.main_features]
+    );
 
+    const projectTitle = getProjectTitle(projectData);
+    const mainImage = getImageUrl(projectImages?.[activeIndex]?.image);
+    const authorImage = getImageUrl(author?.image);
 
-    // ---------------------------------------------------
-    // API chaqiruvi (Loyihani yuklash)
-    // ---------------------------------------------------
+    const isOwner =
+        Boolean(user?.id && author?.id) && Number(user.id) === Number(author.id);
 
-    const getProjectDetail = useCallback(async () => { 
+    const starsCount = projectData?.stars_count || 0;
+    const viewsCount = projectData?.views_count || 0;
+    const commentsCount = projectData?.comments_count || 0;
+
+    const getProjectDetail = useCallback(async () => {
         dispatch(getProjectDetailStart());
+
         try {
-            const response = await ProjectService.projectDetail(projectId); 
-            dispatch(getProjectDetailSuccess(response)); 
-            // Rasm indexini to'g'irlash
-            if (response.images && response.images.length > 0) {
-                 setActiveIndex(prev => Math.min(prev, response.images.length - 1));
-            } else {
-                 setActiveIndex(0);
-            }
+            const response = await ProjectService.projectDetail(projectId);
+
+            dispatch(getProjectDetailSuccess(response));
+
+            const responseImages = Array.isArray(response?.images)
+                ? response.images
+                : [];
+
+            setActiveIndex((prev) =>
+                responseImages.length > 0
+                    ? Math.min(prev, responseImages.length - 1)
+                    : 0
+            );
+
+            setIsStarred(Boolean(response?.is_starred_by_user));
         } catch (err) {
             console.error("ProjectDetail olishda xato:", err);
-            dispatch(getProjectDetailFailure(err.message));
+            dispatch(
+                getProjectDetailFailure(
+                    err?.message || "Loyihani yuklashda xato yuz berdi"
+                )
+            );
         }
     }, [projectId, dispatch]);
 
     useEffect(() => {
-        getProjectDetail()
-    }, [getProjectDetail]); 
+        getProjectDetail();
+    }, [getProjectDetail]);
 
-    // ---------------------------------------------------
-    // ** EDIT / DELETE FUNKSIYALARI **
-    // ---------------------------------------------------
+    useEffect(() => {
+        setIsStarred(Boolean(projectDetail?.is_starred_by_user));
+    }, [projectDetail?.is_starred_by_user]);
 
-    // Loyihani tahrirlash funksiyasi (ProjectFormModal'ga uzatiladi)
     const handleUpdateProject = async (formData, projectIdToUpdate) => {
         try {
-            // BACKENDGA YUBORILADIGAN DATA: projectIdToUpdate, formData (FormData obyekti)
-            await ProjectService.updateProject(projectIdToUpdate, formData); 
+            await ProjectService.updateProject(projectIdToUpdate, formData);
             setIsEditModalOpen(false);
-            // Yangilangan loyiha ma'lumotlarini qayta yuklash
-            await getProjectDetail(); 
-            // Muvaffaqiyatli xabar ko'rsatish
-            // alert("Loyiha muvaffaqiyatli tahrirlandi!"); 
+            await getProjectDetail();
         } catch (error) {
             console.error("Loyihani tahrirlashda xato:", error);
-            // Xatoni ProjectFormModal'ga qaytarish uchun uni tashlaymiz
-            throw error; 
+            throw error;
         }
     };
-    
-    // Loyihani o'chirishni tasdiqlash
+
     const handleConfirmDelete = async () => {
-        if (!projectData.id) return;
+        if (!projectData?.id) return;
 
         setIsDeleting(true);
 
         try {
-            // BACKENDGA YUBORILADIGAN DATA: projectData.id
-            await ProjectService.deleteProject(projectData.id); 
-            
-            // Muvaffaqiyatli o'chirilgandan so'ng, foydalanuvchini boshqa sahifaga yo'naltirish
-            navigate(`/${user.username}/profile/`); // Masalan, foydalanuvchi profiliga
-            // alert("Loyiha muvaffaqiyatli o'chirildi!");
-
+            await ProjectService.deleteProject(projectData.id);
+            navigate(`/${user?.username}/profile/`);
         } catch (err) {
             console.error("Loyihani o'chirishda xato:", err);
-            // Xatoni ko'rsatish
-            alert("Loyihani o'chirishda xato yuz berdi: " + (err.message || "Noma'lum xato")); 
-            setIsDeleteModalOpen(false); // Modalni yopish
+            alert(
+                "Loyihani o‘chirishda xato yuz berdi: " +
+                    (err?.message || "Noma’lum xato")
+            );
+            setIsDeleteModalOpen(false);
         } finally {
             setIsDeleting(false);
         }
     };
 
-    // ---------------------------------------------------
-    // ** STAR/UNSTAR FUNKSIYALARI **
-    // ---------------------------------------------------
-
     const handleStarToggle = useCallback(async () => {
         if (!isLoggedIn) {
-            alert("Loyihani yoqtirish uchun avval tizimga kiring!"); 
+            alert("Loyihani yoqtirish uchun avval tizimga kiring!");
             return;
         }
-        
-        // Optimistik yangilash uchun joriy holatni saqlab qolamiz
-        const currentIsStarred = isStarred;
-        const currentStarsCount = projectDetail.stars_count || 0;
-        const willBeStarred = !currentIsStarred; 
-        const newStarsCountOptimistic = willBeStarred ? currentStarsCount + 1 : currentStarsCount - 1;
 
-        // 1. Optimistik Yangilash (UI tezkor javob berishi uchun)
-        setIsStarred(willBeStarred);
-        dispatch(getProjectDetailSuccess({ 
-            ...projectDetail, 
-            stars_count: newStarsCountOptimistic,
-            is_starred_by_user: willBeStarred
-        }));
+        if (isStarLoading || !projectDetail?.id) return;
+
+        setIsStarLoading(true);
+
+        const oldIsStarred = Boolean(isStarred);
+        const oldStarsCount = projectDetail?.stars_count || 0;
+
+        const nextIsStarred = !oldIsStarred;
+        const optimisticStarsCount = Math.max(
+            0,
+            nextIsStarred ? oldStarsCount + 1 : oldStarsCount - 1
+        );
+
+        setIsStarred(nextIsStarred);
+
+        dispatch(
+            getProjectDetailSuccess({
+                ...projectDetail,
+                stars_count: optimisticStarsCount,
+                is_starred_by_user: nextIsStarred,
+            })
+        );
 
         try {
-            // 2. API chaqiruvi (toggleProjectStar endi hamma ishni qiladi)
             const response = await ProjectService.toggleProjectStar(projectId);
-            
-            // 3. API javobi bilan state'ni yakuniy yangilash (Agar optimistik count noto'g'ri bo'lsa to'g'irlash uchun)
-            // Backenddan keladigan ma'lumotlar: {is_starred_by_user, stars_count, detail}
-            
-            // Backendning haqiqiy holatini statega qo'yish
-            setIsStarred(response.is_starred_by_user);
-            dispatch(getProjectDetailSuccess({ 
-                ...projectDetail, 
-                stars_count: response.stars_count,
-                is_starred_by_user: response.is_starred_by_user
-            }));
 
+            const backendIsStarred = Boolean(response?.is_starred_by_user);
+            const backendStarsCount =
+                typeof response?.stars_count === "number"
+                    ? response.stars_count
+                    : optimisticStarsCount;
+
+            setIsStarred(backendIsStarred);
+
+            dispatch(
+                getProjectDetailSuccess({
+                    ...projectDetail,
+                    stars_count: backendStarsCount,
+                    is_starred_by_user: backendIsStarred,
+                })
+            );
         } catch (error) {
             console.error("Star/Unstar qilishda xato:", error);
-            
-            // Xato bo'lsa, holatni orqaga qaytarish (Rollback)
-            setIsStarred(currentIsStarred); // Avvalgi holatga qaytarish
-            dispatch(getProjectDetailSuccess({ 
-                ...projectDetail, 
-                stars_count: currentStarsCount, // Avvalgi count'ga qaytarish
-                is_starred_by_user: currentIsStarred
-            }));
-            
-            alert("Amalni bajarishda xato yuz berdi. Iltimos, qayta urinib ko'ring.");
+
+            setIsStarred(oldIsStarred);
+
+            dispatch(
+                getProjectDetailSuccess({
+                    ...projectDetail,
+                    stars_count: oldStarsCount,
+                    is_starred_by_user: oldIsStarred,
+                })
+            );
+
+            alert("Star amalida xato yuz berdi. Qayta urinib ko‘ring.");
+        } finally {
+            setIsStarLoading(false);
         }
-    }, [isStarred, isLoggedIn, projectId, projectDetail, dispatch]);
+    }, [
+        isLoggedIn,
+        isStarLoading,
+        isStarred,
+        projectDetail,
+        projectId,
+        dispatch,
+    ]);
 
-
-    // ---------------------------------------------------
-
-    const styleTag = <style dangerouslySetInnerHTML={{ __html: styles }} />;
-
-
-    // =============================================================
-    // LOYIHANI YUKLASH HOLATI
-    // =============================================================
     if (projectDetailIsLoading) {
-        return <ProjectLoadingSkeleton styleTag={styleTag} />;
+        return <ProjectLoadingSkeleton />;
     }
 
-    // =============================================================
-    // XATO HOLATI YOKI MA'LUMOT BO'LMASA
-    // =============================================================
-    if (projectDetailError || !projectData.id) {
+    if (projectDetailError || !projectData?.id) {
         return (
-            <div className="project-body min-h-screen pt-40 flex items-start justify-center">
-                {styleTag}
-                <div className="bg-dark-bg-secondary border border-gray-700 p-8 rounded-lg max-w-xl text-center">
-                    <i className="fa-solid fa-triangle-exclamation text-red-500 text-5xl mb-4"></i>
-                    <h1 className="text-white text-2xl font-bold mb-2">Loyiha topilmadi yoki xato yuz berdi.</h1>
-                    <p className="text-gray-400">Loyihani yuklashda muammo yuz berdi. ID: {projectId}</p>
-                    {projectDetailError && <p className="text-red-400 mt-2 text-sm">{projectDetailError}</p>}
+            <div className="min-h-screen bg-[#05070a] px-4 pt-40 text-white">
+                <div className="mx-auto max-w-xl rounded-3xl border border-red-500/30 bg-red-500/10 p-8 text-center shadow-2xl shadow-black/30">
+                    <AlertTriangle className="mx-auto mb-4 text-red-300" size={52} />
+
+                    <h1 className="text-2xl font-black text-white">
+                        Loyiha topilmadi yoki xato yuz berdi
+                    </h1>
+
+                    <p className="mt-3 text-sm font-semibold text-gray-400">
+                        Loyiha ID: {projectId}
+                    </p>
+
+                    {projectDetailError && (
+                        <p className="mt-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
+                            {projectDetailError}
+                        </p>
+                    )}
+
+                    <button
+                        type="button"
+                        onClick={getProjectDetail}
+                        className="mt-6 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white transition hover:bg-red-500"
+                    >
+                        Qayta urinish
+                    </button>
                 </div>
             </div>
         );
     }
-    
-    // =============================================================
-    // ASOSIY KOMPONENT RENDERINGI
-    // =============================================================
 
     return (
-        <div className="project-body">
-            {styleTag}
+        <div className="relative min-h-screen overflow-hidden bg-[#05070a] text-white">
+            {/* Background */}
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.06)_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(circle_at_center,black_0%,transparent_74%)]" />
+            <div className="pointer-events-none absolute left-1/2 top-24 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-indigo-600/15 blur-[120px]" />
+            <div className="pointer-events-none absolute -right-32 top-1/3 h-[360px] w-[360px] rounded-full bg-purple-500/10 blur-[115px]" />
+            <div className="pointer-events-none absolute -left-32 bottom-32 h-[360px] w-[360px] rounded-full bg-pink-500/10 blur-[115px]" />
 
-            <main className="container mx-auto px-4">
-                <div className="main-content-wrapper rounded-xl shadow-2xl mb-16">
-                    
-                    {/* Loyiha Sarlavhasi va Statistikasi */}
-                    <header className="p-6 md:p-10 border-b border-gray-700/50">
-                        <div className='flex justify-between items-start'>
-                            <h1 className="text-4xl md:text-5xl font-black text-gradient">{projectData.name}</h1>
-                            
-                            {/* ** EDIT VA DELETE TUGMALARI ** */}
+            <main className="container relative z-10 mx-auto px-4 py-24">
+                <div className="overflow-hidden rounded-[34px] border border-gray-700/70 bg-gray-900/65 shadow-2xl shadow-black/40 backdrop-blur-xl">
+                    {/* Header */}
+                    <header className="border-b border-gray-700/70 p-5 sm:p-8 lg:p-10">
+                        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="min-w-0 flex-1">
+                                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-indigo-300">
+                                    <Rocket size={16} />
+                                    Project showcase
+                                </div>
+
+                                <h1 className="max-w-5xl bg-gradient-to-r from-indigo-300 via-purple-400 to-pink-400 bg-clip-text text-4xl font-black tracking-tight text-transparent sm:text-5xl lg:text-6xl">
+                                    {projectTitle}
+                                </h1>
+
+                                <p className="mt-4 max-w-3xl text-sm font-medium leading-7 text-gray-400 sm:text-base">
+                                    {projectData?.description ||
+                                        "Ushbu loyiha uchun hali to‘liq tavsif kiritilmagan."}
+                                </p>
+                            </div>
+
                             {isOwner && (
-                                <div className='flex gap-2 ml-4'>
-                                    <button 
+                                <div className="flex shrink-0 flex-wrap gap-2">
+                                    <button
+                                        type="button"
                                         onClick={() => setIsEditModalOpen(true)}
-                                        className="p-3 text-sm rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition duration-150 flex items-center gap-2 font-semibold"
-                                        title="Loyihani tahrirlash"
+                                        className="inline-flex items-center gap-2 rounded-2xl border border-indigo-400/40 bg-indigo-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 active:scale-95"
                                     >
-                                        <i className="fas fa-edit"></i>
-                                        <span className="hidden md:inline">Tahrirlash</span>
+                                        <Pencil size={17} />
+                                        <span className="hidden sm:inline">Tahrirlash</span>
                                     </button>
-                                    <button 
+
+                                    <button
+                                        type="button"
                                         onClick={() => setIsDeleteModalOpen(true)}
-                                        className="p-3 text-sm rounded-lg bg-red-600 hover:bg-red-700 text-white transition duration-150 flex items-center gap-2 font-semibold"
-                                        title="Loyihani o'chirish"
+                                        className="inline-flex items-center gap-2 rounded-2xl border border-red-400/40 bg-red-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-red-600/20 transition hover:bg-red-500 active:scale-95"
                                     >
-                                        <i className="fas fa-trash-alt"></i>
-                                        <span className="hidden md:inline">O'chirish</span>
+                                        <Trash2 size={17} />
+                                        <span className="hidden sm:inline">O‘chirish</span>
                                     </button>
                                 </div>
                             )}
                         </div>
 
-                        {/* Yutuqlar Paneli */}
-                        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mt-4 text-gray-400">
-                            
-                            {/* ** YANGI STAR BOSISH BO'LIMI ** */}
-                            <div className="flex items-center gap-2">
-                                {/* Faqat Tizimga kirgan foydalanuvchilar uchun Star tugmasini ko'rsatish */}
-                                {isLoggedIn && (
-                                    <button
-                                        onClick={handleStarToggle}
-                                        className={`flex items-center gap-2 p-3 rounded-lg transition-colors duration-200 text-sm font-semibold ${
-                                            isStarred ? 'bg-yellow-600 hover:bg-yellow-700 text-white shadow-lg shadow-yellow-600/30' : 'bg-gray-700/50 hover:bg-gray-600/50 text-gray-300'
-                                        }`}
-                                        title={isStarred ? "Yoqtirishni bekor qilish" : "Loyihani yoqtirish"}
-                                    >
-                                        <i className={`fas fa-star text-lg ${isStarred ? 'text-white' : 'text-yellow-500'}`}></i>
-                                        <span className="hidden sm:inline">{isStarred ? "Yoqilgan" : "Yoqtirish"}</span>
-                                    </button>
+                        {/* Stats and star */}
+                        <div className="mt-7 flex flex-wrap items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={handleStarToggle}
+                                disabled={isStarLoading}
+                                className={`group relative inline-flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-black transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 ${
+                                    isStarred
+                                        ? "border-yellow-400/40 bg-yellow-500/15 text-yellow-200 shadow-lg shadow-yellow-500/20"
+                                        : "border-gray-700 bg-gray-900/70 text-gray-300 hover:border-yellow-400/30 hover:bg-yellow-500/10 hover:text-yellow-200"
+                                }`}
+                                title={
+                                    isStarred
+                                        ? "Star bosilgan. Bekor qilish uchun bosing"
+                                        : "Loyihaga star berish"
+                                }
+                            >
+                                {isStarLoading ? (
+                                    <Loader2 size={19} className="animate-spin" />
+                                ) : (
+                                    <Star
+                                        size={20}
+                                        className={
+                                            isStarred
+                                                ? "fill-yellow-300 text-yellow-300"
+                                                : "text-yellow-400"
+                                        }
+                                    />
                                 )}
-                                
-                                {/* Star / Yoqtirish soni statistikasi (Yangi dizayn) */}
-                                <div className="flex items-center gap-2 text-sm">
-                                    <i className="fas fa-star text-lg text-yellow-500"></i>
-                                    <span className="font-bold text-white text-lg">{(projectData.stars_count || 0).toLocaleString()}</span>
-                                    <span className="text-sm text-gray-400">Yoqish</span>
-                                </div>
-                            </div>
-                            {/* ** YANGI STAR BOSISH BO'LIMI TUGADI ** */}
 
-                            <div className="flex items-center gap-2 text-sm"><i className="fas fa-eye w-5"></i> {projectData.views_count?.toLocaleString() || 0} ko'rish</div>
-                            <div className="flex items-center gap-2 text-sm"><i className="fas fa-comments w-5"></i> {projectData.comments_count?.toLocaleString() || 0} sharh</div>
+                                <span>
+                                    {isStarred ? "Star bosilgan" : "Star berish"}
+                                </span>
+
+                                {isStarred && (
+                                    <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-yellow-300 shadow-[0_0_14px_rgba(250,204,21,0.9)]" />
+                                )}
+                            </button>
+
+                            <StatPill
+                                icon={Star}
+                                value={starsCount.toLocaleString()}
+                                label="star"
+                                className="text-yellow-300"
+                            />
+
+                            <StatPill
+                                icon={Eye}
+                                value={viewsCount.toLocaleString()}
+                                label="ko‘rish"
+                            />
+
+                            <StatPill
+                                icon={MessageCircle}
+                                value={commentsCount.toLocaleString()}
+                                label="sharh"
+                            />
                         </div>
 
-                        {/* Rasm Galereyasi */}
+                        {/* Gallery */}
                         <div className="mt-8">
-                            <div className="relative aspect-video bg-black/20 rounded-lg overflow-hidden">
-                                {projectImages.map((img, index) => (
-                                    <img 
-                                        key={img.id} 
-                                        src={img.image} 
-                                        className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${activeIndex === index ? 'opacity-100' : 'opacity-0'}`}
-                                        alt={img.title || `Project Screenshot ${index + 1}`}
-                                    />
-                                ))}
-                                {/* Agar rasm bo'lmasa, o'rinbosar rasm ko'rsatish */}
-                                {projectImages.length === 0 && (
-                                    <div className='absolute inset-0 flex items-center justify-center bg-gray-900'>
-                                        <i className='fas fa-image text-gray-700 text-6xl'></i>
-                                    </div>
-                                )}
+                            <div className="relative overflow-hidden rounded-[28px] border border-gray-700/70 bg-black/30 shadow-2xl shadow-black/40">
+                                <div className="aspect-video">
+                                    {projectImages.length > 0 ? (
+                                        projectImages.map((img, index) => (
+                                            <img
+                                                key={img?.id || index}
+                                                src={getImageUrl(img?.image)}
+                                                className={`absolute inset-0 h-full w-full object-contain transition-all duration-500 ${
+                                                    activeIndex === index
+                                                        ? "scale-100 opacity-100"
+                                                        : "scale-95 opacity-0"
+                                                }`}
+                                                alt={
+                                                    img?.title ||
+                                                    `Project Screenshot ${index + 1}`
+                                                }
+                                            />
+                                        ))
+                                    ) : (
+                                        <div className="flex h-full w-full items-center justify-center bg-gray-950/70">
+                                            <div className="text-center">
+                                                <ImageIcon
+                                                    className="mx-auto mb-3 text-gray-700"
+                                                    size={72}
+                                                />
+                                                <p className="font-bold text-gray-600">
+                                                    Rasm mavjud emas
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <div className="flex justify-center gap-2 mt-4">
-                                {projectImages.map((_, index) => (
-                                    <button 
-                                        key={index} 
-                                        onClick={() => setActiveIndex(index)} 
-                                        className={`w-2.5 h-2.5 rounded-full transition-colors ${activeIndex === index ? 'bg-white' : 'bg-gray-600 hover:bg-gray-400'}`}
-                                    ></button>
-                                ))}
-                            </div>
+
+                            {projectImages.length > 1 && (
+                                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                                    {projectImages.map((img, index) => (
+                                        <button
+                                            key={img?.id || index}
+                                            type="button"
+                                            onClick={() => setActiveIndex(index)}
+                                            className={`h-16 w-24 overflow-hidden rounded-2xl border transition-all ${
+                                                activeIndex === index
+                                                    ? "border-indigo-400 ring-2 ring-indigo-500/30"
+                                                    : "border-gray-700 opacity-60 hover:opacity-100"
+                                            }`}
+                                        >
+                                            <img
+                                                src={getImageUrl(img?.image)}
+                                                alt=""
+                                                className="h-full w-full object-cover"
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </header>
 
-                    <div className="flex flex-col lg:flex-row">
-                        {/* Asosiy Tarkib */}
-                        <div className="w-full lg:w-2/3 border-r-0 lg:border-r border-gray-700/50">
-                            {/* Loyiha Tavsifi */}
-                            <article className="p-6 md:p-10 prose-custom max-w-none">
-                                <blockquote>
-                                    {projectData.description || "Ushbu loyiha uchun hali to'liq tavsif kiritilmagan."}
-                                </blockquote>
-                                
-                                <h2>Loyiha Haqida</h2>
-                                <p>
-                                    {projectData.description || "Loyiha haqida to'liqroq ma'lumotlar tez orada kiritiladi."}
-                                </p>
-                                
+                    <div className="grid lg:grid-cols-[1fr_380px]">
+                        {/* Main content */}
+                        <section className="border-gray-700/70 lg:border-r">
+                            <article className="p-5 sm:p-8 lg:p-10">
+                                <div className="rounded-3xl border border-indigo-400/20 bg-indigo-500/10 p-5 text-sm font-medium leading-7 text-indigo-100 sm:text-base">
+                                    {projectData?.description ||
+                                        "Ushbu loyiha uchun hali to‘liq tavsif kiritilmagan."}
+                                </div>
+
+                                <div className="mt-8">
+                                    <h2 className="mb-4 flex items-center gap-3 text-2xl font-black text-white">
+                                        <Sparkles className="text-indigo-300" size={26} />
+                                        Loyiha haqida
+                                    </h2>
+
+                                    <p className="text-sm font-medium leading-8 text-gray-400 sm:text-base">
+                                        {projectData?.description ||
+                                            "Loyiha haqida to‘liqroq ma’lumotlar tez orada kiritiladi."}
+                                    </p>
+                                </div>
+
                                 {featuresList.length > 0 && (
-                                    <>
-                                        <h3>Asosiy Imkoniyatlar:</h3>
-                                        <ul>
+                                    <div className="mt-8">
+                                        <h3 className="mb-4 flex items-center gap-3 text-xl font-black text-white">
+                                            <ShieldCheck
+                                                className="text-emerald-300"
+                                                size={23}
+                                            />
+                                            Asosiy imkoniyatlar
+                                        </h3>
+
+                                        <div className="grid gap-3 sm:grid-cols-2">
                                             {featuresList.map((feature, index) => (
-                                                <li key={index}>{feature}</li>
+                                                <div
+                                                    key={index}
+                                                    className="rounded-2xl border border-gray-700/70 bg-gray-950/35 p-4 text-sm font-semibold leading-6 text-gray-300 transition hover:border-indigo-400/30 hover:bg-gray-900"
+                                                >
+                                                    <span className="mr-2 text-indigo-300">
+                                                        #{index + 1}
+                                                    </span>
+                                                    {feature}
+                                                </div>
                                             ))}
-                                        </ul>
-                                    </>
+                                        </div>
+                                    </div>
                                 )}
                             </article>
 
-                            {/* Loyiha Jamoasi Bo'limi */}
-                            <ProjectCollaboration 
-                                currentCollaborators={projectDetail.collaborations} 
-                                pendingRequests={[]} // Bu ma'lumotni ham backenddan olish kerak
-                                projectOwner={author} 
-                                isOwner={isOwner} 
-                                isCollaborator={false} 
-                                hasSentRequest={false} 
-                                projectId={projectId} 
+                            <ProjectCollaboration
+                                currentCollaborators={projectDetail.collaborations}
+                                pendingRequests={[]}
+                                projectOwner={author}
+                                isOwner={isOwner}
+                                isCollaborator={false}
+                                hasSentRequest={false}
+                                projectId={projectId}
                             />
-
-                        </div>
+                        </section>
 
                         {/* Sidebar */}
-                        <aside className="w-full lg:w-1/3 p-6 md:p-10">
-                            <div className="sticky-sidebar space-y-8">
-                                 {/* ... (Sidebar qismi o'zgarishsiz) ... */}
-
-                                   {/* 🔥 MANA SHU YERGA BOOST COMPONENTINI QO'YAMIZ */}
+                        <aside className="p-5 sm:p-8 lg:p-8">
+                            <div className="space-y-6 lg:sticky lg:top-24">
                                 {isOwner && (
-                                    <ProjectBoost 
-                                        projectId={projectData.id} 
-                                        projectName={projectData.name} 
-                                        userCoins={user.coins} 
+                                    <ProjectBoost
+                                        projectId={projectData.id}
+                                        projectName={projectTitle}
+                                        userCoins={user?.coins || 0}
                                     />
                                 )}
-                                  <div>
-                                    <h3 className="font-bold text-white mb-3">Muallif</h3>
-                                    <a href={`/profile/${author.username}`} className="flex items-center gap-3 bg-gray-800/50 hover:bg-gray-700/50 p-3 rounded-lg transition-colors">
-                                        <img src={author.image || UserImage} className="w-12 h-12 rounded-full object-cover" alt={author.username} />
-                                        <div>
-                                            <p className="font-bold text-white">{`${author.first_name || ''} ${author.last_name || author.username}`}</p>
-                                            <p className="text-sm text-gray-400">Daraja: {author.skill_level || 'Aniqlanmagan'}</p>
+
+                                <div className="rounded-3xl border border-gray-700/70 bg-gray-950/35 p-5 shadow-xl shadow-black/20">
+                                    <h3 className="mb-4 flex items-center gap-3 text-lg font-black text-white">
+                                        <UserRound className="text-indigo-300" size={21} />
+                                        Muallif
+                                    </h3>
+
+                                    <Link
+                                        to={`/${author?.username}/profile/`}
+                                        className="flex items-center gap-4 rounded-2xl border border-gray-700/70 bg-gray-900/60 p-4 transition hover:border-indigo-400/40 hover:bg-gray-800/70"
+                                    >
+                                        <img
+                                            src={authorImage}
+                                            className="h-14 w-14 rounded-full border-2 border-gray-700 object-cover"
+                                            alt={author?.username}
+                                        />
+
+                                        <div className="min-w-0">
+                                            <p className="truncate font-black text-white">
+                                                {getAuthorName(author)}
+                                            </p>
+                                            <p className="mt-1 text-xs font-bold text-gray-500">
+                                                @{author?.username || "unknown"}
+                                            </p>
+                                            <p className="mt-1 text-xs font-bold text-indigo-300">
+                                                Daraja:{" "}
+                                                {author?.skill_level || "Aniqlanmagan"}
+                                            </p>
                                         </div>
-                                    </a>
+                                    </Link>
                                 </div>
-                                
-                                <div>
-                                    <h3 className="font-bold text-white mb-3">Texnologiyalar</h3>
+
+                                <div className="rounded-3xl border border-gray-700/70 bg-gray-950/35 p-5 shadow-xl shadow-black/20">
+                                    <h3 className="mb-4 flex items-center gap-3 text-lg font-black text-white">
+                                        <Code2 className="text-purple-300" size={21} />
+                                        Texnologiyalar
+                                    </h3>
+
                                     <div className="flex flex-wrap gap-2">
-                                        {projectData.language_data && (
-                                            <span className="bg-blue-600/20 text-blue-300 text-xs font-semibold px-2.5 py-1 rounded-full">{projectData.language_data.name}</span>
+                                        {projectData?.language_data && (
+                                            <TechBadge type="blue">
+                                                {projectData.language_data.name}
+                                            </TechBadge>
                                         )}
-                                        {projectData.technology_data && (
-                                            <span className="bg-purple-600/20 text-purple-300 text-xs font-semibold px-2.5 py-1 rounded-full">{projectData.technology_data.name}</span>
+
+                                        {projectData?.technology_data && (
+                                            <TechBadge type="purple">
+                                                {projectData.technology_data.name}
+                                            </TechBadge>
                                         )}
-                                        
+
+                                        {!projectData?.language_data &&
+                                            !projectData?.technology_data && (
+                                                <p className="text-sm font-semibold text-gray-500">
+                                                    Texnologiyalar hali kiritilmagan.
+                                                </p>
+                                            )}
                                     </div>
                                 </div>
-                                
+
                                 <div className="space-y-3">
-                                    {projectData.github_url && (
-                                        <a href={projectData.github_url} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-5 rounded-lg transition-colors">
-                                            <i className="fab fa-github"></i> GitHub
+                                    {projectData?.github_url && (
+                                        <a
+                                            href={projectData.github_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-700 bg-gray-900/80 px-5 py-3 text-sm font-black text-white transition hover:border-gray-500 hover:bg-gray-800"
+                                        >
+                                            <Github size={18} />
+                                            GitHub
                                         </a>
                                     )}
-                                    {projectData.website_url && (
-                                        <a href={projectData.website_url} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-5 rounded-lg transition-colors">
-                                            <i className="fas fa-external-link-alt"></i> Live Demo
+
+                                    {projectData?.website_url && (
+                                        <a
+                                            href={projectData.website_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-indigo-400/40 bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500"
+                                        >
+                                            <ExternalLink size={18} />
+                                            Live Demo
                                         </a>
                                     )}
                                 </div>
                             </div>
                         </aside>
                     </div>
-                    
-                    {/* Muhokama Bo'limi */}
-                    <ProjectDiscussion  projectId={projectId}/>
+
+                    <ProjectDiscussion projectId={projectId} />
                 </div>
             </main>
 
-            {/* ======================================= */}
-            {/* ** LOYIHANI TAHRIRLASH MODALI ** */}
-            {/* ======================================= */}
             {isOwner && (
                 <ProjectFormModal
                     isOpen={isEditModalOpen}
                     onClose={() => setIsEditModalOpen(false)}
-                    onSubmit={handleUpdateProject} // Tahrirlash funksiyasini yuboramiz
-                    initialData={projectData} // Tahrirlash uchun mavjud loyiha ma'lumotlarini yuboramiz
-                />
-            )}
-            
-            {/* ======================================= */}
-            {/* ** LOYIHANI O'CHIRISH MODALI ** */}
-            {/* ======================================= */}
-            {isOwner && (
-                <DeleteConfirmationModal 
-                    isOpen={isDeleteModalOpen}
-                    onClose={() => setIsDeleteModalOpen(false)}
-                    onConfirm={handleConfirmDelete} // O'chirishni tasdiqlash funksiyasi
-                    itemTitle={projectData.name}
-                    isProcessing={isDeleting}
+                    onSubmit={handleUpdateProject}
+                    initialData={projectData}
                 />
             )}
 
+            {isOwner && (
+                <DeleteConfirmationModal
+                    isOpen={isDeleteModalOpen}
+                    onClose={() => setIsDeleteModalOpen(false)}
+                    onConfirm={handleConfirmDelete}
+                    itemTitle={projectTitle}
+                    isProcessing={isDeleting}
+                />
+            )}
         </div>
     );
 };

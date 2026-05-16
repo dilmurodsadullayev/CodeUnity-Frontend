@@ -24,7 +24,7 @@ const NotificationItem = ({ notification, handleMarkOneAsRead }) => {
   const senderUsername = notification.sender?.username || 'Noma\'lum';
   const createdAt = new Date(notification.created_at);
   // notification.problem?.id - vazifaning ID'sini olish uchun kutiladi
-  const problemId = notification.problem?.id || notification.id; // object_id ni zaxira sifatida ishlatamiz
+  const problemId = notification.object_id // object_id ni zaxira sifatida ishlatamiz
   console.log("notification ", notification)
 
   const imageSrc = notification.sender?.image 

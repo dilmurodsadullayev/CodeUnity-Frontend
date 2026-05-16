@@ -8,7 +8,16 @@ const initialState = {
     count: 0, // Doim raqam bo'lishi kerak
     next: null,
     previous: null,
-    error: null // Xato holatini saqlash uchun
+    error: null, // Xato holatini saqlash uchun
+    // Birthday users
+    birthdayUsersLoading: false,
+    birthdayUsers: [],
+    birthdayUsersCount: 0,
+    birthdayUsersToday: null,
+    birthdayUsersMonth: null,
+    birthdayUsersLimit: 0,
+    birthdayUsersError: null,
+
 };
 
 export const UserSlice = createSlice({
@@ -34,7 +43,39 @@ export const UserSlice = createSlice({
             state.error = action.payload;
             state.users = []; // Xato bo'lganda ham problems ni bo'sh massivga o'rnatish
             state.count = 0;     // count ni ham 0 ga o'rnatish
-        }
+        },
+        // =========================
+    // BIRTHDAY USERS THIS MONTH
+    // =========================
+        getBirthdayUsersStart: (state) => {
+            state.birthdayUsersLoading = true;
+            state.birthdayUsersError = null;
+            },
+
+            getBirthdayUsersSuccess: (state, action) => {
+            state.birthdayUsersLoading = false;
+
+            state.birthdayUsers = action.payload?.results || [];
+            state.birthdayUsersCount = action.payload?.count || 0;
+            state.birthdayUsersToday = action.payload?.today || null;
+            state.birthdayUsersMonth = action.payload?.month || null;
+            state.birthdayUsersLimit = action.payload?.limit || 0;
+
+            state.birthdayUsersError = null;
+            },
+
+            getBirthdayUsersFailure: (state, action) => {
+            state.birthdayUsersLoading = false;
+
+            state.birthdayUsers = [];
+            state.birthdayUsersCount = 0;
+            state.birthdayUsersToday = null;
+            state.birthdayUsersMonth = null;
+            state.birthdayUsersLimit = 0;
+
+            state.birthdayUsersError =
+                action.payload || "Tug‘ilgan kunlarni olishda xatolik yuz berdi.";
+            },
 
    
     }
@@ -43,7 +84,11 @@ export const UserSlice = createSlice({
 export const {
     getUserStart,
     getUserFailure,
-    getUserSuccess
+    getUserSuccess,
+
+    getBirthdayUsersStart,
+    getBirthdayUsersSuccess,
+    getBirthdayUsersFailure,
 
 } = UserSlice.actions;
 

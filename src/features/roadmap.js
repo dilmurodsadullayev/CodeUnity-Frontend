@@ -1,149 +1,229 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-    // READ (List) holati
+    // READ / LIST
     roadmap_isLoading: false,
     roadmaps: [],
     roadmap_error: null,
-    
-    // CREATE (Post) holati
+
+    // CREATE
     isCreating: false,
     createError: null,
 
-    // UPDATE (Put/Patch) holati
+    // UPDATE
     isUpdating: false,
     updateError: null,
 
-    // DELETE holati
+    // DELETE
     isDeleting: false,
     deleteError: null,
-     // LIKE/UNLIKE holati
-    isLiking: false,
-    likeError: null,
-}
 
-export const RoadmapSlice  = createSlice({
-    name: 'roadmap',
+    // LIKE / UNLIKE
+    isLiking: false,
+    likingRoadmapId: null,
+    likeError: null,
+};
+
+export const RoadmapSlice = createSlice({
+    name: "roadmap",
     initialState,
     reducers: {
-        // ------------------------------------
-        // GET (LIST) Reducer'lar
-        // ------------------------------------
-        getRoadMapStart: state => {
-            state.roadmap_isLoading = true
-            state.roadmap_error = null // Yangi so'rov boshlanganda xatoni tozalash
+        // =========================
+        // GET ROADMAPS
+        // =========================
+        getRoadMapStart: (state) => {
+            state.roadmap_isLoading = true;
+            state.roadmap_error = null;
         },
-        getRoadMapSuccess: (state, actions) => {
-            state.roadmap_isLoading = false
-            state.roadmaps = actions.payload
-            state.roadmap_error = null
+
+        getRoadMapSuccess: (state, action) => {
+            state.roadmap_isLoading = false;
+            state.roadmaps = Array.isArray(action.payload) ? action.payload : [];
+            state.roadmap_error = null;
         },
+
         getRoadMapFailure: (state, action) => {
-            state.roadmap_isLoading = false
-            state.roadmap_error = action.payload
+            state.roadmap_isLoading = false;
+            state.roadmap_error =
+                action.payload || "Roadmaplarni olishda xato yuz berdi.";
         },
-        
-        // ------------------------------------
-        // POST (CREATE) Reducer'lar
-        // ------------------------------------
-        createRoadMapStart: state => {
-            state.isCreating = true
-            state.createError = null
+
+        // =========================
+        // CREATE ROADMAP
+        // =========================
+        createRoadMapStart: (state) => {
+            state.isCreating = true;
+            state.createError = null;
         },
+
         createRoadMapSuccess: (state, action) => {
-            state.isCreating = false
-            // Yangi yaratilgan roadmap'ni ro'yxatning boshiga qo'shish (ixtiyoriy, API tartibiga bog'liq)
-            state.roadmaps.unshift(action.payload);
-            state.createError = null
+            state.isCreating = false;
+            state.createError = null;
+
+            const currentRoadmaps = Array.isArray(state.roadmaps)
+                ? state.roadmaps
+                : [];
+
+            state.roadmaps = [action.payload, ...currentRoadmaps].filter(Boolean);
         },
+
         createRoadMapFailure: (state, action) => {
-            state.isCreating = false
-            state.createError = action.payload
+            state.isCreating = false;
+            state.createError =
+                action.payload || "Roadmap yaratishda xato yuz berdi.";
         },
 
-        // ------------------------------------
-        // PUT/PATCH (UPDATE) Reducer'lar
-        // ------------------------------------
-        updateRoadMapStart: state => {
-            state.isUpdating = true
-            state.updateError = null
+        // =========================
+        // UPDATE ROADMAP
+        // =========================
+        updateRoadMapStart: (state) => {
+            state.isUpdating = true;
+            state.updateError = null;
         },
+
         updateRoadMapSuccess: (state, action) => {
-            state.isUpdating = false
-            state.updateError = null
-            // Yangilangan ob'ektni ro'yxatda topib, yangilash
-            const index = state.roadmaps.findIndex(r => r.id === action.payload.id);
-            if (index !== -1) {
-                state.roadmaps[index] = action.payload;
-            }
+            state.isUpdating = false;
+            state.updateError = null;
+
+            const updatedRoadmap = action.payload;
+
+            if (!updatedRoadmap?.id) return;
+
+            state.roadmaps = state.roadmaps.map((roadmap) =>
+                roadmap.id === updatedRoadmap.id
+                    ? {
+                          ...roadmap,
+                          ...updatedRoadmap,
+                      }
+                    : roadmap
+            );
         },
+
         updateRoadMapFailure: (state, action) => {
-            state.isUpdating = false
-            state.updateError = action.payload
+            state.isUpdating = false;
+            state.updateError =
+                action.payload || "Roadmap tahrirlashda xato yuz berdi.";
         },
 
-        // ------------------------------------
-        // DELETE Reducer'lar
-        // ------------------------------------
-        deleteRoadMapStart: state => {
-            state.isDeleting = true
-            state.deleteError = null
+        // =========================
+        // DELETE ROADMAP
+        // =========================
+        deleteRoadMapStart: (state) => {
+            state.isDeleting = true;
+            state.deleteError = null;
         },
+
         deleteRoadMapSuccess: (state, action) => {
-            state.isDeleting = false
-            state.deleteError = null
-            // O'chirilgan ob'ektni ro'yxatdan olib tashlash (payload o'chirilgan ID bo'lishi kerak)
-            state.roadmaps = state.roadmaps.filter(r => r.id !== action.payload);
-        },
-        deleteRoadMapFailure: (state, action) => {
-            state.isDeleting = false
-            state.deleteError = action.payload
+            state.isDeleting = false;
+            state.deleteError = null;
+
+            const deletedId = action.payload;
+
+            state.roadmaps = state.roadmaps.filter(
+                (roadmap) => roadmap.id !== deletedId
+            );
         },
 
-        toggleLikeRoadmapStart: state => {
-            state.isLiking = true
-            state.likeError = null
+        deleteRoadMapFailure: (state, action) => {
+            state.isDeleting = false;
+            state.deleteError =
+                action.payload || "Roadmap o‘chirishda xato yuz berdi.";
         },
-        // Success: API'dan qaytgan yangilangan Roadmap ob'ektini qabul qiladi
+
+        // =========================
+        // LIKE / UNLIKE
+        // =========================
+        toggleLikeRoadmapStart: (state, action) => {
+            state.isLiking = true;
+            state.likingRoadmapId = action.payload || null;
+            state.likeError = null;
+        },
+
         toggleLikeRoadmapSuccess: (state, action) => {
-            state.isLiking = false
-            state.likeError = null
-            // Yangilangan ob'ektni ro'yxatda topib, yangilash (likeCount va liked holatlari yangilanadi)
-            const index = state.roadmaps.findIndex(r => r.id === action.payload.id);
-            if (index !== -1) {
-                state.roadmaps[index] = action.payload;
-            }
+            state.isLiking = false;
+            state.likingRoadmapId = null;
+            state.likeError = null;
+
+            const updatedRoadmap = action.payload;
+
+            if (!updatedRoadmap?.id) return;
+
+            state.roadmaps = state.roadmaps.map((roadmap) =>
+                roadmap.id === updatedRoadmap.id
+                    ? {
+                          ...roadmap,
+                          ...updatedRoadmap,
+                          is_liked: Boolean(updatedRoadmap.is_liked),
+                          like_count: Number(updatedRoadmap.like_count || 0),
+                      }
+                    : roadmap
+            );
         },
+
         toggleLikeRoadmapFailure: (state, action) => {
-            state.isLiking = false
-            state.likeError = action.payload
+            state.isLiking = false;
+            state.likingRoadmapId = null;
+            state.likeError =
+                action.payload || "Roadmap like bosishda xato yuz berdi.";
         },
-    }
-})
+
+        // =========================
+        // OPTIMISTIC LOCAL UPDATE
+        // =========================
+        updateRoadmapLocal: (state, action) => {
+            const { id, changes } = action.payload || {};
+
+            if (!id) return;
+
+            state.roadmaps = state.roadmaps.map((roadmap) =>
+                roadmap.id === id
+                    ? {
+                          ...roadmap,
+                          ...changes,
+                      }
+                    : roadmap
+            );
+        },
+
+        clearRoadmapErrors: (state) => {
+            state.roadmap_error = null;
+            state.createError = null;
+            state.updateError = null;
+            state.deleteError = null;
+            state.likeError = null;
+        },
+    },
+});
 
 export const {
     // GET
     getRoadMapStart,
     getRoadMapSuccess,
     getRoadMapFailure,
-    // POST
+
+    // CREATE
     createRoadMapStart,
     createRoadMapSuccess,
     createRoadMapFailure,
-    // PUT/PATCH
+
+    // UPDATE
     updateRoadMapStart,
     updateRoadMapSuccess,
     updateRoadMapFailure,
+
     // DELETE
     deleteRoadMapStart,
     deleteRoadMapSuccess,
     deleteRoadMapFailure,
-    
-    // Like Unilike
+
+    // LIKE
     toggleLikeRoadmapStart,
     toggleLikeRoadmapSuccess,
-    toggleLikeRoadmapFailure
+    toggleLikeRoadmapFailure,
 
-    } = RoadmapSlice.actions
-    
-export default RoadmapSlice.reducer
+    // LOCAL
+    updateRoadmapLocal,
+    clearRoadmapErrors,
+} = RoadmapSlice.actions;
+
+export default RoadmapSlice.reducer;

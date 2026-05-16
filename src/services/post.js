@@ -1,151 +1,186 @@
-// Post.js
-import axios from './api' // axios instansiyangizni import qiladi
+// src/services/post.js
+import axios from "./api";
+
+const getErrorMessage = (error, fallback = "Kutilmagan xato yuz berdi.") => {
+    if (error?.response?.data) {
+        return JSON.stringify(error.response.data);
+    }
+
+    return error?.message || fallback;
+};
 
 const PostService = {
-    // 1. POSTLAR RO'YXATINI OLISH (Profile uchun)
-    async getPosts(username) { 
+    // 1. POSTLAR RO'YXATINI OLISH
+    async getPosts(username) {
         try {
-            // GET /users/{username}/posts/
-            const { data } = await axios.get(`/users/${username}/posts/`, { withCredentials: true });
-            console.log("Bu Post ni malumoti ", data);
-            return data; 
+            const { data } = await axios.get(`/users/${username}/posts/`, {
+                withCredentials: true,
+            });
+
+            return data;
         } catch (error) {
             console.error("Post olishda xato:", error.response || error.message);
-            throw error; 
+            throw new Error(getErrorMessage(error, "Postlarni olishda xato."));
         }
     },
-    
-    // 2. POST YARATISH (Create)
-    async createPost(username, postData) { 
+
+    // 2. POST YARATISH
+    async createPost(username, postData) {
         try {
-            console.log("Service'ga kelgan ma'lumot:", postData); 
-            
-            // Axios'ga ikkinchi argument sifatida aynan postData obyektini beramiz
-            const { data } = await axios.post(`/users/post/create/`, postData); 
-            
+            const { data } = await axios.post(`/users/post/create/`, postData, {
+                withCredentials: true,
+            });
+
             return data;
         } catch (error) {
-            if (error.response) {
-                // Serverdan kelgan xatolikni (title: required kabi) konsolga chiqarish
-                console.error("Serverdan qaytgan xato:", error.response.data);
-                throw new Error(JSON.stringify(error.response.data));
-            }
-            throw new Error("Post yaratishda kutilmagan xato.");
+            console.error("Post yaratishda xato:", error.response || error.message);
+            throw new Error(getErrorMessage(error, "Post yaratishda xato."));
         }
     },
-    
-    // 3. POST DETALINI OLISH (Detail)
+
+    // 3. POST DETALINI OLISH
     async getPostDetail(username, slug) {
-         try {
-            // GET /users/{username}/post/{slug}/
-            const { data } = await axios.get(`/users/${username}/post/${slug}/`, { withCredentials: true });
-            console.log("Bu Post Detail malumoti ", data);
+        try {
+            const { data } = await axios.get(`/users/${username}/post/${slug}/`, {
+                withCredentials: true,
+            });
+
             return data;
         } catch (error) {
-            console.error(`Post Detail (${slug}) olishda xato:`, error.response || error.message);
-            throw error;
+            console.error(
+                `Post Detail (${slug}) olishda xato:`,
+                error.response || error.message
+            );
+
+            throw new Error(getErrorMessage(error, "Post detail olishda xato."));
         }
     },
-    
-    // 4. LIKE/UNLIKE ALMASHTIRISH (Toggle Like)
+
+    // 4. LIKE / UNLIKE
     async togglePostLike(postId) {
         try {
-            // POST /posts/post/{id}/like_toggle/ (post_id orqali)
-            const { data } = await axios.post(`/posts/post/${postId}/like_toggle/`, {}, { withCredentials: true });
-            console.log(`✅ Post Like holati yangilandi: ${data.is_liked_by_user ? 'Yoqildi' : 'O\'chirildi'}`, data);
-            return data; 
+            // MUHIM:
+            // Backend urls.py da:
+            // path('post/<int:post_id>/like_toggle/', ...)
+            // users app ostida turgani uchun endpoint: /users/post/<id>/like_toggle/
+            const { data } = await axios.post(
+                `/users/post/${postId}/like_toggle/`,
+                {},
+                { withCredentials: true }
+            );
+
+            return data;
         } catch (error) {
-            console.error("Like/Unlike qilishda xato:", error.response || error.message);
-            throw error;
+            console.error(
+                "Like/Unlike qilishda xato:",
+                error.response || error.message
+            );
+
+            throw new Error(getErrorMessage(error, "Like bosishda xato."));
         }
     },
-    
-    // 5. POST SHARH YARATISH (Create Comment)
+
+    // 5. POST SHARH YARATISH
     async createPostComment(postId, commentData) {
         try {
-            // POST /posts/post/{id}/comments/
-            // Bizning backend view'imizda (PostCommentListCreateAPI) URL: /post/{id}/comments/ edi.
-            const { data } = await axios.post(`/users/post/${postId}/comments/`, commentData, { withCredentials: true });
-            console.log("✅ Post Sharh muvaffaqiyatli yaratildi:", data);
+            const { data } = await axios.post(
+                `/users/post/${postId}/comments/`,
+                commentData,
+                { withCredentials: true }
+            );
+
             return data;
         } catch (error) {
             console.error("Sharh yaratishda xato:", error.response || error.message);
-            throw error;
+            throw new Error(getErrorMessage(error, "Sharh yaratishda xato."));
         }
     },
 
-    // 6. 🌟 YANGI: POST SHARHLARINI OLISH (List Comments)
+    // 6. POST SHARHLARINI OLISH
     async getPostComments(postId) {
         try {
-            // GET /posts/post/{id}/comments/
-            const { data } = await axios.get(`/users/post/${postId}/comments/`, { withCredentials: true });
-            console.log("✅ Post Sharhlari yuklandi:", data);
+            const { data } = await axios.get(`/users/post/${postId}/comments/`, {
+                withCredentials: true,
+            });
+
             return data;
         } catch (error) {
-            console.error("Sharhlarni yuklashda xato:", error.response || error.message);
-            throw error;
+            console.error(
+                "Sharhlarni yuklashda xato:",
+                error.response || error.message
+            );
+
+            throw new Error(getErrorMessage(error, "Sharhlarni olishda xato."));
         }
     },
-    
-    // 7. POSTNI TAHRIRLASH (Update)
+
+    // 7. POSTNI TAHRIRLASH
     async updatePost(username, slug, postData) {
         try {
-            // PATCH /users/{username}/post/{slug}/
-            const { data } = await axios.patch(`/users/${username}/post/${slug}/`, postData, { withCredentials: true });
-            console.log("✅ Post muvaffaqiyatli tahrirlandi:", data);
+            const { data } = await axios.patch(
+                `/users/${username}/post/${slug}/`,
+                postData,
+                { withCredentials: true }
+            );
+
             return data;
         } catch (error) {
-            if (error.response) {
-                console.error("❌ Server xatosi (Post tahrirlash):", error.response.data, error.response.status);
-                throw new Error(JSON.stringify(error.response.data)); 
-            } else {
-                throw new Error("Postni tahrirlashda kutilmagan xato.");
-            }
+            console.error(
+                "Postni tahrirlashda xato:",
+                error.response || error.message
+            );
+
+            throw new Error(getErrorMessage(error, "Postni tahrirlashda xato."));
         }
     },
-    
-    // 8. POSTNI O'CHIRISH (Delete)
+
+    // 8. POSTNI O'CHIRISH
     async deletePost(username, slug) {
         try {
-            // DELETE /users/{username}/post/{slug}/
-            await axios.delete(`/users/${username}/post/${slug}/`, { withCredentials: true });
-            console.log("✅ Post muvaffaqiyatli o'chirildi.");
+            await axios.delete(`/users/${username}/post/${slug}/`, {
+                withCredentials: true,
+            });
+
             return true;
         } catch (error) {
             console.error("Postni o'chirishda xato:", error.response || error.message);
-            throw error;
+            throw new Error(getErrorMessage(error, "Postni o‘chirishda xato."));
         }
     },
 
-     // 🌟🌟🌟 YANGI: SHARHNI TAHRIRLASH (Update Comment)
+    // 9. SHARHNI TAHRIRLASH
     async updatePostComment(commentId, commentData) {
         try {
-            // PATCH /posts/comment/{commentId}/edit/
-            const { data } = await axios.patch(`/users/post/comment/${commentId}/edit/`, commentData, { withCredentials: true });
-            console.log(`✅ Sharh (${commentId}) muvaffaqiyatli tahrirlandi.`, data);
+            const { data } = await axios.patch(
+                `/users/post/comment/${commentId}/edit/`,
+                commentData,
+                { withCredentials: true }
+            );
+
             return data;
         } catch (error) {
-            if (error.response) {
-                console.error("❌ Server xatosi (Sharh tahrirlash):", error.response.data, error.response.status);
-                throw new Error(JSON.stringify(error.response.data)); 
-            } else {
-                throw new Error("Sharhni tahrirlashda kutilmagan xato.");
-            }
+            console.error(
+                "Sharhni tahrirlashda xato:",
+                error.response || error.message
+            );
+
+            throw new Error(getErrorMessage(error, "Sharhni tahrirlashda xato."));
         }
     },
-    
-    // 🌟🌟🌟 YANGI: SHARHNI O'CHIRISH (Delete Comment)
+
+    // 10. SHARHNI O'CHIRISH
     async deletePostComment(commentId) {
         try {
-            // DELETE /posts/comment/{commentId}/edit/
-            await axios.delete(`/users/post/comment/${commentId}/edit/`, { withCredentials: true });
-            console.log(`✅ Sharh (${commentId}) muvaffaqiyatli o'chirildi.`);
+            await axios.delete(`/users/post/comment/${commentId}/edit/`, {
+                withCredentials: true,
+            });
+
             return true;
         } catch (error) {
             console.error("Sharhni o'chirishda xato:", error.response || error.message);
-            throw error;
+            throw new Error(getErrorMessage(error, "Sharhni o‘chirishda xato."));
         }
     },
-}
+};
 
 export default PostService;

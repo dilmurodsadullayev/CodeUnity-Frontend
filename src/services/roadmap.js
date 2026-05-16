@@ -1,78 +1,146 @@
-// CommentService.js (Fayl nomi RoadmapService.js bo'lishi kerak)
-import axios from './api' // Bu fayl (api.js) sizning axios instance'ingizni eksport qiladi deb faraz qilamiz
+import axios from "./api";
+
+const getErrorMessage = (error, fallback = "Kutilmagan xato yuz berdi.") => {
+    if (error?.response?.data) {
+        return JSON.stringify(error.response.data);
+    }
+
+    return error?.message || fallback;
+};
 
 const RoadmapService = {
-    // ------------------------------------
-    // GET (List)
-    // ------------------------------------
+    // =========================
+    // GET ROADMAPS
+    // =========================
     async getRoadmap(username) {
         try {
-            const { data } = await axios.get(`/users/${username}/roadmaps/`, { withCredentials: true });
-            console.log("Bu Roadmap ni malumoti ", data);
+            const { data } = await axios.get(`/users/${username}/roadmaps/`, {
+                withCredentials: true,
+            });
+
             return data;
         } catch (error) {
-            console.error("Roadmap olishda xato:", error.response || error.message);
-            throw error;
+            console.error(
+                "Roadmap olishda xato:",
+                error.response || error.message
+            );
+
+            throw new Error(
+                getErrorMessage(error, "Roadmaplarni olishda xato yuz berdi.")
+            );
         }
     },
 
-    // ------------------------------------
-    // POST (Create)
-    // ------------------------------------
+    // Alias: agar boshqa joyda getRoadmaps deb chaqirilgan bo‘lsa ham ishlaydi
+    async getRoadmaps(username) {
+        return this.getRoadmap(username);
+    },
+
+    // =========================
+    // CREATE ROADMAP
+    // =========================
     async createRoadmap(username, roadmapData) {
         try {
-            // POST so'rovi uchun body (roadmapData) ni yuboramiz
-            const { data } = await axios.post(`/users/${username}/roadmaps/`, roadmapData, { withCredentials: true });
-            return data; // Yaratilgan ob'ektni qaytarish
+            const { data } = await axios.post(
+                `/users/${username}/roadmaps/`,
+                roadmapData,
+                {
+                    withCredentials: true,
+                }
+            );
+
+            return data;
         } catch (error) {
-            console.error("Roadmap yaratishda xato:", error.response || error.message);
-            throw error;
+            console.error(
+                "Roadmap yaratishda xato:",
+                error.response || error.message
+            );
+
+            throw new Error(
+                getErrorMessage(error, "Roadmap yaratishda xato yuz berdi.")
+            );
         }
     },
 
-    // ------------------------------------
-    // PUT/PATCH (Update)
-    // ------------------------------------
+    // =========================
+    // UPDATE ROADMAP
+    // =========================
     async updateRoadmap(username, roadmapId, roadmapData) {
         try {
-            // PATCH dan foydalanish tavsiya etiladi, chunki u faqat o'zgartirilgan maydonlarni yuboradi.
-            // Agar to'liq PUT so'rovi kerak bo'lsa, methodni 'put'ga o'zgartiring.
-            const { data } = await axios.patch(`/users/${username}/roadmaps/${roadmapId}/`, roadmapData, { withCredentials: true });
-            return data; // Yangilangan ob'ektni qaytarish
+            const { data } = await axios.patch(
+                `/users/${username}/roadmaps/${roadmapId}/`,
+                roadmapData,
+                {
+                    withCredentials: true,
+                }
+            );
+
+            return data;
         } catch (error) {
-            console.error(`Roadmap (ID: ${roadmapId}) ni yangilashda xato:`, error.response || error.message);
-            throw error;
+            console.error(
+                `Roadmap ID ${roadmapId} tahrirlashda xato:`,
+                error.response || error.message
+            );
+
+            throw new Error(
+                getErrorMessage(error, "Roadmap tahrirlashda xato yuz berdi.")
+            );
         }
     },
 
-    // ------------------------------------
-    // DELETE
-    // ------------------------------------
+    // =========================
+    // DELETE ROADMAP
+    // =========================
     async deleteRoadmap(username, roadmapId) {
         try {
-            // DELETE so'rovi odatda 204 No Content qaytaradi, shuning uchun 'data' bo'lmasligi mumkin.
-            await axios.delete(`/users/${username}/roadmaps/${roadmapId}/`, { withCredentials: true });
-            return roadmapId; // O'chirilgan IDni qaytarish (slice'da foydalanish uchun qulay)
+            await axios.delete(`/users/${username}/roadmaps/${roadmapId}/`, {
+                withCredentials: true,
+            });
+
+            return roadmapId;
         } catch (error) {
-            console.error(`Roadmap (ID: ${roadmapId}) ni o'chirishda xato:`, error.response || error.message);
-            throw error;
+            console.error(
+                `Roadmap ID ${roadmapId} o‘chirishda xato:`,
+                error.response || error.message
+            );
+
+            throw new Error(
+                getErrorMessage(error, "Roadmap o‘chirishda xato yuz berdi.")
+            );
         }
     },
 
-    // LIKE/UNLIKE (Toggle)
-    // ------------------------------------
+    // =========================
+    // LIKE / UNLIKE ROADMAP
+    // =========================
     async toggleLikeRoadmap(roadmapId) {
         try {
-            // DRF usulida alohida endpoint orqali POST so'rovi yuboriladi
-            // '/api/roadmaps/{id}/like/' yoki shunga o'xshash endpointga POST
-            const { data } = await axios.post(`users/roadmaps/${roadmapId}/like/`, {}, { withCredentials: true }); 
-            // API qaytargan yangilangan Roadmap ob'ektini qaytarish muhim.
-            return data; 
+            // MUHIM:
+            // urls.py:
+            // path('roadmaps/<int:pk>/like/', RoadmapLikeToggleAPI.as_view())
+            //
+            // users app /api/users/ ostida bo‘lsa:
+            // /users/roadmaps/<id>/like/
+            const { data } = await axios.post(
+                `/users/roadmaps/${roadmapId}/like/`,
+                {},
+                {
+                    withCredentials: true,
+                }
+            );
+
+            return data;
         } catch (error) {
-            console.error(`Roadmap (ID: ${roadmapId}) ni yoqtirishda/yoqtirmaslikda xato:`, error.response || error.message);
-            throw error;
+            console.error(
+                `Roadmap ID ${roadmapId} like/unlike xato:`,
+                error.response || error.message
+            );
+
+            throw new Error(
+                getErrorMessage(error, "Roadmap like bosishda xato yuz berdi.")
+            );
         }
     },
-}
+};
 
-export default RoadmapService
+export default RoadmapService;

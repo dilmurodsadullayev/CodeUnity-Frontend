@@ -1,212 +1,567 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import './FCoin.css';
+import React, { useMemo } from "react";
+import { motion } from "framer-motion";
+import { useSelector } from "react-redux";
 
-// Rasmni import qilish
-import FCoinImage from '../assests/coin/fcoin.png'; 
+import "./FCoin.css";
+
+import FCoinImage from "../assests/coin/fcoin.png";
+
+import {
+    ArrowUpRight,
+    BadgeCheck,
+    Banknote,
+    BookOpen,
+    Bot,
+    Crown,
+    Gem,
+    Gift,
+    Heart,
+    Lock,
+    Megaphone,
+    Palette,
+    PenLine,
+    Rocket,
+    ShieldCheck,
+    ShoppingCart,
+    Sparkles,
+    Star,
+    TrendingUp,
+    Trophy,
+    Wallet,
+    Zap,
+} from "lucide-react";
+
+const earnWays = [
+    {
+        icon: PenLine,
+        title: "Yangi post yozish",
+        desc: "Foydali maqola yoki tajriba ulashing.",
+        bonus: "+20",
+        tone: "emerald",
+    },
+    {
+        icon: BookOpen,
+        title: "Muammoga javob yozish",
+        desc: "Boshqa dasturchilarga yechim bering.",
+        bonus: "+5",
+        tone: "emerald",
+    },
+    {
+        icon: Heart,
+        title: "Like olish",
+        desc: "Post yoki javobingiz foydali deb topilsa.",
+        bonus: "+3",
+        tone: "pink",
+    },
+    {
+        icon: Crown,
+        title: "Eng yaxshi yechim",
+        desc: "Javobingiz accepted solution bo‘lsa.",
+        bonus: "+50",
+        tone: "yellow",
+    },
+    {
+        icon: Rocket,
+        title: "Loyiha yuklash",
+        desc: "Portfolio uchun real loyiha qo‘shing.",
+        bonus: "+100",
+        tone: "purple",
+    },
+    {
+        icon: Zap,
+        title: "Kunlik kirish",
+        desc: "Platformaga faol kirib boring.",
+        bonus: "+1",
+        tone: "blue",
+    },
+];
+
+const spendWays = [
+    {
+        icon: BadgeCheck,
+        title: "Avatar ramkalari",
+        desc: "Profil rasmingizga premium frame qo‘shing.",
+        price: "250",
+    },
+    {
+        icon: Palette,
+        title: "Eksklyuziv profil temalari",
+        desc: "Profil sahifangizni boshqalardan ajrating.",
+        price: "500",
+    },
+    {
+        icon: Megaphone,
+        title: "Loyihani TOP-ga chiqarish",
+        desc: "Loyihangizni ko‘proq foydalanuvchiga ko‘rsating.",
+        price: "800",
+    },
+    {
+        icon: Trophy,
+        title: "Premium badge",
+        desc: "Faolligingiz uchun maxsus nishonlar.",
+        price: "1200",
+    },
+];
+
+const rules = [
+    {
+        icon: ShieldCheck,
+        title: "Shaffoflik",
+        desc: "Har bir FCoin harakati tarixda saqlanadi va profil hamyonida ko‘rinadi.",
+    },
+    {
+        icon: Lock,
+        title: "Ichki iqtisodiyot",
+        desc: "FCoin haqiqiy valyuta emas. U FSociety ichidagi motivatsion aktiv hisoblanadi.",
+    },
+    {
+        icon: Bot,
+        title: "Anti-spam",
+        desc: "Spam, bot yoki soxta faoliyat orqali yig‘ilgan FCoin bekor qilinadi.",
+    },
+];
+
+const roadmap = [
+    "FCoin history / transaction sahifasi",
+    "Premium profil dizaynlari",
+    "Loyihani boost qilish",
+    "Badge shop va avatar frame",
+];
+
+const toneClasses = {
+    emerald: "border-emerald-400/20 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10",
+    pink: "border-pink-400/20 bg-pink-500/10 text-pink-300 shadow-pink-500/10",
+    yellow: "border-yellow-400/20 bg-yellow-500/10 text-yellow-300 shadow-yellow-500/10",
+    purple: "border-purple-400/20 bg-purple-500/10 text-purple-300 shadow-purple-500/10",
+    blue: "border-sky-400/20 bg-sky-500/10 text-sky-300 shadow-sky-500/10",
+};
+
+const MotionCard = ({ children, delay = 0, className = "" }) => (
+    <motion.div
+        initial={{ y: 35, opacity: 0 }}
+        whileInView={{ y: 0, opacity: 1 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.55, delay }}
+        className={className}
+    >
+        {children}
+    </motion.div>
+);
 
 const FCoin = () => {
-  return (
-    <div className="bg-[#05070a] min-h-screen relative overflow-hidden">
-      
-      {/* --- FLOATING BACKGROUND ANIMATION (Rasm ishlatilgan versiya) --- */}
-      <div className="floating-coins-bg opacity-20">
-        {[...Array(10)].map((_, i) => (
-          <motion.img 
-            key={i}
-            src={FCoinImage}
-            alt="fcoin-bg"
-            className="absolute pointer-events-none"
-            initial={{ y: '110vh', opacity: 0 }}
-            animate={{ 
-                y: '-20vh', 
-                opacity: [0, 1, 1, 0],
-                rotate: 360 
-            }}
-            transition={{ 
-                duration: Math.random() * 10 + 10, 
-                repeat: Infinity, 
-                delay: Math.random() * 5,
-                ease: "linear"
-            }}
-            style={{ 
-              width: `${Math.random() * 40 + 20}px`, 
-              left: `${Math.random() * 100}%`,
-              filter: 'blur(1px)' 
-            }}
-          />
-        ))}
-      </div>
+    const { user } = useSelector((state) => state.auth || {});
 
-      <main className="container mx-auto px-4 py-16 relative z-10">
-        
-        {/* --- HEADER SECTION --- */}
-        <section className="text-center pt-8 pb-12">
-          
-          {/* ASOSIY TANGA (Sizning fcoin.png rasmingiz) */}
-          <div className="relative flex justify-center">
-             {/* Orqa fondagi yorug'lik */}
-             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-indigo-600/30 blur-[60px] rounded-full animate-pulse"></div>
-             
-             <motion.img 
-                src={FCoinImage}
-                alt="FCoin Digital Asset"
-                initial={{ scale: 0, rotateY: -180 }}
-                animate={{ scale: 1, rotateY: 0 }}
-                transition={{ type: "spring", stiffness: 100, damping: 12, delay: 0.2 }}
-                whileHover={{ scale: 1.1, rotateY: 10 }}
-                className="w-32 h-32 md:w-44 md:h-44 object-contain relative z-10 drop-shadow-[0_0_30px_rgba(99,102,241,0.8)]"
-             />
-          </div>
-          
-          <motion.h1 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="text-5xl md:text-7xl font-black text-white mt-8 tracking-tighter"
-          >
-            FCoin <span className="text-indigo-500 drop-shadow-[0_0_15px_rgba(99,102,241,0.6)] uppercase italic">Iqtisodiyoti</span>
-          </motion.h1>
+    const currentCoins = user?.coins ?? 0;
 
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="mt-6 inline-block px-6 py-2 rounded-full bg-indigo-900/30 border border-indigo-500/30 backdrop-blur-sm"
-          >
-            <p className="text-indigo-300 font-mono text-sm uppercase tracking-widest">
-              <span className="font-black text-white">FCoin</span> (FixCoin) — FSociety tizimining ichki yoqilg'isi
-            </p>
-          </motion.div>
+    const floatingCoins = useMemo(() => {
+        return Array.from({ length: 14 }).map((_, index) => ({
+            id: index,
+            size: 22 + ((index * 13) % 42),
+            left: (index * 19) % 100,
+            delay: (index * 0.55) % 6,
+            duration: 12 + ((index * 7) % 10),
+            blur: index % 3 === 0 ? "1.5px" : "0px",
+            opacity: index % 2 === 0 ? 0.18 : 0.1,
+        }));
+    }, []);
 
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto mt-6">
-            Hissangizni qadrlaymiz. Har bir harakatingiz raqamli aktivga aylanadi. 
-            Ko'proq yechim, ko'proq <span className="text-white font-bold tracking-widest">FCOIN</span>.
-          </p>
-        </section>
+    return (
+        <div className="fcoin-page relative min-h-screen overflow-hidden bg-[#05070a] text-white">
+            {/* BACKGROUND */}
+            <div className="pointer-events-none absolute inset-0 fcoin-grid-bg" />
+            <div className="pointer-events-none absolute left-1/2 top-24 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-indigo-600/15 blur-[120px]" />
+            <div className="pointer-events-none absolute -right-24 top-1/3 h-[360px] w-[360px] rounded-full bg-yellow-500/10 blur-[110px]" />
+            <div className="pointer-events-none absolute -left-24 bottom-20 h-[360px] w-[360px] rounded-full bg-emerald-500/10 blur-[110px]" />
 
-        {/* --- MAIN CARDS SECTION --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          
-          {/* EARNING FCoin */}
-          <motion.div 
-            initial={{ x: -50, opacity: 0 }}
-            whileInView={{ x: 0, opacity: 1 }}
-            viewport={{ once: true }}
-            className="info-card earning-bg border border-green-500/20 bg-gray-900/40 backdrop-blur-md rounded-[40px] overflow-hidden shadow-2xl"
-          >
-            <div className="p-8">
-              <h2 className="text-3xl font-black text-white flex items-center gap-3 uppercase tracking-tight italic">
-                <i className="fas fa-arrow-up-right-dots text-green-400"></i>
-                Ishlash yo'llari
-              </h2>
-              <div className="mt-8 space-y-3">
-                {[
-                  { icon: "fas fa-edit", text: "Yangi maqola / Post yozish", bonus: "+20" },
-                  { icon: "fas fa-pen-nib", text: "Muammolarga javob yozish", bonus: "+5" },
-                  { icon: "fas fa-heart", text: "Post Like (❤️) olish", bonus: "+3" },
-                  { icon: "fas fa-crown", text: "Eng Yaxshi Yechim topish", bonus: "+50" },
-                  { icon: "fas fa-rocket", text: "Yangi loyiha yuklash", bonus: "+100" },
-                  { icon: "fas fa-calendar-day", text: "Daily Login (Kunlik kirish)", bonus: "+1" },
-                ].map((item, index) => (
-                  <div key={index} className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-green-500/10 transition-all border border-transparent hover:border-green-500/30 group">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-green-500/20 text-green-400 group-hover:scale-110 transition-transform">
-                      <i className={item.icon}></i>
-                    </div>
-                    <p className="flex-grow text-gray-300 font-medium">{item.text}</p>
-                    <span className="font-black text-white bg-green-600/30 px-3 py-1 rounded-lg border border-green-500/30">{item.bonus}</span>
-                  </div>
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                {floatingCoins.map((coin) => (
+                    <motion.img
+                        key={coin.id}
+                        src={FCoinImage}
+                        alt=""
+                        className="absolute bottom-[-90px] select-none"
+                        initial={{ y: 0, opacity: 0, rotate: 0 }}
+                        animate={{
+                            y: "-125vh",
+                            opacity: [0, coin.opacity, coin.opacity, 0],
+                            rotate: 360,
+                        }}
+                        transition={{
+                            duration: coin.duration,
+                            repeat: Infinity,
+                            delay: coin.delay,
+                            ease: "linear",
+                        }}
+                        style={{
+                            width: `${coin.size}px`,
+                            left: `${coin.left}%`,
+                            filter: `blur(${coin.blur}) drop-shadow(0 0 16px rgba(250, 204, 21, 0.35))`,
+                        }}
+                    />
                 ))}
-              </div>
             </div>
-          </motion.div>
 
-          {/* SPENDING FCoin */}
-          <motion.div 
-            initial={{ x: 50, opacity: 0 }}
-            whileInView={{ x: 0, opacity: 1 }}
-            viewport={{ once: true }}
-            className="info-card spending-bg border border-indigo-500/20 bg-gray-900/40 backdrop-blur-md rounded-[40px] overflow-hidden shadow-2xl"
-          >
-            <div className="p-8">
-              <h2 className="text-3xl font-black text-white flex items-center gap-3 uppercase tracking-tight italic">
-                <i className="fas fa-shopping-cart text-indigo-400"></i>
-                Sarflash
-              </h2>
-              <div className="mt-8 space-y-6">
-                <div>
-                  <h3 className="font-bold text-indigo-300 text-lg mb-3 flex items-center gap-2 uppercase tracking-widest">
-                    <span className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
-                    Profil Dizayni
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-gray-300 text-sm flex items-center gap-3 hover:bg-indigo-600/10 transition-colors">
-                      <i className="fas fa-id-badge text-indigo-400"></i> Avatar ramkalari
-                    </div>
-                    <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-gray-300 text-sm flex items-center gap-3 hover:bg-indigo-600/10 transition-colors">
-                      <i className="fas fa-palette text-indigo-400"></i> Eksklyuziv temalar
-                    </div>
-                  </div>
-                </div>
+            <main className="container relative z-10 mx-auto px-4 py-12 sm:py-16">
+                {/* HERO */}
+                <section className="mx-auto max-w-6xl pt-6 text-center">
+                    <motion.div
+                        initial={{ scale: 0.7, opacity: 0, rotateY: -120 }}
+                        animate={{ scale: 1, opacity: 1, rotateY: 0 }}
+                        transition={{
+                            type: "spring",
+                            stiffness: 110,
+                            damping: 14,
+                            delay: 0.1,
+                        }}
+                        className="relative mx-auto flex h-44 w-44 items-center justify-center sm:h-56 sm:w-56"
+                    >
+                        <div className="absolute inset-0 rounded-full bg-yellow-400/20 blur-[55px] fcoin-pulse" />
+                        <div className="absolute h-[78%] w-[78%] rounded-full border border-yellow-300/20" />
+                        <div className="absolute h-[98%] w-[98%] rounded-full border border-indigo-300/10" />
 
-                <div>
-                  <h3 className="font-bold text-indigo-300 text-lg mb-3 flex items-center gap-2 uppercase tracking-widest">
-                    <span className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
-                    Imtiyozlar
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10 group hover:border-indigo-500/40 transition-all">
-                       <i className="fas fa-bullhorn text-xl text-indigo-400"></i>
-                       <p className="text-gray-300">Loyihani TOP-ga ko'tarish</p>
-                    </div>
-                    <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10 group hover:border-indigo-500/40 transition-all">
-                       <i className="fas fa-graduation-cap text-xl text-indigo-400"></i>
-                       <p className="text-gray-300">Premium Kurslarga kirish</p>
-                    </div>
-                  </div>
-                </div>
+                        <motion.img
+                            src={FCoinImage}
+                            alt="FCoin"
+                            className="relative z-10 h-32 w-32 object-contain drop-shadow-[0_0_42px_rgba(250,204,21,0.45)] sm:h-44 sm:w-44"
+                            animate={{
+                                y: [0, -8, 0],
+                                rotateY: [0, 8, 0],
+                            }}
+                            transition={{
+                                duration: 4,
+                                repeat: Infinity,
+                                ease: "easeInOut",
+                            }}
+                        />
+                    </motion.div>
 
-                <div className="p-6 bg-indigo-600/10 border border-indigo-500/30 rounded-2xl">
-                  <p className="text-indigo-300 text-sm italic">
-                    "Kelajakda FCoin orqali real F.Society brend mahsulotlariga (stikerlar, kiyimlar) ega bo'lish imkoniyati qo'shiladi."
-                  </p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+                    <motion.div
+                        initial={{ y: 25, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="mt-6"
+                    >
+                        <div className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-yellow-400/20 bg-yellow-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] text-yellow-300 shadow-lg shadow-yellow-500/10 sm:text-sm">
+                            <Sparkles size={16} />
+                            FixCoin Economy
+                        </div>
+
+                        <h1 className="text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">
+                            FCoin{" "}
+                            <span className="fcoin-title-gradient italic">
+                                iqtisodiyoti
+                            </span>
+                        </h1>
+
+                        <p className="mx-auto mt-6 max-w-3xl text-sm font-medium leading-7 text-gray-400 sm:text-lg sm:leading-8">
+                            FCoin — FSociety ichidagi motivatsion aktiv. Muammo yeching,
+                            post yozing, loyiha yuklang va har bir foydali harakatingizni
+                            raqamli qiymatga aylantiring.
+                        </p>
+                    </motion.div>
+
+                    {/* WALLET SUMMARY */}
+                    <motion.div
+                        initial={{ y: 30, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.35 }}
+                        className="mx-auto mt-10 grid max-w-5xl gap-4 md:grid-cols-3"
+                    >
+                        <div className="fcoin-glass-card rounded-3xl p-5 text-left">
+                            <div className="flex items-center gap-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-yellow-400/20 bg-yellow-500/10 text-yellow-300">
+                                    <Wallet size={24} />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-black uppercase tracking-wider text-gray-500">
+                                        Sizning hamyoningiz
+                                    </p>
+                                    <p className="mt-1 text-3xl font-black text-white">
+                                        {currentCoins}{" "}
+                                        <span className="text-base text-yellow-300">
+                                            FCoin
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="fcoin-glass-card rounded-3xl p-5 text-left">
+                            <div className="flex items-center gap-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-500/10 text-emerald-300">
+                                    <TrendingUp size={24} />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-black uppercase tracking-wider text-gray-500">
+                                        Eng katta bonus
+                                    </p>
+                                    <p className="mt-1 text-3xl font-black text-white">
+                                        +100{" "}
+                                        <span className="text-base text-emerald-300">
+                                            loyiha
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="fcoin-glass-card rounded-3xl p-5 text-left">
+                            <div className="flex items-center gap-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-purple-400/20 bg-purple-500/10 text-purple-300">
+                                    <Gem size={24} />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-black uppercase tracking-wider text-gray-500">
+                                        Maqsad
+                                    </p>
+                                    <p className="mt-1 text-3xl font-black text-white">
+                                        Rank{" "}
+                                        <span className="text-base text-purple-300">
+                                            & rewards
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                </section>
+
+                {/* EARN / SPEND */}
+                <section className="mt-16 grid gap-8 lg:grid-cols-2">
+                    {/* EARN */}
+                    <MotionCard className="fcoin-panel earning-panel overflow-hidden rounded-[32px] border border-emerald-400/15 bg-gray-900/50 shadow-2xl shadow-black/40 backdrop-blur-md">
+                        <div className="relative p-5 sm:p-8">
+                            <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl" />
+
+                            <div className="relative z-10 mb-8 flex items-center justify-between gap-4">
+                                <div>
+                                    <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-black uppercase tracking-widest text-emerald-300">
+                                        <ArrowUpRight size={15} />
+                                        Earn FCoin
+                                    </div>
+
+                                    <h2 className="text-2xl font-black text-white sm:text-3xl">
+                                        FCoin ishlash yo‘llari
+                                    </h2>
+
+                                    <p className="mt-2 text-sm font-medium leading-6 text-gray-400">
+                                        Platformaga foyda keltiring va har bir hissangiz
+                                        uchun mukofot oling.
+                                    </p>
+                                </div>
+
+                                <div className="hidden h-16 w-16 items-center justify-center rounded-3xl border border-emerald-400/20 bg-emerald-500/10 text-emerald-300 sm:flex">
+                                    <Banknote size={30} />
+                                </div>
+                            </div>
+
+                            <div className="relative z-10 space-y-3">
+                                {earnWays.map((item, index) => {
+                                    const Icon = item.icon;
+
+                                    return (
+                                        <motion.div
+                                            key={item.title}
+                                            initial={{ x: -20, opacity: 0 }}
+                                            whileInView={{ x: 0, opacity: 1 }}
+                                            viewport={{ once: true }}
+                                            transition={{ delay: index * 0.06 }}
+                                            whileHover={{ scale: 1.015 }}
+                                            className="group flex items-center gap-4 rounded-2xl border border-white/5 bg-white/[0.035] p-4 transition-all hover:border-emerald-400/25 hover:bg-emerald-500/10"
+                                        >
+                                            <div
+                                                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border shadow-lg ${
+                                                    toneClasses[item.tone]
+                                                }`}
+                                            >
+                                                <Icon size={22} />
+                                            </div>
+
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className="truncate text-sm font-black text-white sm:text-base">
+                                                    {item.title}
+                                                </h3>
+                                                <p className="mt-1 line-clamp-1 text-xs font-medium text-gray-500 sm:text-sm">
+                                                    {item.desc}
+                                                </p>
+                                            </div>
+
+                                            <span className="shrink-0 rounded-xl border border-emerald-400/25 bg-emerald-500/15 px-3 py-1.5 text-sm font-black text-emerald-200">
+                                                {item.bonus}
+                                            </span>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </MotionCard>
+
+                    {/* SPEND */}
+                    <MotionCard
+                        delay={0.08}
+                        className="fcoin-panel spending-panel overflow-hidden rounded-[32px] border border-indigo-400/15 bg-gray-900/50 shadow-2xl shadow-black/40 backdrop-blur-md"
+                    >
+                        <div className="relative p-5 sm:p-8">
+                            <div className="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-indigo-500/10 blur-3xl" />
+
+                            <div className="relative z-10 mb-8 flex items-center justify-between gap-4">
+                                <div>
+                                    <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-black uppercase tracking-widest text-indigo-300">
+                                        <ShoppingCart size={15} />
+                                        Spend FCoin
+                                    </div>
+
+                                    <h2 className="text-2xl font-black text-white sm:text-3xl">
+                                        FCoin sarflash
+                                    </h2>
+
+                                    <p className="mt-2 text-sm font-medium leading-6 text-gray-400">
+                                        Profil, loyiha va platformadagi imkoniyatlaringizni
+                                        kuchaytiring.
+                                    </p>
+                                </div>
+
+                                <div className="hidden h-16 w-16 items-center justify-center rounded-3xl border border-indigo-400/20 bg-indigo-500/10 text-indigo-300 sm:flex">
+                                    <Gift size={30} />
+                                </div>
+                            </div>
+
+                            <div className="relative z-10 grid gap-3 sm:grid-cols-2">
+                                {spendWays.map((item, index) => {
+                                    const Icon = item.icon;
+
+                                    return (
+                                        <motion.div
+                                            key={item.title}
+                                            initial={{ y: 18, opacity: 0 }}
+                                            whileInView={{ y: 0, opacity: 1 }}
+                                            viewport={{ once: true }}
+                                            transition={{ delay: index * 0.06 }}
+                                            whileHover={{ y: -4 }}
+                                            className="group rounded-2xl border border-white/5 bg-white/[0.035] p-4 transition-all hover:border-indigo-400/30 hover:bg-indigo-500/10"
+                                        >
+                                            <div className="mb-4 flex items-center justify-between gap-3">
+                                                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-indigo-400/20 bg-indigo-500/10 text-indigo-300">
+                                                    <Icon size={21} />
+                                                </div>
+
+                                                <span className="inline-flex items-center gap-1 rounded-xl border border-yellow-400/20 bg-yellow-500/10 px-2.5 py-1 text-xs font-black text-yellow-300">
+                                                    <img
+                                                        src={FCoinImage}
+                                                        alt=""
+                                                        className="h-4 w-4 object-contain"
+                                                    />
+                                                    {item.price}
+                                                </span>
+                                            </div>
+
+                                            <h3 className="text-base font-black text-white">
+                                                {item.title}
+                                            </h3>
+
+                                            <p className="mt-2 text-sm font-medium leading-6 text-gray-400">
+                                                {item.desc}
+                                            </p>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="relative z-10 mt-6 rounded-3xl border border-indigo-400/20 bg-indigo-500/10 p-5">
+                                <p className="text-sm font-semibold leading-7 text-indigo-200">
+                                    Kelajakda FCoin orqali avatar frame, premium badge,
+                                    loyiha boost va FSociety brend sovg‘alarini olish
+                                    imkoniyati qo‘shiladi.
+                                </p>
+                            </div>
+                        </div>
+                    </MotionCard>
+                </section>
+
+                {/* RULES + ROADMAP */}
+                <section className="mt-10 grid gap-8 lg:grid-cols-[1.35fr_0.65fr]">
+                    <MotionCard className="rounded-[32px] border border-gray-700/70 bg-gray-900/55 p-5 shadow-2xl shadow-black/35 backdrop-blur-md sm:p-8">
+                        <div className="mb-8 flex items-center gap-4">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-3xl border border-indigo-400/20 bg-indigo-500/10 text-indigo-300">
+                                <ShieldCheck size={28} />
+                            </div>
+
+                            <div>
+                                <h2 className="text-2xl font-black text-white sm:text-3xl">
+                                    Tizim qoidalari
+                                </h2>
+                                <p className="mt-1 text-sm font-medium text-gray-500">
+                                    FCoin adolatli va shaffof ishlashi uchun
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-3">
+                            {rules.map((rule) => {
+                                const Icon = rule.icon;
+
+                                return (
+                                    <div
+                                        key={rule.title}
+                                        className="rounded-3xl border border-gray-700/60 bg-gray-950/35 p-5 transition hover:border-indigo-400/30 hover:bg-gray-900"
+                                    >
+                                        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl border border-indigo-400/20 bg-indigo-500/10 text-indigo-300">
+                                            <Icon size={22} />
+                                        </div>
+
+                                        <h3 className="text-lg font-black text-white">
+                                            {rule.title}
+                                        </h3>
+
+                                        <p className="mt-2 text-sm font-medium leading-6 text-gray-400">
+                                            {rule.desc}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </MotionCard>
+
+                    <MotionCard
+                        delay={0.08}
+                        className="rounded-[32px] border border-yellow-400/15 bg-yellow-500/[0.045] p-5 shadow-2xl shadow-black/35 backdrop-blur-md sm:p-8"
+                    >
+                        <div className="mb-6 flex items-center gap-4">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-3xl border border-yellow-400/20 bg-yellow-500/10 text-yellow-300">
+                                <Star size={27} />
+                            </div>
+
+                            <div>
+                                <h2 className="text-2xl font-black text-white">
+                                    Keyingi bosqich
+                                </h2>
+                                <p className="mt-1 text-sm font-medium text-gray-500">
+                                    FCoin uchun roadmap
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            {roadmap.map((item, index) => (
+                                <div
+                                    key={item}
+                                    className="flex items-start gap-3 rounded-2xl border border-white/5 bg-white/[0.035] p-4"
+                                >
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-yellow-400/20 bg-yellow-500/10 text-xs font-black text-yellow-300">
+                                        {index + 1}
+                                    </div>
+
+                                    <p className="text-sm font-bold leading-6 text-gray-300">
+                                        {item}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </MotionCard>
+                </section>
+            </main>
         </div>
-
-        {/* --- RULES SECTION --- */}
-        <motion.section 
-          initial={{ y: 50, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true }}
-          className="mt-16 bg-gradient-to-r from-gray-900 via-indigo-950/20 to-black p-1 rounded-[45px] border border-indigo-500/10"
-        >
-          <div className="bg-gray-950 p-8 md:p-12 rounded-[44px]">
-            <h2 className="text-4xl font-black text-white flex items-center gap-4 mb-8 italic uppercase tracking-tighter">
-              <i className="fas fa-shield-halved text-indigo-500"></i>
-              Tizim Qoidalari
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-              <div className="space-y-3">
-                <h4 className="text-white font-bold text-lg uppercase tracking-wider">Shaffoflik</h4>
-                <p className="text-gray-400 text-sm leading-relaxed">Profilingizdagi "Hamyon" bo'limida har bir operatsiya blokcheyn kabi aniq saqlanadi.</p>
-              </div>
-              <div className="space-y-3">
-                <h4 className="text-white font-bold text-lg uppercase tracking-wider">Legalite</h4>
-                <p className="text-gray-400 text-sm leading-relaxed">FCoin haqiqiy valyuta emas. Uni sotish yoki tashqi pulga ayirboshlash taqiqlanadi.</p>
-              </div>
-              <div className="space-y-3">
-                <h4 className="text-white font-bold text-lg uppercase tracking-wider">Adolat</h4>
-                <p className="text-gray-400 text-sm leading-relaxed">Spam yoki bot orqali to'plangan aktivlar avtomatik musodara qilinadi.</p>
-              </div>
-            </div>
-          </div>
-        </motion.section>
-
-      </main>
-    </div>
-  );
+    );
 };
 
 export default FCoin;

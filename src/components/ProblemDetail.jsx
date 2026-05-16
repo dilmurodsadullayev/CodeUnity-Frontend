@@ -76,22 +76,28 @@ const ProblemDetail = () => {
   };
 
   const handleStarClick = async (problemId) => {
+    if (problemDetail?.star_by_user) return;
+
     dispatch(postProblemStarStart());
 
     try {
       const response = await ProblemService.addStar(problemId);
       dispatch(postProblemStarSuccess(response));
+      await getProblemDetail();
     } catch (error) {
       console.error("Star qo‘shishda xatolik ❌", error);
     }
   };
 
   const handleStarDeleteClick = async (problemId) => {
+    if (!problemDetail?.star_by_user) return;
+
     dispatch(deleteProblemStarStart());
 
     try {
       const response = await ProblemService.removeStar(problemId);
       dispatch(deleteProblemStarSuccess(response));
+      await getProblemDetail();
     } catch (error) {
       dispatch(deleteProblemStarFailure(error));
       console.error("Star olib tashlashda xatolik ❌", error);
@@ -120,6 +126,8 @@ const ProblemDetail = () => {
   };
 
   const handleWorkClick = () => {
+    if (problemDetail?.is_solved) return;
+
     if (responseFormRef.current) {
       responseFormRef.current.scrollIntoView({
         behavior: "smooth",
@@ -151,6 +159,7 @@ const ProblemDetail = () => {
       const response = await ProblemService.acceptSolution(id, solutionId);
       dispatch(acceptSolutionSuccess(response));
       alert("✅ Yechim muvaffaqiyatli qabul qilindi!");
+      await getProblemDetail();
     } catch (error) {
       const message = error.response?.data?.detail || error.message;
 
@@ -161,261 +170,435 @@ const ProblemDetail = () => {
 
   if (isLoading || !problemDetail) {
     return (
-      <div className="p-8 text-center text-gray-400">
-        Muammo yuklanmoqda...
-      </div>
+      <main className="min-h-screen bg-[#050816] px-4 py-20">
+        <div className="mx-auto max-w-4xl rounded-[2rem] border border-white/10 bg-[#0d1117] p-10 text-center shadow-2xl shadow-black/30">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-300">
+            <i className="fas fa-spinner fa-spin text-2xl"></i>
+          </div>
+
+          <h2 className="text-xl font-black text-white">
+            Muammo yuklanmoqda...
+          </h2>
+
+          <p className="mt-2 text-sm text-gray-500">
+            Iltimos, bir necha soniya kuting.
+          </p>
+        </div>
+      </main>
     );
   }
 
   const authorImage = getImageUrl(problemDetail?.user?.image);
 
+  const responseCount =
+    problemDetail?.total_responses ||
+    problemDetail?.response_count ||
+    problemDetail?.responses_count ||
+    problemDetail?.responses?.length ||
+    0;
+
   return (
-    <main className="container mx-auto px-4 py-12">
-      <div className="lg:grid lg:grid-cols-12 lg:gap-12">
-        <div className="lg:col-span-8">
-          <div className="container mx-auto px-4 py-8">
-            <section
-              className="animate-fade-in-up"
-              style={{ animationDelay: "0.1s" }}
-            >
-              <div className="mb-4">
-                {problemDetail?.is_solved ? (
-                  <span className="rounded-lg border border-green-600/50 bg-green-600/20 px-4 py-2 text-sm font-bold text-green-400">
-                    <i className="fas fa-check-circle mr-2"></i>
-                    YECHILGAN
-                  </span>
-                ) : (
-                  <span className="rounded-lg border border-red-600/50 bg-red-600/20 px-4 py-2 text-sm font-bold text-red-400">
-                    <i className="fas fa-hourglass-half mr-2"></i>
-                    YECHILMAGAN
-                  </span>
-                )}
-              </div>
+    <main className="min-h-screen bg-[#050816] px-4 py-8 lg:py-12">
+      <div className="mx-auto w-full max-w-[1500px]">
+        <div className="grid gap-8 lg:grid-cols-12 lg:gap-10">
+          {/* MAIN CONTENT */}
+          <div className="lg:col-span-8">
+            <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#0d1117] p-5 shadow-2xl shadow-black/30 md:p-7 lg:p-8">
+              <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cyan-500/10 blur-[100px]" />
+              <div className="pointer-events-none absolute -bottom-28 -left-28 h-72 w-72 rounded-full bg-indigo-500/10 blur-[100px]" />
 
-              <div className="mb-3 flex flex-wrap gap-2">
-                {problemDetail?.language_data?.map((language) => (
-                  <span
-                    key={language.id || language.name}
-                    className="rounded-full bg-orange-500/20 px-2.5 py-1 text-xs font-semibold text-orange-300"
-                  >
-                    {language.name}
-                  </span>
-                ))}
-              </div>
+              <div className="relative z-10">
+                {/* STATUS BADGES */}
+                <div className="mb-5 flex flex-wrap items-center gap-3">
+                  {problemDetail?.is_solved ? (
+                    <span className="inline-flex items-center gap-2 rounded-full border border-green-400/30 bg-green-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-green-300">
+                      <i className="fas fa-check-circle"></i>
+                      Yechilgan
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-2 rounded-full border border-red-400/30 bg-red-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-red-300">
+                      <i className="fas fa-hourglass-half"></i>
+                      Yechilmagan
+                    </span>
+                  )}
 
-              <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <h1 className="text-3xl font-bold text-white lg:text-4xl">
-                  {problemDetail?.problem}
-                </h1>
+                  {problemDetail?.star_by_user && (
+                    <span className="inline-flex items-center gap-2 rounded-full border border-yellow-400/30 bg-yellow-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-yellow-300">
+                      <i className="fas fa-star"></i>
+                      Siz star berdingiz
+                    </span>
+                  )}
 
-                {isOwner && (
-                  <div className="flex shrink-0 gap-3">
-                    <button
-                      type="button"
-                      onClick={handleEditProblem}
-                      className="flex items-center gap-2 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:bg-blue-500"
-                    >
-                      <i className="fas fa-edit"></i>
-                      Tahrirlash
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleDeleteProblem}
-                      className="flex items-center gap-2 rounded-md bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:bg-red-500"
-                    >
-                      <i className="fas fa-trash-alt"></i>
-                      O‘chirish
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="mb-6 flex items-center text-sm text-gray-400">
-                {authorImage ? (
-                  <img
-                    src={authorImage}
-                    className="mr-3 h-8 w-8 rounded-full object-cover"
-                    alt="Avatar"
-                  />
-                ) : (
-                  <img
-                    src={UserImage}
-                    className="mr-3 h-8 w-8 rounded-full"
-                    alt="Avatar"
-                  />
-                )}
-
-                <a
-                  href={`/${problemDetail?.user?.username}/profile/`}
-                  className="font-semibold text-white hover:underline"
-                >
-                  {problemDetail?.user?.username}
-                </a>
-
-                <span className="mx-2">&bull;</span>
-
-                <span>{timeAgo(problemDetail?.created_at)} so‘ralgan</span>
-
-                <span className="mx-2">&bull;</span>
-
-                <span>{problemDetail?.total_views} marta ko‘rilgan</span>
-              </div>
-            </section>
-
-            {(problemDetail?.is_urgent ||
-              problemDetail?.offered_coins ||
-              problemDetail?.deadline) && (
-              <div
-                className={`mb-8 flex flex-col items-start justify-between gap-4 rounded-xl p-5 md:flex-row md:items-center ${
-                  problemDetail?.is_urgent
-                    ? "border border-red-700 bg-red-900/40 shadow-xl"
-                    : "border border-gray-700 bg-gray-800/50"
-                } animate-fade-in-up`}
-                style={{ animationDelay: "0.25s" }}
-              >
-                <div className="flex flex-col flex-wrap gap-4 sm:flex-row">
                   {problemDetail?.is_urgent && (
-                    <div className="flex items-center rounded-full bg-red-900/30 px-3 py-1 text-sm font-bold text-red-400">
-                      <i className="fas fa-bolt mr-2 text-lg"></i>
-                      FAVQULODDA
-                    </div>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-yellow-400/30 bg-yellow-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-yellow-300">
+                      <i className="fas fa-bolt"></i>
+                      Tezkor
+                    </span>
                   )}
 
                   {problemDetail?.offered_coins > 0 && (
-                    <div className="flex items-center rounded-full bg-yellow-900/30 px-3 py-1 text-sm font-semibold text-yellow-400">
-                      <i className="fas fa-coins mr-2"></i>
-                      Mukofot: {problemDetail.offered_coins} Tanga
-                    </div>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-yellow-400/30 bg-yellow-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-yellow-300">
+                      <i className="fas fa-coins"></i>
+                      {problemDetail.offered_coins} FCoin
+                    </span>
                   )}
+                </div>
 
-                  {problemDetail?.deadline && (
-                    <div className="flex items-center rounded-full bg-indigo-900/30 px-3 py-1 text-sm font-semibold text-indigo-400">
-                      <i className="fas fa-clock mr-2"></i>
-                      Muddat:
-                      <span className="ml-1">
-                        <CountdownTimer targetDate={problemDetail.deadline} />
+                {/* LANGUAGES */}
+                <div className="mb-5 flex flex-wrap gap-2">
+                  {problemDetail?.language_data?.length > 0 ? (
+                    problemDetail.language_data.map((language) => (
+                      <span
+                        key={language.id || language.name}
+                        className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-black text-cyan-300"
+                      >
+                        {language.name}
                       </span>
+                    ))
+                  ) : (
+                    <span className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1 text-xs font-bold text-gray-500">
+                      Til belgilanmagan
+                    </span>
+                  )}
+                </div>
+
+                {/* TITLE + OWNER ACTIONS */}
+                <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="mb-2 font-mono text-[11px] font-black uppercase tracking-[0.3em] text-gray-600">
+                      fsociety://problem/{problemDetail?.id}
+                    </p>
+
+                    <h1 className="break-words text-3xl font-black leading-tight text-white md:text-4xl lg:text-5xl">
+                      {problemDetail?.problem}
+                    </h1>
+                  </div>
+
+                  {isOwner && (
+                    <div className="flex shrink-0 flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={handleEditProblem}
+                        className="inline-flex items-center gap-2 rounded-2xl border border-blue-400/30 bg-blue-500/10 px-4 py-2 text-sm font-black text-blue-300 transition-all hover:bg-blue-500/20"
+                      >
+                        <i className="fas fa-edit"></i>
+                        Tahrirlash
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleDeleteProblem}
+                        className="inline-flex items-center gap-2 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm font-black text-red-300 transition-all hover:bg-red-500/20"
+                      >
+                        <i className="fas fa-trash-alt"></i>
+                        O‘chirish
+                      </button>
                     </div>
                   )}
                 </div>
 
-                {!problemDetail?.is_solved && (
-                  <button
-                    type="button"
-                    onClick={handleWorkClick}
-                    className="flex w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-green-600 px-6 py-2 text-base font-bold text-white shadow-xl transition-all duration-300 hover:scale-105 hover:bg-green-500 md:w-auto"
+                {/* AUTHOR */}
+                <div className="mb-7 flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/[0.035] p-4 text-sm text-gray-400 sm:flex-row sm:items-center">
+                  <img
+                    src={authorImage || UserImage}
+                    className="h-12 w-12 shrink-0 rounded-2xl border border-cyan-400/20 object-cover"
+                    alt="Avatar"
+                  />
+
+                  <div className="min-w-0 flex-1">
+                    <a
+                      href={`/${problemDetail?.user?.username}/profile/`}
+                      className="block truncate text-base font-black text-white hover:text-cyan-300"
+                    >
+                      @{problemDetail?.user?.username}
+                    </a>
+
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-gray-500">
+                      <span>{timeAgo(problemDetail?.created_at)} so‘ralgan</span>
+                      <span className="hidden text-gray-700 sm:inline">/</span>
+                      <span>{problemDetail?.total_views || 0} marta ko‘rilgan</span>
+                      <span className="hidden text-gray-700 sm:inline">/</span>
+                      <span>{responseCount} ta yechim</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* URGENT / DEADLINE */}
+                {(problemDetail?.is_urgent ||
+                  problemDetail?.offered_coins ||
+                  problemDetail?.deadline) && (
+                  <div
+                    className={`mb-8 flex flex-col items-start justify-between gap-4 rounded-3xl border p-5 md:flex-row md:items-center ${
+                      problemDetail?.is_urgent
+                        ? "border-red-400/30 bg-red-500/10 shadow-xl shadow-red-500/5"
+                        : "border-white/10 bg-white/[0.035]"
+                    }`}
                   >
-                    <i className="fas fa-hammer"></i>
-                    Men ishlayman!
-                  </button>
-                )}
-              </div>
-            )}
+                    <div className="flex flex-wrap gap-3">
+                      {problemDetail?.is_urgent && (
+                        <div className="inline-flex items-center rounded-full border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm font-black text-red-300">
+                          <i className="fas fa-bolt mr-2"></i>
+                          Favqulodda muammo
+                        </div>
+                      )}
 
-            <div className="mt-6 flex">
-              <div
-                className="mr-6 flex flex-col items-center animate-fade-in-up"
-                style={{ animationDelay: "0.2s" }}
-              >
-                <button
-                  type="button"
-                  onClick={() => handleStarClick(problemDetail.id)}
-                  className={`text-gray-500 transition-colors ${
-                    problemDetail?.star_by_user
-                      ? "text-green-400"
-                      : "hover:text-green-400"
-                  }`}
-                >
-                  <i className="fas fa-arrow-up text-3xl"></i>
-                </button>
+                      {problemDetail?.offered_coins > 0 && (
+                        <div className="inline-flex items-center rounded-full border border-yellow-400/30 bg-yellow-400/10 px-4 py-2 text-sm font-black text-yellow-300">
+                          <i className="fas fa-coins mr-2"></i>
+                          Mukofot: {problemDetail.offered_coins} FCoin
+                        </div>
+                      )}
 
-                <span className="my-1 text-3xl font-bold text-white">
-                  {problemDetail?.star ?? 0}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => handleStarDeleteClick(problemDetail.id)}
-                  className={`text-gray-500 transition-colors ${
-                    problemDetail?.star_by_user
-                      ? "text-red-400"
-                      : "hover:text-red-400"
-                  }`}
-                >
-                  <i className="fas fa-arrow-down text-3xl"></i>
-                </button>
-              </div>
-
-              <div className="w-full">
-                <article
-                  className="prose prose-invert max-w-none animate-fade-in-up text-gray-300"
-                  style={{ animationDelay: "0.3s" }}
-                >
-                  <p className="mb-3 text-lg leading-relaxed text-gray-200">
-                    {problemDetail?.description}
-                  </p>
-
-                  <h3 className="mb-4 mt-6 border-b border-gray-700 pb-2 text-xl font-semibold text-white">
-                    ❌ Xatolik bo‘lgan kod:
-                  </h3>
-
-                  <div className="mb-6 overflow-hidden rounded-2xl border border-gray-700 bg-[#1E1E2F] shadow-lg">
-                    {problemDetail?.code ? (
-                      <>
-                        <div className="flex items-center justify-between bg-[#2A2A3D] px-4 py-2">
-                          <span className="font-mono text-sm text-gray-400">
-                            error.py{" "}
-                            <span className="text-indigo-400">(Python)</span>
+                      {problemDetail?.deadline && (
+                        <div className="inline-flex items-center rounded-full border border-indigo-400/30 bg-indigo-500/10 px-4 py-2 text-sm font-black text-indigo-300">
+                          <i className="fas fa-clock mr-2"></i>
+                          Muddat:
+                          <span className="ml-1">
+                            <CountdownTimer targetDate={problemDetail.deadline} />
                           </span>
+                        </div>
+                      )}
+                    </div>
 
+                    {!problemDetail?.is_solved && (
+                      <button
+                        type="button"
+                        onClick={handleWorkClick}
+                        className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-indigo-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-1 hover:shadow-cyan-500/40 md:w-auto"
+                      >
+                        <i className="fas fa-hammer"></i>
+                        Men ishlayman!
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* REDDIT STYLE CONTENT */}
+                <div className="flex gap-3 md:gap-5">
+                  {/* LEFT VOTE COLUMN */}
+                  <aside className="shrink-0">
+                    <div className="sticky top-28 flex w-[58px] flex-col items-center rounded-3xl border border-white/10 bg-[#111827]/90 p-2 shadow-xl shadow-black/20 sm:w-[70px] sm:p-3">
+                      {/* ADD STAR */}
+                      <button
+                        type="button"
+                        onClick={() => handleStarClick(problemDetail.id)}
+                        disabled={problemDetail?.star_by_user}
+                        className={`flex h-11 w-11 items-center justify-center rounded-2xl border transition-all sm:h-12 sm:w-12 ${
+                          problemDetail?.star_by_user
+                            ? "cursor-not-allowed border-green-400/30 bg-green-500/10 text-green-300"
+                            : "border-green-400/20 bg-green-500/10 text-green-300 hover:scale-105 hover:bg-green-500/20"
+                        }`}
+                        title={
+                          problemDetail?.star_by_user
+                            ? "Siz allaqachon star bergansiz"
+                            : "Star berish"
+                        }
+                      >
+                        <i className="fas fa-arrow-up text-xl sm:text-2xl"></i>
+                      </button>
+
+                      {/* COUNT */}
+                      <span className="my-3 text-2xl font-black text-white sm:text-3xl">
+                        {problemDetail?.star ?? 0}
+                      </span>
+
+                      {/* REMOVE STAR */}
+                      <button
+                        type="button"
+                        onClick={() => handleStarDeleteClick(problemDetail.id)}
+                        disabled={!problemDetail?.star_by_user}
+                        className={`flex h-11 w-11 items-center justify-center rounded-2xl border transition-all sm:h-12 sm:w-12 ${
+                          problemDetail?.star_by_user
+                            ? "border-red-400/30 bg-red-500/10 text-red-300 hover:scale-105 hover:bg-red-500/20"
+                            : "cursor-not-allowed border-white/10 bg-white/[0.035] text-gray-600"
+                        }`}
+                        title={
+                          problemDetail?.star_by_user
+                            ? "Starni olib tashlash"
+                            : "Avval star bering"
+                        }
+                      >
+                        <i className="fas fa-arrow-down text-xl sm:text-2xl"></i>
+                      </button>
+
+                      {/* STAR STATUS */}
+                      <div
+                        className={`mt-3 flex h-8 w-8 items-center justify-center rounded-xl border text-xs sm:h-9 sm:w-9 ${
+                          problemDetail?.star_by_user
+                            ? "border-yellow-400/30 bg-yellow-400/10 text-yellow-300"
+                            : "border-white/10 bg-white/[0.035] text-gray-600"
+                        }`}
+                        title={
+                          problemDetail?.star_by_user
+                            ? "Star berilgan"
+                            : "Star berilmagan"
+                        }
+                      >
+                        <i
+                          className={
+                            problemDetail?.star_by_user
+                              ? "fas fa-check"
+                              : "far fa-star"
+                          }
+                        ></i>
+                      </div>
+                    </div>
+                  </aside>
+
+                  {/* ARTICLE CONTENT */}
+                  <article className="min-w-0 flex-1">
+                    {/* DESCRIPTION */}
+                    <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-4 sm:p-5">
+                      <h2 className="mb-3 text-lg font-black text-white sm:text-xl">
+                        Muammo tavsifi
+                      </h2>
+
+                      <p className="break-words text-sm leading-7 text-gray-300 sm:text-base md:text-lg md:leading-8">
+                        {problemDetail?.description}
+                      </p>
+                    </div>
+
+                    {/* CODE */}
+                    <div className="mt-6 overflow-hidden rounded-3xl border border-white/10 bg-[#050816] shadow-2xl shadow-black/20">
+                      <div className="flex flex-col gap-3 border-b border-white/10 bg-white/[0.035] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-500">
+                            Error Code
+                          </p>
+
+                          <h3 className="text-sm font-black text-white">
+                            ❌ Xatolik bo‘lgan kod
+                          </h3>
+                        </div>
+
+                        {problemDetail?.code && (
                           <button
                             type="button"
                             onClick={handleCopy}
-                            className="copy-btn flex items-center gap-2 rounded-md bg-indigo-600 px-3 py-1 text-sm text-white transition-colors hover:bg-indigo-500"
+                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-indigo-400/30 bg-indigo-500/10 px-4 py-2 text-xs font-black text-indigo-300 transition-all hover:bg-indigo-500/20"
                           >
                             <i className="fas fa-copy"></i>
-                            {copied ? "✅ Nusxalandi" : "Nusxalash"}
+                            {copied ? "Nusxalandi" : "Nusxalash"}
                           </button>
-                        </div>
+                        )}
+                      </div>
 
-                        <pre className="overflow-x-auto bg-[#1E1E2F] p-4 text-sm leading-relaxed text-gray-200">
+                      {problemDetail?.code ? (
+                        <pre className="max-h-[520px] overflow-auto bg-[#050816] p-4 text-xs leading-relaxed text-gray-200 sm:p-5 sm:text-sm">
                           <code>{problemDetail?.code}</code>
                         </pre>
-                      </>
-                    ) : (
-                      <p className="p-4 text-base italic text-gray-300">
-                        Kod mavjud emas.
+                      ) : (
+                        <p className="p-5 text-base italic text-gray-400">
+                          Kod mavjud emas.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mt-5 rounded-3xl border border-cyan-400/20 bg-cyan-400/10 p-4 sm:p-5">
+                      <p className="text-sm leading-6 text-cyan-100">
+                        <i className="fas fa-lightbulb mr-2 text-yellow-300"></i>
+                        Ushbu muammoni optimallashtirish uchun eng to‘g‘ri
+                        yondashuv qanday? O‘z yechimingizni pastda qoldiring.
                       </p>
-                    )}
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </section>
+
+            {/* RESPONSES */}
+            <section className="mt-8 overflow-hidden rounded-[2rem] border border-white/10 bg-[#0d1117] shadow-2xl shadow-black/30">
+              <div className="border-b border-white/10 bg-[#0d1117]/95 px-5 py-5 backdrop-blur md:px-7">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="font-mono text-[11px] font-black uppercase tracking-[0.28em] text-gray-600">
+                      fsociety://solutions
+                    </p>
+
+                    <h2 className="mt-1 text-2xl font-black text-white">
+                      Yechimlar
+                      <span className="ml-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-sm text-cyan-300">
+                        {responseCount}
+                      </span>
+                    </h2>
+
+                    <p className="mt-2 text-sm leading-6 text-gray-500">
+                      Javoblar ko‘payib ketsa, shu blok ichida alohida scroll
+                      bo‘ladi.
+                    </p>
                   </div>
 
-                  <p className="text-base italic text-gray-300">
-                    💡 Ushbu muammoni optimallashtirish uchun eng to‘g‘ri
-                    yondashuv qanday?
-                  </p>
-                </article>
+                  {!problemDetail?.is_solved && (
+                    <button
+                      type="button"
+                      onClick={handleWorkClick}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-5 py-3 text-sm font-black text-cyan-300 transition-all hover:bg-cyan-400/20"
+                    >
+                      <i className="fas fa-pen-nib"></i>
+                      Yechim yozish
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <hr className="my-8 border-gray-700" />
+              <div className="max-h-[780px] overflow-y-auto px-4 py-5 md:px-6 lg:max-h-[850px]">
+                <ProblemResponse
+                  id={id}
+                  isOwner={isOwner}
+                  isSolved={problemDetail?.is_solved}
+                  onAcceptSolution={handleAcceptSolution}
+                />
+              </div>
+            </section>
 
-            <ProblemResponse
-              id={id}
-              isOwner={isOwner}
-              isSolved={problemDetail?.is_solved}
-              onAcceptSolution={handleAcceptSolution}
-            />
+            {/* RESPONSE FORM */}
+            {!problemDetail?.is_solved ? (
+              <section
+                ref={responseFormRef}
+                className="mt-8 overflow-hidden rounded-[2rem] border border-cyan-400/20 bg-[#0d1117] p-5 shadow-2xl shadow-cyan-500/5 md:p-7"
+              >
+                <div className="mb-5">
+                  <p className="font-mono text-[11px] font-black uppercase tracking-[0.28em] text-gray-600">
+                    fsociety://new-solution
+                  </p>
 
-            <div ref={responseFormRef}>
-              <ProblemResponseForm id={id} />
-            </div>
+                  <h2 className="mt-1 text-2xl font-black text-white">
+                    O‘z yechimingizni yozing
+                  </h2>
+
+                  <p className="mt-2 text-sm leading-6 text-gray-500">
+                    Kodingizni, tushuntirishingizni va qanday qilib xatoni
+                    tuzatganingizni aniq yozing.
+                  </p>
+                </div>
+
+                <ProblemResponseForm id={id} />
+              </section>
+            ) : (
+              <section className="mt-8 rounded-[2rem] border border-green-400/20 bg-green-500/10 p-6 text-center">
+                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-green-500/10 text-green-300">
+                  <i className="fas fa-check-circle text-2xl"></i>
+                </div>
+
+                <h3 className="text-xl font-black text-white">
+                  Bu muammo yechilgan
+                </h3>
+
+                <p className="mt-2 text-sm text-gray-400">
+                  Yangi yechim yozish yopilgan. Mavjud yechimlarni yuqoridagi
+                  blokda ko‘rishingiz mumkin.
+                </p>
+              </section>
+            )}
           </div>
-        </div>
 
-        <aside className="mt-12 lg:col-span-4 lg:mt-0">
-          <SimilarProblems problemId={id} />
-        </aside>
+          {/* RIGHT SIDEBAR */}
+          <aside className="lg:col-span-4">
+            <div className="lg:sticky lg:top-28">
+              <SimilarProblems problemId={id} />
+            </div>
+          </aside>
+        </div>
       </div>
     </main>
   );

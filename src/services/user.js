@@ -22,6 +22,43 @@ const UserService = {
         }
     },
     
+
+    async getMonthlyBirthdayUsers({
+        limit = 5,
+        upcomingOnly = false,
+        excludeMe = true,
+            } = {}) {
+        try {
+        const params = new URLSearchParams({
+            limit: limit,
+        });
+
+        if (upcomingOnly) {
+            params.append("upcoming_only", "1");
+        }
+
+        if (excludeMe) {
+            params.append("exclude_me", "1");
+        }
+
+        const { data } = await axios.get(
+            `/users/birthdays/month/?${params.toString()}`,
+            {
+            withCredentials: true,
+            }
+        );
+
+        console.log("Birthday users ma'lumoti:", data);
+
+        return data;
+        } catch (error) {
+        console.error(
+            "Birthday users olishda xato:",
+            error.response || error.message
+        );
+        throw error;
+        }
+    },
 }
 
 export default UserService;
