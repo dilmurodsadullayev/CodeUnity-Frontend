@@ -12,6 +12,7 @@ import CommentService from "../services/comments";
 import UserImage from "../assests/userImage.jpeg";
 
 import {
+    BadgeCheck,
     Eye,
     Lock,
     Loader2,
@@ -70,6 +71,10 @@ const timeAgo = (createdAt) => {
     return "hozirgina";
 };
 
+const isTruthyAdminLike = (value) => {
+    return value === true || value === "true" || value === 1 || value === "1";
+};
+
 const CommentSection = () => {
     const dispatch = useDispatch();
 
@@ -102,12 +107,10 @@ const CommentSection = () => {
 
     return (
         <section id="feedback" className="relative overflow-hidden px-4 py-20">
-            {/* Background effects */}
             <div className="pointer-events-none absolute left-1/2 top-10 h-72 w-72 -translate-x-1/2 rounded-full bg-indigo-600/10 blur-3xl" />
             <div className="pointer-events-none absolute bottom-10 right-10 h-72 w-72 rounded-full bg-pink-600/10 blur-3xl" />
 
             <div className="container relative z-10 mx-auto">
-                {/* Header */}
                 <div className="mx-auto mb-12 max-w-3xl text-center">
                     <div className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-sm font-black text-indigo-300 shadow-lg shadow-indigo-500/10">
                         <Sparkles size={17} />
@@ -126,7 +129,6 @@ const CommentSection = () => {
                     </p>
                 </div>
 
-                {/* Form / Auth notice */}
                 <div className="mx-auto mb-10 max-w-3xl">
                     {isLoggedIn ? (
                         <div className="rounded-3xl border border-gray-700/70 bg-gray-900/70 p-4 shadow-2xl shadow-black/30 backdrop-blur-md sm:p-5">
@@ -182,7 +184,6 @@ const CommentSection = () => {
                     )}
                 </div>
 
-                {/* Comments */}
                 <div className="mx-auto max-w-3xl">
                     <div className="mb-5 flex items-center justify-between gap-3">
                         <div>
@@ -293,48 +294,96 @@ const CommentItem = ({ comment, index }) => {
     const isHidden = comment?.status && comment.status !== "visible";
     const [showSpoiler, setShowSpoiler] = useState(isHidden);
 
-    const username = comment?.user?.username || "anonymous";
+    const username =
+        comment?.user?.username ||
+        comment?.username ||
+        comment?.user_username ||
+        "anonymous";
+
     const profileUrl = `/${username}/profile`;
-    const userImage = getImageUrl(comment?.user?.image);
+
+    const userImage = getImageUrl(
+        comment?.user?.image ||
+            comment?.user_image ||
+            comment?.image ||
+            null
+    );
+
+    const isAdminLiked = isTruthyAdminLike(comment?.is_admin_liked);
 
     return (
         <article
-            className="group relative overflow-hidden rounded-3xl border border-gray-700/70 bg-gray-900/70 p-5 shadow-xl shadow-black/20 transition-all duration-300 hover:border-indigo-500/40 hover:bg-gray-900/90 hover:shadow-indigo-500/10"
+            className={`group relative overflow-hidden rounded-3xl border p-5 shadow-xl shadow-black/20 transition-all duration-300 ${
+                isAdminLiked
+                    ? "border-amber-400/40 bg-gradient-to-br from-gray-900/90 via-gray-900/80 to-amber-950/20 hover:border-amber-300/60 hover:shadow-amber-500/10"
+                    : "border-gray-700/70 bg-gray-900/70 hover:border-indigo-500/40 hover:bg-gray-900/90 hover:shadow-indigo-500/10"
+            }`}
             style={{ animationDelay: `${index * 0.06}s` }}
         >
             <div className="pointer-events-none absolute -right-16 -top-16 h-36 w-36 rounded-full bg-indigo-500/10 blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
+            {isAdminLiked && (
+                <div className="pointer-events-none absolute right-4 top-4 hidden rounded-full bg-amber-400/10 p-2 text-amber-300 sm:block">
+                    <BadgeCheck size={24} />
+                </div>
+            )}
+
             <div className="relative z-10 flex gap-4">
                 <Link to={profileUrl} className="shrink-0">
-                    <img
-                        src={userImage}
-                        alt={`${username} avatar`}
-                        className="h-12 w-12 rounded-full border-2 border-gray-700 object-cover shadow-lg shadow-black/30 transition group-hover:border-indigo-400/60 sm:h-14 sm:w-14"
-                        onError={(e) => {
-                            e.currentTarget.src = UserImage;
-                        }}
-                    />
+                    <div className="relative">
+                        <img
+                            src={userImage}
+                            alt={`${username} avatar`}
+                            className={`h-12 w-12 rounded-full border-2 object-cover shadow-lg shadow-black/30 transition sm:h-14 sm:w-14 ${
+                                isAdminLiked
+                                    ? "border-amber-400/70 group-hover:border-amber-300"
+                                    : "border-gray-700 group-hover:border-indigo-400/60"
+                            }`}
+                            onError={(e) => {
+                                e.currentTarget.src = UserImage;
+                            }}
+                        />
+
+                        {isAdminLiked && (
+                            <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-gray-950 bg-amber-400 text-gray-950 shadow-lg shadow-amber-500/30">
+                                <BadgeCheck size={15} />
+                            </span>
+                        )}
+                    </div>
                 </Link>
 
                 <div className="min-w-0 flex-1">
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
-                            <Link
-                                to={profileUrl}
-                                className="inline-flex max-w-full items-center gap-2 text-base font-black text-white transition hover:text-indigo-300"
-                            >
-                                <span className="truncate">{username}</span>
-                                <UserRound size={15} className="text-gray-500" />
-                            </Link>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Link
+                                    to={profileUrl}
+                                    className="inline-flex max-w-full items-center gap-2 text-base font-black text-white transition hover:text-indigo-300"
+                                >
+                                    <span className="truncate">{username}</span>
+                                    <UserRound size={15} className="text-gray-500" />
+                                </Link>
 
-                            <p className="text-xs font-semibold text-gray-500">
+                                {isAdminLiked && <AdminLikedBadge />}
+                            </div>
+
+                            <p className="mt-1 text-xs font-semibold text-gray-500">
                                 {timeAgo(comment?.created_at)}
                             </p>
                         </div>
 
-                        {comment?.status && (
-                            <StatusBadge status={comment.status} />
-                        )}
+                        <div className="flex flex-wrap items-center gap-2">
+                            {comment?.status && (
+                                <StatusBadge status={comment.status} />
+                            )}
+
+                            {isAdminLiked && (
+                                <span className="inline-flex w-fit items-center gap-1 rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-amber-300 sm:hidden">
+                                    <BadgeCheck size={13} />
+                                    Admin
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     {showSpoiler ? (
@@ -367,13 +416,31 @@ const CommentItem = ({ comment, index }) => {
                             </div>
                         </div>
                     ) : (
-                        <p className="mt-3 whitespace-pre-line break-words text-sm font-medium leading-7 text-gray-300 sm:text-[15px]">
-                            {comment?.message || "Izoh matni mavjud emas."}
-                        </p>
+                        <>
+                            <p className="mt-3 whitespace-pre-line break-words text-sm font-medium leading-7 text-gray-300 sm:text-[15px]">
+                                {comment?.message || "Izoh matni mavjud emas."}
+                            </p>
+
+                            {isAdminLiked && (
+                                <div className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-2 text-xs font-bold text-amber-200">
+                                    <BadgeCheck size={16} />
+                                    Bu izoh admin tomonidan yoqtirilgan
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
         </article>
+    );
+};
+
+const AdminLikedBadge = () => {
+    return (
+        <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-amber-300 shadow-lg shadow-amber-500/10">
+            <BadgeCheck size={13} />
+            Admin yoqtirdi
+        </span>
     );
 };
 
