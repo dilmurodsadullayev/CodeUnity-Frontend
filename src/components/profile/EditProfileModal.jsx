@@ -18,12 +18,10 @@ const SKILL_LEVELS = [
 const normalizeDateForInput = (dateValue) => {
     if (!dateValue) return "";
 
-    // Agar backend "2004-05-28" qaytarsa
     if (typeof dateValue === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
         return dateValue;
     }
 
-    // Agar backend "2004-05-28T00:00:00Z" kabi qaytarsa
     if (typeof dateValue === "string" && dateValue.includes("T")) {
         return dateValue.split("T")[0];
     }
@@ -53,6 +51,7 @@ const EditProfileModal = ({ profileData, isOpen, onClose }) => {
     const [formData, setFormData] = useState({
         first_name: "",
         last_name: "",
+        email: "",
         birthday: "",
         address: "",
         about_me: "",
@@ -76,8 +75,8 @@ const EditProfileModal = ({ profileData, isOpen, onClose }) => {
             setFormData({
                 first_name: profileData.first_name ?? "",
                 last_name: profileData.last_name ?? "",
+                email: profileData.email ?? "",
 
-                // ✅ BIRTHDAY QO‘SHILDI
                 birthday: normalizeDateForInput(
                     profileData.birthday || profileData.birth_date
                 ),
@@ -176,10 +175,8 @@ const EditProfileModal = ({ profileData, isOpen, onClose }) => {
         } else {
             dataToSend = {
                 ...formData,
-
-                // ✅ BIRTHDAY JSON ICHIDA HAM KETADI
                 birthday: formData.birthday || null,
-
+                email: formData.email || "",
                 skills: buildSkillsArray(),
             };
         }
@@ -206,7 +203,9 @@ const EditProfileModal = ({ profileData, isOpen, onClose }) => {
             try {
                 const parsed = JSON.parse(err.message);
 
-                if (parsed.birthday) {
+                if (parsed.email) {
+                    errorMessage = `Email: ${parsed.email[0]}`;
+                } else if (parsed.birthday) {
                     errorMessage = `Tug‘ilgan sana: ${parsed.birthday[0]}`;
                 } else if (parsed.detail) {
                     errorMessage = parsed.detail;
@@ -345,7 +344,26 @@ const EditProfileModal = ({ profileData, isOpen, onClose }) => {
                             />
                         </div>
 
-                        {/* ✅ BIRTHDAY INPUT */}
+                        <div className="md:col-span-2">
+                            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
+                                Email
+                            </label>
+                            <div className="relative">
+                                <i className="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    placeholder="example@gmail.com"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 pl-10 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                />
+                            </div>
+                            <p className="mt-1 text-xs text-gray-500">
+                                Email manzilingiz profil va tizim xabarlari uchun ishlatiladi.
+                            </p>
+                        </div>
+
                         <div>
                             <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
                                 Tug‘ilgan sana
