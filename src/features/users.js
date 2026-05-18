@@ -2,13 +2,17 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
     isLoading: false,
-    users: [], // Doim massiv bo'lishi kerak
-    languages: [],
-    userDetail: null,
-    count: 0, // Doim raqam bo'lishi kerak
+
+    users: [],
+    count: 0,
     next: null,
     previous: null,
-    error: null, // Xato holatini saqlash uchun
+
+    languages: [],
+    userDetail: null,
+
+    error: null,
+
     // Birthday users
     birthdayUsersLoading: false,
     birthdayUsers: [],
@@ -17,54 +21,87 @@ const initialState = {
     birthdayUsersMonth: null,
     birthdayUsersLimit: 0,
     birthdayUsersError: null,
-
 };
 
 export const UserSlice = createSlice({
-    name: 'user',
+    name: "user",
     initialState,
     reducers: {
-     
-
-        getUserStart: state => {
+        // =========================
+        // USERS LIST / PAGINATION
+        // =========================
+        getUserStart: (state) => {
             state.isLoading = true;
-            state.error = null; // Yangi so'rov boshlanganda xatoni tozalash
+            state.error = null;
         },
-        getUserSuccess: (state, actions) => {
+
+        getUserSuccess: (state, action) => {
             state.isLoading = false;
-            state.users = actions.payload.results|| []; // actions.payload.results Agar results bo'lmasa, bo'sh massivga o'rnatamiz
-            state.count = actions.payload.count || 0;     // Agar count bo'lmasa, 0 ga o'rnatamiz
-            state.next = actions.payload.next;
-            state.previous = actions.payload.previous;
-            state.error = null; // Muvaffaqiyatli bo'lsa xatoni tozalash
+            state.error = null;
+
+            const payload = action.payload;
+
+            // Backend pagination response:
+            // { count, next, previous, results }
+            if (payload && Array.isArray(payload.results)) {
+                state.users = payload.results;
+                state.count = Number(payload.count || 0);
+                state.next = payload.next || null;
+                state.previous = payload.previous || null;
+                return;
+            }
+
+            // Agar backend oddiy array qaytarsa ham buzilmasin
+            if (Array.isArray(payload)) {
+                state.users = payload;
+                state.count = payload.length;
+                state.next = null;
+                state.previous = null;
+                return;
+            }
+
+            state.users = [];
+            state.count = 0;
+            state.next = null;
+            state.previous = null;
         },
+
         getUserFailure: (state, action) => {
             state.isLoading = false;
-            state.error = action.payload;
-            state.users = []; // Xato bo'lganda ham problems ni bo'sh massivga o'rnatish
-            state.count = 0;     // count ni ham 0 ga o'rnatish
+            state.error =
+                action.payload || "Foydalanuvchilarni olishda xatolik yuz berdi.";
+
+            state.users = [];
+            state.count = 0;
+            state.next = null;
+            state.previous = null;
         },
+
         // =========================
-    // BIRTHDAY USERS THIS MONTH
-    // =========================
+        // BIRTHDAY USERS THIS MONTH
+        // =========================
         getBirthdayUsersStart: (state) => {
             state.birthdayUsersLoading = true;
             state.birthdayUsersError = null;
-            },
+        },
 
-            getBirthdayUsersSuccess: (state, action) => {
+        getBirthdayUsersSuccess: (state, action) => {
             state.birthdayUsersLoading = false;
-
-            state.birthdayUsers = action.payload?.results || [];
-            state.birthdayUsersCount = action.payload?.count || 0;
-            state.birthdayUsersToday = action.payload?.today || null;
-            state.birthdayUsersMonth = action.payload?.month || null;
-            state.birthdayUsersLimit = action.payload?.limit || 0;
-
             state.birthdayUsersError = null;
-            },
 
-            getBirthdayUsersFailure: (state, action) => {
+            const payload = action.payload || {};
+
+            state.birthdayUsers = Array.isArray(payload.results)
+                ? payload.results
+                : [];
+
+            state.birthdayUsersCount = Number(payload.count || 0);
+            state.birthdayUsersToday = payload.today || null;
+            state.birthdayUsersMonth = payload.month || null;
+            state.birthdayUsersLimit = Number(payload.limit || 0);
+        },
+
+        getBirthdayUsersFailure: (state, action) => {
             state.birthdayUsersLoading = false;
 
             state.birthdayUsers = [];
@@ -75,10 +112,13 @@ export const UserSlice = createSlice({
 
             state.birthdayUsersError =
                 action.payload || "Tug‘ilgan kunlarni olishda xatolik yuz berdi.";
-            },
+        },
 
-   
-    }
+        clearUserErrors: (state) => {
+            state.error = null;
+            state.birthdayUsersError = null;
+        },
+    },
 });
 
 export const {
@@ -90,6 +130,7 @@ export const {
     getBirthdayUsersSuccess,
     getBirthdayUsersFailure,
 
+    clearUserErrors,
 } = UserSlice.actions;
 
 export default UserSlice.reducer;
