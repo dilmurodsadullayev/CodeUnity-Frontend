@@ -1,126 +1,140 @@
-import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Outlet,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
-  Main, Navbar, Footer, Login, Register, Problems, Feedback, FCoin, Users,
-  Profile, NotFound, ProblemDetail, ProblemCreate, ProblemSolutionUpdate,
-  FCoinHistory, NotificationsPage,
+  Main,
+  Navbar,
+  Footer,
+  Login,
+  Register,
+  Problems,
+  Feedback,
+  FCoin,
+  Users,
+  Profile,
+  NotFound,
+  ProblemDetail,
+  ProblemCreate,
+  ProblemSolutionUpdate,
+  FCoinHistory,
+  NotificationsPage,
   MyProblems,
   ProjectDetail,
-  PostDetail, Projects, SocialCallback
+  PostDetail,
+  Projects,
+  SocialCallback,
 } from "./components";
 
 import AuthService from "./services/auth";
-import { logoutUser, signUserSuccess, signUserStart, signUserFailer } from "./features/auth/Auth";
-import { connectWebSocket, disconnectWebSocket } from "./middleware/notificationMiddleware";
 
-import { motion } from 'framer-motion';
-import FSocietyLogo from './assests/logo/f_society.png'; // Logotip yo'li
+import {
+  logoutUser,
+  signUserSuccess,
+  signUserStart,
+  signUserFailer,
+} from "./features/auth/Auth";
+
+import {
+  connectWebSocket,
+  disconnectWebSocket,
+} from "./middleware/notificationMiddleware";
+
+import { motion } from "framer-motion";
+import FSocietyLogo from "./assests/logo/f_society.png";
 
 // ====================================================================
-// WOW LOADER KOMPONENTI - AppLoader
+// APP LOADER
 // ====================================================================
-
-/**
- * Loyihaning mavzusiga mos keladigan chiroyli yuklanish animatsiyasi.
- * Dark Mode'ni qo'llab-quvvatlaydi.
- */
 const AppLoader = () => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#05070a] overflow-hidden relative">
-      
-      {/* --- BACKGROUND GLOW EFFECT --- */}
-      <div className="absolute w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] animate-pulse"></div>
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#05070a]">
+      <div className="absolute h-[500px] w-[500px] animate-pulse rounded-full bg-indigo-600/10 blur-[120px]" />
 
       <div className="relative flex flex-col items-center">
-        
-        {/* --- LOGO ANIMATION SECTION --- */}
-        <div className="relative w-40 h-40 md:w-56 md:h-56 flex items-center justify-center">
-          
-          {/* Outer Rotating Ring (Hi-Tech Style) */}
+        <div className="relative flex h-40 w-40 items-center justify-center md:h-56 md:w-56">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
-            className="absolute inset-0 border-t-2 border-b-2 border-indigo-500/30 rounded-full"
-          ></motion.div>
+            className="absolute inset-0 rounded-full border-b-2 border-t-2 border-indigo-500/30"
+          />
 
-          {/* Inner Fast Rotating Ring */}
           <motion.div
             animate={{ rotate: -360 }}
             transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-            className="absolute inset-4 border-r-2 border-l-2 border-indigo-400 rounded-full shadow-[0_0_20px_rgba(99,102,241,0.5)]"
-          ></motion.div>
+            className="absolute inset-4 rounded-full border-l-2 border-r-2 border-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.5)]"
+          />
 
-          {/* Central Logo with Glitch and Glow */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ 
+            animate={{
               scale: [0.9, 1.05, 1],
               opacity: 1,
               filter: [
                 "drop-shadow(0 0 10px rgba(99,102,241,0.5))",
                 "drop-shadow(0 0 30px rgba(99,102,241,0.8))",
-                "drop-shadow(0 0 10px rgba(99,102,241,0.5))"
-              ]
+                "drop-shadow(0 0 10px rgba(99,102,241,0.5))",
+              ],
             }}
-            transition={{ 
-              duration: 2, 
-              repeat: Infinity, 
-              ease: "easeInOut" 
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut",
             }}
             className="z-10"
           >
-            <img 
-              src={FSocietyLogo} 
-              alt="F.Society Logo" 
-              className="w-32 h-32 md:w-44 md:h-44 object-contain"
+            <img
+              src={FSocietyLogo}
+              alt="F.Society Logo"
+              className="h-32 w-32 object-contain md:h-44 md:w-44"
             />
           </motion.div>
 
-          {/* Scanning Line Effect */}
-          <motion.div 
-            animate={{ top: ['0%', '100%', '0%'] }}
+          <motion.div
+            animate={{ top: ["0%", "100%", "0%"] }}
             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-            className="absolute left-0 right-0 h-[2px] bg-indigo-500/50 shadow-[0_0_15px_#6366f1] z-20"
-          ></motion.div>
+            className="absolute left-0 right-0 z-20 h-[2px] bg-indigo-500/50 shadow-[0_0_15px_#6366f1]"
+          />
         </div>
 
-        {/* --- TEXT SECTION --- */}
         <div className="mt-12 text-center">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-black tracking-[0.2em] text-white uppercase italic"
+            className="text-4xl font-black uppercase italic tracking-[0.2em] text-white md:text-5xl"
           >
-            F<span className="text-indigo-500 animate-pulse">Society</span>
+            F<span className="animate-pulse text-indigo-500">Society</span>
           </motion.h1>
 
-          <div className="flex items-center justify-center space-x-2 mt-4">
-            {/* Typing Animation for Subtext */}
-            <motion.p 
+          <div className="mt-4 flex items-center justify-center space-x-2">
+            <motion.p
               animate={{ opacity: [0, 1, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="text-indigo-400 font-mono text-sm md:text-base tracking-widest uppercase"
+              className="font-mono text-sm uppercase tracking-widest text-indigo-400 md:text-base"
             >
               Initializing system scan...
             </motion.p>
           </div>
 
-          {/* Progress Bar Container */}
-          <div className="w-64 h-1 bg-gray-900 mt-6 rounded-full overflow-hidden border border-gray-800">
-            <motion.div 
+          <div className="mt-6 h-1 w-64 overflow-hidden rounded-full border border-gray-800 bg-gray-900">
+            <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: "100%" }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-              className="w-full h-full bg-gradient-to-r from-transparent via-indigo-500 to-transparent"
-            ></motion.div>
+              transition={{
+                repeat: Infinity,
+                duration: 1.5,
+                ease: "easeInOut",
+              }}
+              className="h-full w-full bg-gradient-to-r from-transparent via-indigo-500 to-transparent"
+            />
           </div>
-        </div>
-
-        {/* --- DECORATIVE BINARY CODE (Optional) --- */}
-        <div className="absolute -bottom-20 opacity-5 font-mono text-xs text-indigo-500 select-none hidden md:block">
-            01010100 01101000 01100101 00100000 01110111 01101111 01110010 01101100 01100100 00100000 01101001 01110011 00100000 01101111 01110101 01110010 01110011
         </div>
       </div>
     </div>
@@ -128,165 +142,252 @@ const AppLoader = () => {
 };
 
 // ====================================================================
-// PrivateRoute komponenti
+// PRIVATE ROUTE
 // ====================================================================
 const PrivateRoute = ({ children }) => {
   const { isLoggedIn, isLoading } = useSelector((state) => state.auth);
 
   if (isLoading) {
-    // Endi AppLoader komponentini ishlatamiz
     return <AppLoader />;
   }
 
-  // Agar login bo'lmagan bo'lsa, /login ga yo'naltiramiz
   return isLoggedIn ? children : <Navigate to="/login" replace />;
 };
 
 // ====================================================================
-// AppContent komponenti
+// PUBLIC AUTH WRAPPER
+// ====================================================================
+const PublicAuthPage = ({ children, isDarkMode }) => {
+  const { isLoggedIn, isLoading } = useSelector((state) => state.auth);
+
+  if (isLoading) {
+    return <AppLoader />;
+  }
+
+  if (isLoggedIn) {
+    return <Navigate to="/" replace />;
+  }
+
+  return (
+    <div
+      className={`flex min-h-screen items-center justify-center bg-[#0d1117] ${
+        isDarkMode ? "dark" : ""
+      }`}
+    >
+      {children}
+    </div>
+  );
+};
+
+// ====================================================================
+// APP LAYOUT
+// ====================================================================
+const AppLayout = ({ isDarkMode, toggleTheme }) => {
+  return (
+    <PrivateRoute>
+      <div className="flex min-h-screen flex-col">
+        <Navbar toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
+
+        <div
+          className={`flex-grow text-gray-800 transition-colors duration-300 dark:text-gray-200 ${
+            isDarkMode ? "dark" : ""
+          } bg-gray-100 dark:bg-[#0d1117]`}
+        >
+          <Outlet />
+        </div>
+
+        <Footer />
+      </div>
+    </PrivateRoute>
+  );
+};
+
+// ====================================================================
+// APP CONTENT
 // ====================================================================
 function AppContent() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const dispatch = useDispatch();
-  const { isLoggedIn, isLoading } = useSelector((state) => state.auth);
   const location = useLocation();
 
-  // Mavzuni localStorage'dan yuklash
+  const { isLoggedIn } = useSelector((state) => state.auth);
+
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Theme load
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
+    const savedTheme = localStorage.getItem("theme");
+
+    if (savedTheme === "dark") {
       setIsDarkMode(true);
-      document.documentElement.classList.add('dark');
+      document.documentElement.classList.add("dark");
     } else {
       setIsDarkMode(false);
-      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove("dark");
     }
   }, []);
 
-  // Mavzuni o'zgartirish funksiyasi
   const toggleTheme = () => {
-    setIsDarkMode(prevMode => {
+    setIsDarkMode((prevMode) => {
       const newMode = !prevMode;
+
       if (newMode) {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
+        document.documentElement.classList.add("dark");
+        localStorage.setItem("theme", "dark");
       } else {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
+        document.documentElement.classList.remove("dark");
+        localStorage.setItem("theme", "light");
       }
+
       return newMode;
     });
   };
 
-  // Foydalanuvchi ma'lumotlarini dastlabki yuklash va autentifikatsiya holatini tekshirish
+  // Auth check
   useEffect(() => {
-    const publicPaths = ['/login', '/register'];
-    const isPublicPath = publicPaths.includes(location.pathname);
+    let isMounted = true;
 
     const checkUserStatus = async () => {
-      dispatch(signUserStart()); // Autentifikatsiya tekshiruvini boshlash
+      dispatch(signUserStart());
+
       try {
         const response = await AuthService.getUser();
+
+        if (!isMounted) return;
+
         if (response && response.id) {
           dispatch(signUserSuccess(response));
-          // Foydalanuvchi muvaffaqiyatli login bo'lganda WebSocketga ulanish
-          dispatch(connectWebSocket());
-        } else {
-          dispatch(signUserFailer("Foydalanuvchi ma'lumotlari mavjud emas yoki noto'g'ri."));
-          dispatch(logoutUser());
-          // Foydalanuvchi login bo'lmaganda WebSocket ulanishini uzish
-          dispatch(disconnectWebSocket());
+          return;
         }
-      } catch (error) {
-        dispatch(signUserFailer(error.message || "Autentifikatsiya xatosi yuz berdi."));
+
+        dispatch(signUserFailer("Foydalanuvchi ma'lumotlari topilmadi."));
         dispatch(logoutUser());
-        // Xato yuz berganda WebSocket ulanishini uzish
-        dispatch(disconnectWebSocket());
+      } catch (error) {
+        if (!isMounted) return;
+
+        dispatch(
+          signUserFailer(
+            error?.message || "Autentifikatsiya tekshiruvida xatolik yuz berdi."
+          )
+        );
+        dispatch(logoutUser());
       }
     };
 
-    // Autentifikatsiya holatini tekshirish mantig'i
-    if (!isLoggedIn && isLoading) { 
-      checkUserStatus();
-    } else if (isLoggedIn && !isLoading) {
-      dispatch(connectWebSocket());
-    } else if (!isLoggedIn && !isLoading && !isPublicPath) {
+    checkUserStatus();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [dispatch]);
+
+  // api.js refresh failed bo‘lsa auth:logout event yuboradi
+  useEffect(() => {
+    const handleForceLogout = () => {
       dispatch(logoutUser());
       dispatch(disconnectWebSocket());
-    } else if (!isLoggedIn && !isLoading && isPublicPath) {
+    };
+
+    window.addEventListener("auth:logout", handleForceLogout);
+
+    return () => {
+      window.removeEventListener("auth:logout", handleForceLogout);
+    };
+  }, [dispatch]);
+
+  // WebSocket connect/disconnect
+  useEffect(() => {
+    if (isLoggedIn) {
+      dispatch(connectWebSocket());
+    } else {
       dispatch(disconnectWebSocket());
     }
 
-  }, [dispatch, isLoggedIn, isLoading, location.pathname]);
+    return () => {
+      dispatch(disconnectWebSocket());
+    };
+  }, [dispatch, isLoggedIn]);
 
   return (
-    <>
-      <Routes>
-        {/* Login va Register sahifalari */}
-        <Route path="/login" element={
-          <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'dark' : ''} bg-[#0d1117]`}>
-            {isLoggedIn ? <Navigate to="/" replace /> : <Login />}
-          </div>
-        } />
-        <Route path="/register" element={
-          <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'dark' : ''} bg-[#0d1117]`}>
-            {isLoggedIn ? <Navigate to="/" replace /> : <Register />}
-          </div>
-        } />
+    <Routes>
+      {/* PUBLIC AUTH PAGES */}
+      <Route
+        path="/login"
+        element={
+          <PublicAuthPage isDarkMode={isDarkMode}>
+            <Login />
+          </PublicAuthPage>
+        }
+      />
 
-          {/* Social Login Callback Route */}
-        <Route path="/callback/:provider" element={
-           <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'dark' : ''} bg-[#0d1117]`}>
-             <SocialCallback />
-           </div>
-        } />
+      <Route
+        path="/register"
+        element={
+          <PublicAuthPage isDarkMode={isDarkMode}>
+            <Register />
+          </PublicAuthPage>
+        }
+      />
 
-        {/* Not Found sahifasi */}
-        <Route path="*" element={
-          <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? 'dark' : ''} bg-[#0d1117]`}>
+      <Route
+        path="/callback/:provider"
+        element={
+          <div
+            className={`flex min-h-screen items-center justify-center bg-[#0d1117] ${
+              isDarkMode ? "dark" : ""
+            }`}
+          >
+            <SocialCallback />
+          </div>
+        }
+      />
+
+      {/* PRIVATE LAYOUT */}
+      <Route
+        path="/"
+        element={
+          <AppLayout isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
+        }
+      >
+        <Route index element={<Main />} />
+
+        <Route path="problems" element={<Problems />} />
+        <Route path="my-problems" element={<MyProblems />} />
+        <Route path="problem-create" element={<ProblemCreate />} />
+        <Route path="problem/:id/edit" element={<ProblemCreate />} />
+        <Route
+          path="problem/:id/solution/:solutionId/edit"
+          element={<ProblemSolutionUpdate />}
+        />
+        <Route path="problem/:id/detail" element={<ProblemDetail />} />
+
+        <Route path="feedback" element={<Feedback />} />
+        <Route path="fcoin" element={<FCoin />} />
+        <Route path="fcoin-history" element={<FCoinHistory />} />
+
+        <Route path="users" element={<Users />} />
+        <Route path=":username/profile" element={<Profile />} />
+
+        <Route path="projects" element={<Projects />} />
+        <Route path="project/:projectId/detail" element={<ProjectDetail />} />
+
+        <Route path="notifications" element={<NotificationsPage />} />
+        <Route path=":username/post/:slug/" element={<PostDetail />} />
+      </Route>
+
+      {/* NOT FOUND */}
+      <Route
+        path="*"
+        element={
+          <div
+            className={`flex min-h-screen items-center justify-center bg-[#0d1117] ${
+              isDarkMode ? "dark" : ""
+            }`}
+          >
             <NotFound />
           </div>
-        } />
-
-        {/* Asosiy sahifalar (PrivateRoute orqali himoyalangan) */}
-        <Route
-          path="/"
-          element={
-            <PrivateRoute>
-              <div className="flex flex-col min-h-screen">
-                <Navbar toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
-                <div
-                  className={`flex-grow ${
-                    isDarkMode ? "dark" : ""
-                  } text-gray-800 dark:text-gray-200 transition-colors duration-300 bg-gray-100 dark:bg-[#0d1117]`}
-                >
-                  <Outlet />
-                </div>
-                <Footer />
-              </div>
-            </PrivateRoute>
-          }
-        >
-          {/* ichki sahifalar */}
-          <Route index element={<Main />} />
-          <Route path="problems" element={<Problems />} />
-          <Route path="my-problems" element={<MyProblems />} />
-          <Route path="problem-create" element={<ProblemCreate />} />
-          <Route path="problem/:id/edit" element={<ProblemCreate />} />
-          <Route path="problem/:id/solution/:solutionId/edit" element={<ProblemSolutionUpdate />} />
-          <Route path="problem/:id/detail" element={<ProblemDetail />} />
-          <Route path="feedback" element={<Feedback />} />
-          <Route path="fcoin" element={<FCoin />} />
-          <Route path="users" element={<Users />} />
-          <Route path="/:username/profile" element={<Profile />} />
-          <Route path="projects" element={<Projects />} />
-          <Route path="project/:projectId/detail" element={<ProjectDetail />} />
-          <Route path="fcoin-history" element={<FCoinHistory />} />
-          <Route path="notifications" element={<NotificationsPage />} />
-          <Route path="/:username/post/:slug/" element={<PostDetail />} />
-        </Route>
-      </Routes>
-    </>
+        }
+      />
+    </Routes>
   );
 }
 

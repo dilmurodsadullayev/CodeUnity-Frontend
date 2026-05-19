@@ -1,42 +1,88 @@
-// ./features/auth/Auth.js
+// src/features/auth/Auth.js
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-    isLoading: true, // Ilova birinchi marta yuklanganda autentifikatsiya tekshirilayotganini bildirish uchun
+    isLoading: true,
     isLoggedIn: false,
     error: null,
-    user: null
-}
+    user: null,
+};
 
 export const authSlice = createSlice({
-    name: 'auth',
+    name: "auth",
     initialState,
     reducers: {
-        signUserStart: state => {
+        signUserStart: (state) => {
             state.isLoading = true;
             state.error = null;
         },
+
         signUserSuccess: (state, action) => {
-            state.isLoggedIn = true;
             state.isLoading = false;
-            state.user = action.payload;
+            state.isLoggedIn = true;
+            state.user = action.payload?.user || action.payload || null;
             state.error = null;
         },
+
+        signUserFailure: (state, action) => {
+            state.isLoading = false;
+            state.isLoggedIn = false;
+            state.user = null;
+            state.error = action.payload || "Autentifikatsiya xatosi.";
+        },
+
+        // Eski typo nom. Eski kodlar buzilmasligi uchun qoldirildi.
         signUserFailer: (state, action) => {
             state.isLoading = false;
             state.isLoggedIn = false;
-            state.error = action.payload;
             state.user = null;
+            state.error = action.payload || "Autentifikatsiya xatosi.";
         },
-        logoutUser: state => {
+
+        checkAuthStart: (state) => {
+            state.isLoading = true;
+            state.error = null;
+        },
+
+        checkAuthSuccess: (state, action) => {
+            state.isLoading = false;
+            state.isLoggedIn = true;
+            state.user = action.payload || null;
+            state.error = null;
+        },
+
+        checkAuthFailure: (state) => {
+            state.isLoading = false;
+            state.isLoggedIn = false;
+            state.user = null;
+            state.error = null;
+        },
+
+        logoutUser: (state) => {
             state.user = null;
             state.isLoggedIn = false;
-            state.isLoading = false; // Logout bo'lganda ham yuklanish holati tugaydi
+            state.isLoading = false;
             state.error = null;
-            // Cookie'ni server tomoni o'chiradi yoki AuthService o'chirishi kerak
-        }
-    }
+        },
+
+        clearAuthError: (state) => {
+            state.error = null;
+        },
+    },
 });
 
-export const { signUserStart, signUserFailer, signUserSuccess, logoutUser } = authSlice.actions;
+export const {
+    signUserStart,
+    signUserSuccess,
+    signUserFailure,
+    signUserFailer,
+
+    checkAuthStart,
+    checkAuthSuccess,
+    checkAuthFailure,
+
+    logoutUser,
+    clearAuthError,
+} = authSlice.actions;
+
 export default authSlice.reducer;
