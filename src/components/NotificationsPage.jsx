@@ -1,270 +1,320 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from "framer-motion";
-import PlaceholderUserImage from '../assests/userImage.jpeg'; // Ensure this path is correct
-import { useSelector, useDispatch } from 'react-redux'; // useDispatch qo'shildi
-import { timeUntilDeadline } from '../utils/timeUntilDeadline';
-import { markNotificationAsRead, markAllNotificationsAsRead } from '../middleware/notificationMiddleware'; // Middleware funksiyalari qo'shildi
-import timeAgo from '../utils/timeAgo';
+// src/components/NotificationsPage.jsx
 
-// Constants
-const baseUrl = "http://127.0.0.1:8000";
+import React, { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useSelector, useDispatch } from "react-redux";
+
+import {
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+} from "../middleware/notificationMiddleware";
+
+import NotificationCard from "./notifications/NotificationCard";
+
+import NotificationPagination, {
+    NotificationEmptyState,
+    NotificationLoadingState,
+} from "./notifications/NotificationPagination";
+
+const FILTERS = [
+    { key: "all", label: "Hammasi", icon: "fa-layer-group" },
+    { key: "unread", label: "O‘qilmagan", icon: "fa-bell" },
+    { key: "read", label: "O‘qilgan", icon: "fa-check-double" },
+];
 
 const NotificationsPage = () => {
-  const dispatch = useDispatch();
-  // Redux store'dan bildirishnomalarni olish
-  const { notifications } = useSelector((state) => state.notifications); 
-  const [filter, setFilter] = useState('all'); // 'all', 'unread', 'read'
+    const dispatch = useDispatch();
 
-  // O'qildi deb belgilash funksiyalari (Redux orqali)
-  const markNotificationAsReadAction = (id) => {
-    dispatch(markNotificationAsRead(id));
-  };
+    const {
+        notifications = [],
+        totalUnreadCount = 0,
+        wsConnected,
+        wsError,
+        loading,
+    } = useSelector((state) => state.notifications || {});
 
-  const markAllAsReadAction = () => {
-    dispatch(markAllNotificationsAsRead());
-  };
+    const { user: currentUser } = useSelector((state) => state.auth || {});
 
-  // is_read property'si asosida filterlash
-  const filteredNotifications = [...notifications]
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) // Eng yangisini birinchi ko'rsatish
-    .filter(n => {
-    if (filter === 'unread') return !n.is_read; // is_read ishlatildi
-    if (filter === 'read') return n.is_read;    // is_read ishlatildi
-    return true;
-  });
+    const [filter, setFilter] = useState("all");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
 
-  const unreadCount = notifications.filter(n => !n.is_read).length; // is_read ishlatildi
+    const safeNotifications = Array.isArray(notifications) ? notifications : [];
 
-  const getNotificationDetails = (notification) => {
-    let icon = "fas fa-info-circle";
-    let colorClass = "text-gray-400";
-    let text = notification.message || "Yangi bildirishnoma.";
-    
-    // Vazifa nomini olish (agar mavjud bo'lsa)
-    const problemTitle = notification.problem?.problem || 'Noma\'lum vazifa'; 
-    
-    // Kimdan ekanligini olish
-    let userName = notification.sender?.username || 'Noma\'lum';
-    let userImage = notification.sender?.image 
-      ? `${baseUrl}${notification.sender.image}` 
-      : PlaceholderUserImage;
-    
-    // Problem ID ni object_id yoki problem.id dan olish
-    const problemId = notification.object_id || notification.problem?.id; 
-    let problemUrl = problemId ? `/problem/${problemId}/detail` : '/problems';
+    const unreadCount = useMemo(() => {
+        if (typeof totalUnreadCount === "number") {
+            return totalUnreadCount;
+        }
 
+        return safeNotifications.filter((item) => !item.is_read).length;
+    }, [safeNotifications, totalUnreadCount]);
 
-    // content_type yoki type ga qarab xabar turini aniqlash
-    if (notification.content_type === "problem") {
-        icon = "fas fa-plus-square";
-        colorClass = "text-indigo-400";
-        // message: "Yangi muammo joylandi: Muammo 6"
-        const titleMatch = notification.message.match(/:\s*(.*)/);
-        const inferredTitle = titleMatch ? titleMatch[1].trim() : 'Yangi vazifa';
-        text = `Yangi muammo joylandi: <span class="font-semibold text-white">"${inferredTitle}"</span>.`;
+    const readCount = Math.max(safeNotifications.length - unreadCount, 0);
 
-    } else if (notification.content_type === "star") {
-        icon = "fas fa-star";
-        colorClass = "text-yellow-400";
-        // message: "anakin foydalanuvchi siz yuklagan '...' muammoga ⭐ star berdi."
-        text = `<span class="font-semibold text-white">${notification.message}</span>`;
-    } else if (notification.type === "problem_assigned" || notification.type === "problem_urgent") {
-        icon = "fas fa-puzzle-piece";
-        colorClass = "text-indigo-400";
-        text = `Sizga <span class="font-semibold text-white">"${problemTitle}"</span> vazifasi yuklatildi.`;
-    } else if (notification.type === "problem_completed") {
-        icon = "fas fa-check-circle";
-        colorClass = "text-green-400";
-        const coins = notification.coins || notification.offered_coins; // Coin ni tekshirish
-        const coinsText = coins ? ` va sizga <span class="text-yellow-400 font-semibold">${coins} Coin</span> berildi` : '';
-        text = `<span class="font-semibold text-white">"${problemTitle}"</span> vazifasi yakunlandi${coinsText}.`;
-    } else if (notification.type === "new_feedback") {
-        icon = "fas fa-comments";
-        colorClass = "text-blue-400";
-        text = `<span class="font-semibold text-white">"${problemTitle}"</span> bo'yicha yangi fikr keldi.`;
-    }
-    
-    // Agar sender yo'q bo'lsa
-    if (!notification.sender) {
-        userName = 'Tizim';
-    }
+    const filteredNotifications = useMemo(() => {
+        return [...safeNotifications]
+            .sort((a, b) => {
+                return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+            })
+            .filter((notification) => {
+                if (filter === "unread") return !notification.is_read;
+                if (filter === "read") return notification.is_read;
+                return true;
+            });
+    }, [safeNotifications, filter]);
 
-    return { icon, colorClass, text, userImage, userName, problemUrl };
-  };
+    const totalFiltered = filteredNotifications.length;
+    const totalPages = Math.max(1, Math.ceil(totalFiltered / perPage));
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-    exit: { opacity: 0, x: -20, transition: { duration: 0.2 } },
-  };
+    const startIndex = (currentPage - 1) * perPage;
+    const endIndex = startIndex + perPage;
 
+    const paginatedNotifications = useMemo(() => {
+        return filteredNotifications.slice(startIndex, endIndex);
+    }, [filteredNotifications, startIndex, endIndex]);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black p-4 sm:p-6 lg:p-8">
-      <div className="max-w-4xl mx-auto">
-        <motion.h1
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-4xl font-extrabold text-white mb-8 text-center"
-        >
-          Bildirishnomalar <span className="text-indigo-400">Markazi</span>
-        </motion.h1>
+    const startItem = totalFiltered === 0 ? 0 : startIndex + 1;
+    const endItem = Math.min(endIndex, totalFiltered);
 
-        {/* Action and Filter Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          className="bg-gray-800/60 backdrop-blur-md border border-gray-700 rounded-xl p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4"
-        >
-          <div className="flex space-x-2">
-            {['all', 'unread', 'read'].map(option => (
-              <button
-                key={option}
-                onClick={() => setFilter(option)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  filter === option
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
-                }`}
-              >
-                {option === 'all' && 'Hammasi'}
-                {option === 'unread' && `O'qilmagan (${unreadCount})`}
-                {option === 'read' && "O'qilgan"}
-              </button>
-            ))}
-          </div>
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllAsReadAction} // Yangilangan funksiya
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 flex items-center text-sm font-medium"
-            >
-              <i className="fas fa-check-double mr-2"></i> Hammasini o'qilgan deb belgilash
-            </button>
-          )}
-        </motion.div>
+    const isInitialLoading = loading && safeNotifications.length === 0;
+    const isSoftLoading = loading && safeNotifications.length > 0;
 
-        {/* Notifications List */}
-        <motion.div layout className="space-y-4">
-          <AnimatePresence>
-            {filteredNotifications.length > 0 ? (
-              filteredNotifications.map((notification) => {
-                const { icon, colorClass, text, userImage, userName, problemUrl } = getNotificationDetails(notification);
-                console.log(userImage)
-                console.log(notification)
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filter, perPage]);
 
-                return (
-                  <motion.div
-                    key={notification.id}
-                    layout
-                    variants={itemVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    className={`bg-gray-800/70 backdrop-blur-md border ${
-                      !notification.is_read ? 'border-indigo-600' : 'border-gray-700' // is_read ishlatildi
-                    } rounded-xl p-4 flex items-start gap-4 transition-all duration-300 hover:shadow-lg hover:bg-gray-700/70`}
-                  >
-                    {/* User Avatar */}
-                    <Link to={problemUrl} className="flex-shrink-0">
-                      <img
-                        src={userImage}
-                        alt={userName}
-                        className="h-12 w-12 rounded-full object-cover border-2 border-indigo-500"
-                      />
-                    </Link>
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [currentPage, totalPages]);
 
-                    {/* Notification Content */}
-                    <div className="flex-grow">
-                      <Link to={problemUrl} className="block text-white hover:text-indigo-400 transition-colors">
-                        <p className="text-base mb-1 flex items-center">
-                            <i className={`${icon} ${colorClass} text-lg mr-2`}></i> 
-                            <span dangerouslySetInnerHTML={{ __html: text }}></span>
-                        </p>
-                      </Link>
-                      
-                      <p className="text-gray-400 text-xs flex items-center gap-2">
-                        <i className={`fas fa-user text-gray-400`}></i>
-                        <span className="font-medium">{userName}</span>
-                        <span className="text-gray-600">•</span>
-                        
-                        {/* Problem-related (deadline, coins) */}
-                        {(notification.content_type === "problem" || notification.type === "problem_assigned" || notification.type === "problem_urgent") && (
-                            <>
-                                {/* Deadline: Asosiy deadline ni yoki problem ichidagi deadline ni ishlatish */}
-                                {(notification.deadline || notification.problem?.deadline) && (
-                                    <>
-                                        <i className="fas fa-clock text-red-500"></i>
-                                        <span className="text-red-400">{timeUntilDeadline(notification.deadline || notification.problem.deadline)}</span>
-                                        <span className="text-gray-600">•</span>
-                                    </>
-                                )}
-                                
-                                {/* Coins: Asosiy offered_coins ni yoki problem ichidagi coins ni ishlatish */}
-                                {(notification.offered_coins || notification.problem?.offered_coins) && (
-                                    <>
-                                        <i className="fas fa-coins text-yellow-400"></i>
-                                        <span className="text-yellow-400 font-bold">{notification.offered_coins || notification.problem.offered_coins}</span>
-                                        <span className="text-gray-600">•</span>
-                                    </>
-                                )}
-                                
-                            </>
-                        )}
+    const markNotificationAsReadAction = (id) => {
+        dispatch(markNotificationAsRead(id));
+    };
 
-                        {/* Umumiy vaqt */}
-                        <i className="fas fa-calendar-alt"></i>
-                        <span>
-                            {timeAgo(notification.created_at)}
+    const markAllAsReadAction = () => {
+        dispatch(markAllNotificationsAsRead());
+    };
+
+    const handlePageChange = (page) => {
+        const nextPage = Math.min(Math.max(page, 1), totalPages);
+
+        setCurrentPage(nextPage);
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+    };
+
+    const handlePerPageChange = (value) => {
+        setPerPage(value);
+        setCurrentPage(1);
+    };
+
+    const handleFilterChange = (value) => {
+        setFilter(value);
+        setCurrentPage(1);
+    };
+
+    return (
+        <main className="relative min-h-screen overflow-hidden bg-[#05070a] px-4 py-10 text-white sm:px-6 lg:px-8">
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.06)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(circle_at_top,black_0%,transparent_75%)]" />
+            <div className="pointer-events-none absolute left-1/2 top-24 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-indigo-600/15 blur-[130px]" />
+            <div className="pointer-events-none absolute -right-40 top-1/3 h-[360px] w-[360px] rounded-full bg-yellow-500/10 blur-[120px]" />
+            <div className="pointer-events-none absolute -left-40 bottom-20 h-[360px] w-[360px] rounded-full bg-purple-500/10 blur-[120px]" />
+
+            <div className="relative z-10 mx-auto max-w-5xl">
+                <motion.header
+                    initial={{ opacity: 0, y: -18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.45 }}
+                    className="mb-8 text-center"
+                >
+                    <div className="mb-5 inline-flex items-center rounded-full border border-indigo-400/25 bg-indigo-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-indigo-300 shadow-lg shadow-indigo-500/10">
+                        <span className="mr-2 h-2 w-2 rounded-full bg-indigo-400 shadow-[0_0_12px_rgba(129,140,248,0.9)]"></span>
+                        Notification Center
+                    </div>
+
+                    <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+                        Bildirishnomalar{" "}
+                        <span className="bg-gradient-to-r from-indigo-300 via-purple-400 to-yellow-300 bg-clip-text text-transparent">
+                            Markazi
                         </span>
-                      </p>
+                    </h1>
+
+                    <p className="mx-auto mt-4 max-w-2xl text-sm font-semibold leading-7 text-gray-400 sm:text-base">
+                        FCoin mukofotlari, problem, post, badge va boshqa muhim xabarlar shu yerda jamlanadi.
+                    </p>
+                </motion.header>
+
+                <motion.section
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.12, duration: 0.42 }}
+                    className="mb-8 grid gap-4 md:grid-cols-3"
+                >
+                    <div className="rounded-3xl border border-gray-800 bg-gray-900/70 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl">
+                        <p className="text-xs font-black uppercase tracking-widest text-gray-500">
+                            Jami
+                        </p>
+                        <h3 className="mt-2 text-4xl font-black text-white">
+                            {safeNotifications.length}
+                        </h3>
+                        <p className="mt-1 text-sm font-semibold text-gray-500">
+                            barcha xabarlar
+                        </p>
                     </div>
 
-                    {/* Actions and Status */}
-                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                      {!notification.is_read && ( // Agar o'qilmagan bo'lsa, o'qildi deb belgilash tugmasi
-                        <button
-                          onClick={() => markNotificationAsReadAction(notification.id)}
-                          className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center font-medium"
-                          title="O'qildi deb belgilash"
-                        >
-                          <i className="fas fa-check mr-1"></i> O'qildi
-                        </button>
-                      )}
-                      
-                      {/* Status indicator */}
-                      {!notification.is_read ? (
-                        <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse mt-auto" title="Yangi bildirishnoma"></span>
-                      ) : (
-                         <span className="text-xs text-gray-500 mt-auto">O'qilgan</span>
-                      )}
-                      
+                    <div className="rounded-3xl border border-indigo-400/25 bg-indigo-500/10 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl">
+                        <p className="text-xs font-black uppercase tracking-widest text-indigo-300">
+                            Yangi
+                        </p>
+                        <h3 className="mt-2 text-4xl font-black text-indigo-200">
+                            {unreadCount}
+                        </h3>
+                        <p className="mt-1 text-sm font-semibold text-indigo-300/70">
+                            o‘qilmagan xabarlar
+                        </p>
                     </div>
-                  </motion.div>
-                );
-              })
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="bg-gray-800/60 backdrop-blur-md border border-gray-700 rounded-xl p-6 text-center text-gray-400 text-lg"
-              >
-                <i className="fas fa-bell-slash text-4xl mb-3 text-gray-600"></i>
-                <p>Hozircha {filter === 'unread' ? 'o\'qilmagan' : filter === 'read' ? 'o\'qilgan' : ''} bildirishnomalar yo'q.</p>
-                {filter !== 'all' && (
-                    <button onClick={() => setFilter('all')} className="mt-4 text-indigo-400 hover:underline">
-                        Barcha bildirishnomalarni ko'rish
-                    </button>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </div>
-    </div>
-  );
+
+                    <div className="rounded-3xl border border-emerald-400/20 bg-emerald-500/10 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl">
+                        <p className="text-xs font-black uppercase tracking-widest text-emerald-300">
+                            O‘qilgan
+                        </p>
+                        <h3 className="mt-2 text-4xl font-black text-emerald-200">
+                            {readCount}
+                        </h3>
+                        <p className="mt-1 text-sm font-semibold text-emerald-300/70">
+                            ko‘rib chiqilgan
+                        </p>
+                    </div>
+                </motion.section>
+
+                <motion.section
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.18, duration: 0.42 }}
+                    className="mb-8 rounded-3xl border border-gray-800 bg-gray-900/70 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl"
+                >
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="grid grid-cols-3 gap-2 rounded-2xl border border-gray-800 bg-gray-950/60 p-1.5">
+                            {FILTERS.map((item) => {
+                                const isActive = filter === item.key;
+
+                                const count =
+                                    item.key === "all"
+                                        ? safeNotifications.length
+                                        : item.key === "unread"
+                                          ? unreadCount
+                                          : readCount;
+
+                                return (
+                                    <button
+                                        key={item.key}
+                                        type="button"
+                                        onClick={() => handleFilterChange(item.key)}
+                                        className={`rounded-xl px-3 py-2.5 text-xs font-black transition-all sm:text-sm ${
+                                            isActive
+                                                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                                                : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                                        }`}
+                                    >
+                                        <i className={`fa-solid ${item.icon} mr-1.5`}></i>
+                                        {item.label}
+                                        <span className="ml-1 opacity-70">
+                                            ({count})
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <div
+                                className={`rounded-2xl border px-4 py-2 text-xs font-black ${
+                                    wsConnected
+                                        ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-300"
+                                        : "border-red-400/25 bg-red-500/10 text-red-300"
+                                }`}
+                            >
+                                <i
+                                    className={`fa-solid ${
+                                        wsConnected ? "fa-wifi" : "fa-plug-circle-xmark"
+                                    } mr-1.5`}
+                                ></i>
+                                {wsConnected ? "Real-time faol" : "Ulanish kutilmoqda"}
+                            </div>
+
+                            {unreadCount > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={markAllAsReadAction}
+                                    className="rounded-2xl border border-purple-400/25 bg-purple-500/10 px-4 py-2 text-xs font-black text-purple-300 transition hover:bg-purple-500/20 hover:text-purple-200"
+                                >
+                                    <i className="fa-solid fa-check-double mr-1.5"></i>
+                                    Hammasi o‘qildi
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {wsError && (
+                        <p className="mt-3 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-xs font-bold text-red-300">
+                            <i className="fa-solid fa-triangle-exclamation mr-1.5"></i>
+                            {wsError}
+                        </p>
+                    )}
+                </motion.section>
+
+                <motion.section layout className="space-y-4">
+                    {isInitialLoading ? (
+                        <NotificationLoadingState count={perPage} />
+                    ) : (
+                        <>
+                            {isSoftLoading && (
+                                <div className="mb-4 rounded-2xl border border-indigo-400/20 bg-indigo-500/10 px-4 py-3 text-xs font-black text-indigo-300">
+                                    <i className="fa-solid fa-spinner fa-spin mr-2"></i>
+                                    Bildirishnomalar yangilanmoqda...
+                                </div>
+                            )}
+
+                            <AnimatePresence mode="popLayout">
+                                {paginatedNotifications.length > 0 ? (
+                                    paginatedNotifications.map((notification) => (
+                                        <NotificationCard
+                                            key={notification.id}
+                                            notification={notification}
+                                            currentUser={currentUser}
+                                            onMarkRead={markNotificationAsReadAction}
+                                        />
+                                    ))
+                                ) : (
+                                    <NotificationEmptyState
+                                        key="empty"
+                                        filter={filter}
+                                        onShowAll={() => handleFilterChange("all")}
+                                    />
+                                )}
+                            </AnimatePresence>
+
+                            <NotificationPagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                totalItems={totalFiltered}
+                                perPage={perPage}
+                                startItem={startItem}
+                                endItem={endItem}
+                                onPageChange={handlePageChange}
+                                onPerPageChange={handlePerPageChange}
+                            />
+                        </>
+                    )}
+                </motion.section>
+            </div>
+        </main>
+    );
 };
 
 export default NotificationsPage;

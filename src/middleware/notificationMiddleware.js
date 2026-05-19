@@ -11,31 +11,52 @@ import {
   markAllNotificationsAsReadLocally,
 } from "../features/notificationSlice";
 
-// Action type constants
+import { WS_URL } from "../services/config";
+
+// ===============================
+// ACTION TYPES
+// ===============================
+
 const CONNECT_WS = "notifications/connectWebSocket";
 const DISCONNECT_WS = "notifications/disconnectWebSocket";
 const MARK_NOTIFICATION_AS_READ = "notifications/markNotificationAsRead";
 const MARK_ALL_NOTIFICATIONS_AS_READ = "notifications/markAllNotificationsAsRead";
 
-// WS orqali yuborish uchun action creators
+// ===============================
+// ACTION CREATORS
+// ===============================
+
+export const connectWebSocket = () => ({
+  type: CONNECT_WS,
+});
+
+export const disconnectWebSocket = (shouldClear = false) => ({
+  type: DISCONNECT_WS,
+  payload: {
+    shouldClear,
+  },
+});
+
 export const markNotificationAsRead = (id) => ({
   type: MARK_NOTIFICATION_AS_READ,
-  payload: { notification_id: id },
+  payload: {
+    notification_id: id,
+  },
 });
 
 export const markAllNotificationsAsRead = () => ({
   type: MARK_ALL_NOTIFICATIONS_AS_READ,
 });
 
-export const connectWebSocket = () => ({
-  type: CONNECT_WS,
-});
-
-export const disconnectWebSocket = () => ({
-  type: DISCONNECT_WS,
-});
+// ===============================
+// HELPERS
+// ===============================
 
 const getWebSocketUrl = () => {
+  if (WS_URL) {
+    return WS_URL;
+  }
+
   if (import.meta.env?.VITE_WS_URL) {
     return import.meta.env.VITE_WS_URL;
   }
@@ -51,224 +72,323 @@ const getWebSocketUrl = () => {
   return `${protocol}://${backendHost}/ws/notifications/`;
 };
 
+const safeJsonParse = (value) => {
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    console.error("DEBUG [WS]: JSON parse xatosi:", error);
+    return null;
+  }
+};
+
+const normalizeNotification = (payload) => {
+  if (!payload) return null;
+
+  const raw =
+    payload.notification_data ||
+    payload.notification ||
+    payload.data ||
+    payload;
+
+  if (!raw) return null;
+
+  const id = raw.id || raw.notification_id;
+
+  if (!id) return null;
+
+  return {
+    id,
+    sender: raw.sender || null,
+    recipient: raw.recipient || null,
+
+    // Backend modelda content_type bor, eski WSlarda type kelishi ham mumkin.
+    content_type: raw.content_type || raw.type || "info",
+
+    object_id: raw.object_id || null,
+    message: raw.message || raw.text || raw.body || "",
+    created_at: raw.created_at || new Date().toISOString(),
+    is_read: Boolean(raw.is_read),
+  };
+};
+
+const normalizeNotifications = (notifications) => {
+  if (!Array.isArray(notifications)) return [];
+
+  return notifications.map(normalizeNotification).filter(Boolean);
+};
+
+const isSocketOpen = (websocket) => {
+  return websocket && websocket.readyState === WebSocket.OPEN;
+};
+
+const isSocketConnecting = (websocket) => {
+  return websocket && websocket.readyState === WebSocket.CONNECTING;
+};
+
+// ===============================
+// MIDDLEWARE
+// ===============================
+
 const notificationMiddleware = (store) => {
   let websocket = null;
-  let reconnectInterval = null;
+  let reconnectTimeout = null;
+  let reconnectAttempts = 0;
+  let manuallyClosed = false;
 
-  const clearReconnectInterval = () => {
-    if (reconnectInterval) {
-      clearInterval(reconnectInterval);
-      reconnectInterval = null;
-      console.log("DEBUG [WS]: Reconnect interval cleared.");
+  const MAX_RECONNECT_ATTEMPTS = 8;
+
+  const clearReconnectTimeout = () => {
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout);
+      reconnectTimeout = null;
     }
   };
 
   const sendMessage = (message) => {
-    if (websocket && websocket.readyState === WebSocket.OPEN) {
+    if (isSocketOpen(websocket)) {
       websocket.send(JSON.stringify(message));
       console.log("DEBUG [WS]: Sent message:", message);
       return true;
     }
 
-    console.warn("DEBUG [WS]: WebSocket is not open. Message not sent:", message);
+    console.warn("DEBUG [WS]: WebSocket open emas. Message yuborilmadi:", message);
     return false;
   };
 
-  const normalizeNotificationMessage = (message) => {
-    // Backend Channels ba'zan shunday yuboradi:
-    // { type: "notification.message", notification_data: {...} }
-    if (message?.notification_data) {
-      return message.notification_data;
+  const requestUnreadNotifications = () => {
+    sendMessage({
+      command: "fetch_unread_notifications",
+      action: "fetch_unread_notifications",
+    });
+  };
+
+  const scheduleReconnect = () => {
+    clearReconnectTimeout();
+
+    const { isLoggedIn } = store.getState().auth || {};
+
+    if (!isLoggedIn) {
+      console.log("DEBUG [WS]: User logout bo‘lgan. Reconnect qilinmaydi.");
+      return;
     }
 
-    // Ba'zan:
-    // { type: "notification_message", notification: {...} }
-    if (message?.notification) {
-      return message.notification;
+    if (manuallyClosed) {
+      console.log("DEBUG [WS]: Manual close. Reconnect qilinmaydi.");
+      return;
     }
 
-    // Agar to'g'ridan-to'g'ri notification object kelsa
-    if (message?.id && message?.message) {
-      return message;
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      console.warn("DEBUG [WS]: Reconnect limit tugadi.");
+      return;
     }
 
-    return null;
+    reconnectAttempts += 1;
+
+    const delay = Math.min(3000 * reconnectAttempts, 15000);
+
+    console.log(`DEBUG [WS]: ${delay}ms dan keyin reconnect qilinadi...`);
+
+    reconnectTimeout = setTimeout(() => {
+      connectWebSocketInternal();
+    }, delay);
+  };
+
+  const handleInitialNotifications = (message) => {
+    const notifications = normalizeNotifications(message.notifications);
+    store.dispatch(setNotifications(notifications));
+    store.dispatch(setLoading(false));
+  };
+
+  const handleMarkAsReadSuccess = (message) => {
+    const notificationId =
+      message.notification_id ||
+      message.id ||
+      message?.notification?.id ||
+      message?.data?.id;
+
+    if (notificationId) {
+      // MUHIM: object emas, to‘g‘ridan-to‘g‘ri id yuboramiz.
+      store.dispatch(markNotificationAsReadLocally(notificationId));
+    }
+  };
+
+  const handleNewNotification = (message) => {
+    const notification = normalizeNotification(message);
+
+    if (!notification) {
+      console.warn("DEBUG [WS]: Notification format tanilmadi:", message);
+      return;
+    }
+
+    store.dispatch(addNotification(notification));
   };
 
   const onOpen = () => {
+    console.log("DEBUG [WS]: WebSocket connected.");
+
+    reconnectAttempts = 0;
+    manuallyClosed = false;
+
+    clearReconnectTimeout();
+
     store.dispatch(wsConnected());
     store.dispatch(setLoading(false));
 
-    console.log("DEBUG [WS]: WebSocket Connected!");
-    clearReconnectInterval();
+    requestUnreadNotifications();
   };
 
   const onClose = (event) => {
     console.log(
-      `DEBUG [WS]: WebSocket Disconnected: ${event.code} - ${event.reason}`
+      `DEBUG [WS]: WebSocket disconnected. Code: ${event.code}, Reason: ${event.reason}`
     );
 
-    store.dispatch(wsDisconnected(`Disconnected: ${event.code} - ${event.reason}`));
+    websocket = null;
+
+    store.dispatch(
+      wsDisconnected(event.reason || `Disconnected: ${event.code}`)
+    );
+
     store.dispatch(setLoading(false));
 
-    const shouldReconnect =
-      event.code !== 1000 &&
-      event.code !== 1001 &&
-      event.code !== 4000 &&
-      !reconnectInterval;
+    const normalClose =
+      event.code === 1000 ||
+      event.code === 1001 ||
+      event.code === 4000;
 
-    if (!shouldReconnect) {
-      return;
+    if (!normalClose && !manuallyClosed) {
+      scheduleReconnect();
     }
-
-    const { isLoggedIn } = store.getState().auth;
-
-    if (!isLoggedIn) {
-      console.log("DEBUG [WS]: User not logged in, no reconnection attempt.");
-      return;
-    }
-
-    console.log("DEBUG [WS]: User is logged in. Attempting to reconnect...");
-
-    reconnectInterval = setInterval(() => {
-      const currentIsLoggedIn = store.getState().auth.isLoggedIn;
-
-      if (!currentIsLoggedIn) {
-        clearReconnectInterval();
-        store.dispatch(wsDisconnected("Authentication required after disconnect."));
-        console.log("DEBUG [WS]: Reconnection stopped: User logged out.");
-        return;
-      }
-
-      if (!websocket || websocket.readyState === WebSocket.CLOSED) {
-        console.log("DEBUG [WS]: Reconnecting WebSocket...");
-        connectWebSocketInternal();
-      }
-
-      if (websocket?.readyState === WebSocket.CONNECTING) {
-        console.log("DEBUG [WS]: WebSocket is still connecting. Skipping...");
-      }
-    }, 5000);
   };
 
   const onError = (error) => {
-    console.error("DEBUG [WS]: WebSocket Error:", error);
+    console.error("DEBUG [WS]: WebSocket error:", error);
+
     store.dispatch(setLoading(false));
-    store.dispatch(wsDisconnected("WebSocket Error: Connection refused or failed."));
-  };
+    store.dispatch(wsDisconnected("WebSocket ulanishida xatolik yuz berdi."));
 
-  const onMessage = (event) => {
-    try {
-      const message = JSON.parse(event.data);
-      console.log("DEBUG [WS]: Received message from WebSocket:", message);
-
-      // 1. Boshlang'ich notificationlar
-      if (message.type === "initial_notifications") {
-        const notifications = Array.isArray(message.notifications)
-          ? message.notifications
-          : [];
-
-        store.dispatch(setNotifications(notifications));
-        store.dispatch(setLoading(false));
-        return;
-      }
-
-      // 2. Bitta notification o'qildi degan javob kelsa
-      if (
-        message.type === "notification_marked_as_read" ||
-        message.type === "mark_as_read_success"
-      ) {
-        const notificationId =
-          message.notification_id || message.id || message?.notification?.id;
-
-        if (notificationId) {
-          store.dispatch(markNotificationAsReadLocally({ id: notificationId }));
-        }
-
-        return;
-      }
-
-      // 3. Hammasi o'qildi degan javob kelsa
-      if (
-        message.type === "all_notifications_marked_as_read" ||
-        message.type === "mark_all_as_read_success"
-      ) {
-        store.dispatch(markAllNotificationsAsReadLocally());
-        return;
-      }
-
-      // 4. Yangi notification
-      const notification = normalizeNotificationMessage(message);
-
-      if (notification) {
-        store.dispatch(addNotification(notification));
-        return;
-      }
-
-      console.warn("DEBUG [WS]: Unknown message format:", message);
-    } catch (error) {
-      console.error("DEBUG [WS]: Failed to parse WebSocket message:", error);
+    if (websocket) {
+      websocket.close();
     }
   };
 
+  const onMessage = (event) => {
+    const message = safeJsonParse(event.data);
+
+    if (!message) return;
+
+    console.log("DEBUG [WS]: Message received:", message);
+
+    // 1. Boshlang‘ich notificationlar
+    if (
+      message.type === "initial_notifications" ||
+      message.command === "unread_notifications" ||
+      message.type === "unread_notifications"
+    ) {
+      handleInitialNotifications(message);
+      return;
+    }
+
+    // 2. Bitta notification o‘qildi
+    if (
+      message.type === "notification_marked_as_read" ||
+      message.type === "mark_as_read_success" ||
+      message.command === "mark_as_read_success" ||
+      (message.command === "mark_as_read" && message.status === "success")
+    ) {
+      handleMarkAsReadSuccess(message);
+      return;
+    }
+
+    // 3. Barcha notificationlar o‘qildi
+    if (
+      message.type === "all_notifications_marked_as_read" ||
+      message.type === "mark_all_as_read_success" ||
+      message.command === "mark_all_as_read_success" ||
+      (message.command === "mark_all_as_read" && message.status === "success")
+    ) {
+      store.dispatch(markAllNotificationsAsReadLocally());
+      return;
+    }
+
+    // 4. Yangi real-time notification
+    // Backenddan:
+    // {content_type:"coin", message:"..."}
+    // yoki Channels formatida:
+    // {type:"notification.message", notification_data:{...}}
+    if (
+      message.notification_data ||
+      message.notification ||
+      message.content_type ||
+      message.type
+    ) {
+      handleNewNotification(message);
+      return;
+    }
+
+    console.warn("DEBUG [WS]: Unknown message format:", message);
+  };
+
   function connectWebSocketInternal() {
-    const { isLoggedIn } = store.getState().auth;
+    const { isLoggedIn } = store.getState().auth || {};
 
     if (!isLoggedIn) {
-      console.warn("DEBUG [WS]: User not logged in. WebSocket not started.");
+      console.warn("DEBUG [WS]: User login qilmagan. WS ulanmaydi.");
       store.dispatch(wsDisconnected("Authentication required."));
       store.dispatch(setLoading(false));
       return;
     }
 
-    const currentState = websocket?.readyState;
-
-    if (currentState === WebSocket.OPEN) {
-      console.log("DEBUG [WS]: WebSocket already OPEN. Skipping connection.");
+    if (isSocketOpen(websocket)) {
+      console.log("DEBUG [WS]: WebSocket already OPEN.");
       return;
     }
 
-    if (currentState === WebSocket.CONNECTING) {
-      console.log("DEBUG [WS]: WebSocket already CONNECTING. Skipping connection.");
+    if (isSocketConnecting(websocket)) {
+      console.log("DEBUG [WS]: WebSocket already CONNECTING.");
       return;
     }
 
+    manuallyClosed = false;
     store.dispatch(setLoading(true));
 
     const wsUrl = getWebSocketUrl();
 
-    console.log(`DEBUG [WS]: Attempting to connect to ${wsUrl}`);
+    console.log(`DEBUG [WS]: Connecting to ${wsUrl}`);
 
-    websocket = new WebSocket(wsUrl);
-    websocket.onopen = onOpen;
-    websocket.onclose = onClose;
-    websocket.onmessage = onMessage;
-    websocket.onerror = onError;
+    try {
+      websocket = new WebSocket(wsUrl);
+
+      websocket.onopen = onOpen;
+      websocket.onclose = onClose;
+      websocket.onerror = onError;
+      websocket.onmessage = onMessage;
+    } catch (error) {
+      console.error("DEBUG [WS]: WebSocket yaratishda xato:", error);
+
+      store.dispatch(setLoading(false));
+      store.dispatch(wsDisconnected("WebSocket yaratishda xato."));
+      scheduleReconnect();
+    }
   }
 
   return (next) => (action) => {
     switch (action.type) {
       case CONNECT_WS: {
-        const { isLoggedIn } = store.getState().auth;
+        const { isLoggedIn } = store.getState().auth || {};
         const wsState = websocket ? websocket.readyState : WebSocket.CLOSED;
 
         console.log(
-          `DEBUG [Connect Action]: isLoggedIn: ${isLoggedIn}, WS State: ${wsState}`
+          `DEBUG [WS CONNECT]: isLoggedIn=${isLoggedIn}, wsState=${wsState}`
         );
 
         if (!isLoggedIn) {
-          console.log("DEBUG [Connect Action]: User not logged in. Skip WS.");
           store.dispatch(wsDisconnected("Authentication required."));
+          store.dispatch(setLoading(false));
           break;
         }
 
-        if (wsState === WebSocket.OPEN) {
-          console.log("DEBUG [Connect Action]: WS already OPEN. Skip.");
-          break;
-        }
-
-        if (wsState === WebSocket.CONNECTING) {
-          console.log("DEBUG [Connect Action]: WS already CONNECTING. Skip.");
+        if (isSocketOpen(websocket) || isSocketConnecting(websocket)) {
+          console.log("DEBUG [WS CONNECT]: WS already active.");
           break;
         }
 
@@ -277,43 +397,50 @@ const notificationMiddleware = (store) => {
       }
 
       case DISCONNECT_WS: {
-        console.log("DEBUG [Disconnect Action]: Initiated disconnection.");
+        console.log("DEBUG [WS DISCONNECT]: Manual disconnect.");
 
-        clearReconnectInterval();
+        manuallyClosed = true;
+        clearReconnectTimeout();
 
         if (
           websocket &&
           (websocket.readyState === WebSocket.OPEN ||
             websocket.readyState === WebSocket.CONNECTING)
         ) {
-          websocket.close(1000, "User logged out or manually disconnected.");
+          websocket.close(1000, "Client manually disconnected.");
         }
 
         websocket = null;
+        reconnectAttempts = 0;
 
-        store.dispatch(clearNotifications());
+        const shouldClear = Boolean(action.payload?.shouldClear);
+
+        if (shouldClear) {
+          store.dispatch(clearNotifications());
+        }
+
         store.dispatch(wsDisconnected("Disconnected manually."));
         store.dispatch(setLoading(false));
-
         break;
       }
 
       case MARK_NOTIFICATION_AS_READ: {
-        const notifId = action.payload?.notification_id;
+        const notificationId = action.payload?.notification_id;
 
-        if (!notifId) {
-          console.warn("DEBUG [WS]: notification_id not found.");
+        if (!notificationId) {
+          console.warn("DEBUG [WS]: notification_id topilmadi.");
           break;
         }
 
         const success = sendMessage({
+          command: "mark_as_read",
           action: "mark_as_read",
-          notification_id: notifId,
+          notification_id: notificationId,
         });
 
-        // Offline yoki WS ishlamay qolsa ham UI yangilansin
+        // UI tezroq yangilanishi uchun lokal ham o‘qilgan qilamiz.
         if (success) {
-          store.dispatch(markNotificationAsReadLocally({ id: notifId }));
+          store.dispatch(markNotificationAsReadLocally(notificationId));
         }
 
         break;
@@ -321,10 +448,10 @@ const notificationMiddleware = (store) => {
 
       case MARK_ALL_NOTIFICATIONS_AS_READ: {
         const success = sendMessage({
+          command: "mark_all_as_read",
           action: "mark_all_as_read",
         });
 
-        // Offline yoki WS ishlamay qolsa ham UI yangilansin
         if (success) {
           store.dispatch(markAllNotificationsAsReadLocally());
         }
