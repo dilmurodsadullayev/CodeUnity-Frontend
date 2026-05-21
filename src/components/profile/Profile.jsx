@@ -53,6 +53,15 @@ import {
     UserRound,
     Users,
 } from "lucide-react";
+import BotService from "../../services/bot";
+
+import {
+    getTelegramProfileStart,
+    getTelegramProfileSuccess,
+    getTelegramProfileFailure,
+} from "../../features/bot";
+
+import { Bot, Send } from "lucide-react";
 
 const DEFAULT_COVER =
     "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=2070&auto=format&fit=crop";
@@ -283,6 +292,13 @@ const Profile = () => {
 
     const { profile, isLoading, error } = useSelector((state) => state.profile);
     const { user } = useSelector((state) => state.auth);
+    const {
+        isLoading: botLoading,
+        telegramProfile,
+    } = useSelector((state) => state.bot);
+
+    const isTelegramLinked = Boolean(telegramProfile?.is_linked);
+
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
@@ -306,9 +322,61 @@ const Profile = () => {
         }
     }, [dispatch, username]);
 
+    const getTelegramBotStatus = useCallback(async () => {
+        if (!isOwner) return;
+
+        dispatch(getTelegramProfileStart());
+
+        try {
+            const response = await BotService.getTelegramProfile();
+            dispatch(getTelegramProfileSuccess(response));
+        } catch (err) {
+            console.error("Telegram bot status olishda xato:", err);
+            dispatch(getTelegramProfileFailure(err.message));
+        }
+    }, [dispatch, isOwner]);
+
+    const handleConnectTelegramBot = async () => {
+        dispatch(getTelegramProfileStart());
+
+        try {
+            const response = await BotService.getTelegramProfile();
+
+            dispatch(getTelegramProfileSuccess(response));
+
+            const profileData = response?.data || response;
+
+            if (profileData?.is_linked) {
+                alert("Telegram bot allaqachon ulangan ✅");
+                return;
+            }
+
+            const linkCode = profileData?.link_code;
+
+            if (!linkCode) {
+                alert("Telegram ulash kodi topilmadi.");
+                return;
+            }
+
+            const botUsername = "FixSocietybot";
+            const telegramUrl = `https://t.me/${botUsername}?start=${linkCode}`;
+
+            window.open(telegramUrl, "_blank", "noopener,noreferrer");
+        } catch (err) {
+            console.error("Telegram bot ulashda xato:", err);
+            dispatch(getTelegramProfileFailure(err.message));
+            alert(err.message || "Telegram botni ulashda xato yuz berdi.");
+        }
+    };
+
     useEffect(() => {
         getProfile();
     }, [getProfile]);
+
+    useEffect(() => {
+        getTelegramBotStatus();
+    }, [getTelegramBotStatus]);
+
 
     const currentUser = useMemo(() => {
         const skills = normalizeSkills(profile?.skills);
@@ -335,6 +403,8 @@ const Profile = () => {
             aboutMe: profile?.about_me,
             skills,
             birthday: profile?.birthday || profile?.birth_date,
+            telegramUsername: telegramProfile?.telegram_username || null,
+            telegramLinked: telegramProfile?.is_linked || false,
         };
     }, [profile, username]);
 
@@ -464,11 +534,38 @@ const Profile = () => {
 
                         {/* DESKTOP ACTIONS */}
                         <div className="hidden shrink-0 flex-wrap items-center justify-end gap-2 lg:flex">
-                            <ActionButton variant="gray">
-                                <Users size={17} />
-                                Mentorlik so‘rash
-                            </ActionButton>
+                           {isOwner && (
+                                <ActionButton
+                                    variant={isTelegramLinked ? "indigo" : "gray"}
+                                    onClick={handleConnectTelegramBot}
+                                    className={`
+                                        relative overflow-hidden
+                                        ${botLoading ? "opacity-70 pointer-events-none" : ""}
+                                        ${
+                                            isTelegramLinked
+                                                ? "border-emerald-400/60 bg-emerald-600/20 text-emerald-200 shadow-emerald-500/40 ring-1 ring-emerald-400/30"
+                                                : ""
+                                        }
+                                    `}
+                                >
+                                    {isTelegramLinked && (
+                                        <>
+                                            <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-lg shadow-emerald-400/80 animate-pulse" />
+                                            <span className="absolute inset-0 bg-emerald-400/5" />
+                                        </>
+                                    )}
 
+                                    {botLoading ? (
+                                        <Loader2 size={17} className="animate-spin" />
+                                    ) : isTelegramLinked ? (
+                                        <CheckCircle size={17} />
+                                    ) : (
+                                        <Bot size={17} />
+                                    )}
+
+                                    {isTelegramLinked ? "Bot ulangan" : "Botni ulash"}
+                                </ActionButton>
+                            )}
                             {isOwner && (
                                 <>
                                     <ActionButton
@@ -493,10 +590,40 @@ const Profile = () => {
 
                     {/* MOBILE / TABLET ACTIONS */}
                     <div className={`mt-5 grid gap-2 ${isOwner ? "grid-cols-3" : "grid-cols-1"} lg:hidden`}>
-                        <ActionButton variant="gray" className="w-full px-2">
-                            <Users size={17} />
-                            <span className="truncate">Mentorlik</span>
-                        </ActionButton>
+                       {isOwner && (
+                            <ActionButton
+                                variant={isTelegramLinked ? "indigo" : "gray"}
+                                onClick={handleConnectTelegramBot}
+                                className={`
+                                    relative w-full overflow-hidden px-2
+                                    ${botLoading ? "opacity-70 pointer-events-none" : ""}
+                                    ${
+                                        isTelegramLinked
+                                            ? "border-emerald-400/60 bg-emerald-600/20 text-emerald-200 shadow-emerald-500/40 ring-1 ring-emerald-400/30"
+                                            : ""
+                                    }
+                                `}
+                            >
+                                {isTelegramLinked && (
+                                    <>
+                                        <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-lg shadow-emerald-400/80 animate-pulse" />
+                                        <span className="absolute inset-0 bg-emerald-400/5" />
+                                    </>
+                                )}
+
+                                {botLoading ? (
+                                    <Loader2 size={17} className="animate-spin" />
+                                ) : isTelegramLinked ? (
+                                    <CheckCircle size={17} />
+                                ) : (
+                                    <Bot size={17} />
+                                )}
+
+                                <span className="truncate">
+                                    {isTelegramLinked ? "Ulangan" : "Bot"}
+                                </span>
+                            </ActionButton>
+                        )}
 
                         {isOwner && (
                             <>
@@ -675,6 +802,34 @@ const Profile = () => {
                                     </a>
                                 ) : (
                                     <EmptyValue />
+                                )}
+                            </SidebarRow>
+                            <SidebarRow
+                                icon={Send}
+                                label="Telegram Bot"
+                                iconClass={
+                                    currentUser.telegramLinked
+                                        ? "text-emerald-300"
+                                        : "text-gray-400"
+                                }
+                            >
+                                {currentUser.telegramLinked ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="relative flex h-2.5 w-2.5">
+                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                                            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                                        </span>
+
+                                        <span className="font-black text-emerald-300">
+                                            {currentUser.telegramUsername
+                                                ? `@${currentUser.telegramUsername}`
+                                                : "Telegram Connected"}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <span className="text-gray-500">
+                                        Bot ulanmagan
+                                    </span>
                                 )}
                             </SidebarRow>
                         </ul>

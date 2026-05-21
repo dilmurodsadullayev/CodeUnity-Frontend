@@ -14,7 +14,8 @@ import ProfileReducer from '../features/profile'
 import ProjectReducer from '../features/projects'
 import PostReducer from '../features/posts'
 import RoadmapReducer from '../features/roadmap'
-import BadgeReducer from '../features/badge'; 
+import BadgeReducer from '../features/badge';
+import BotReducer from "../features/bot"; 
 
 
 export const store = configureStore({
@@ -32,6 +33,7 @@ export const store = configureStore({
     post: PostReducer,
     roadmap: RoadmapReducer,
     badge: BadgeReducer,
+    bot: BotReducer,
     
   },
   middleware: (getDefaultMiddleware) =>
