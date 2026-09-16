@@ -1,88 +1,2051 @@
-/* Google Fonts (Inter) - agar global style'da yo'q bo'lsa */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
+/* =========================================================
+   REGISTER DESIGN TOKENS
+   ========================================================= */
 
-/* --- Global Konstanta Stil --- */
 :root {
-    --dark-bg: #0d1117;
-    --dark-bg-secondary: #161b22; /* Karta foni */
-    --border-color: #30363d;
-    --text-primary: #c9d1d9;
-    --text-secondary: #8b949e;
-    --indigo: #4f46e5;
-    --indigo-hover: #4338ca;
-    --purple: #c084fc;
+    --register-bg:
+        #0d1117;
+
+    --register-surface:
+        rgba(
+            22,
+            27,
+            34,
+            0.94
+        );
+
+    --register-input:
+        #0d1117;
+
+    --register-input-focus:
+        #10151d;
+
+    --register-border:
+        #30363d;
+
+    --register-border-hover:
+        #484f58;
+
+    --register-text:
+        #f0f6fc;
+
+    --register-text-secondary:
+        #c9d1d9;
+
+    --register-muted:
+        #8b949e;
+
+    --register-subtle:
+        #6e7681;
+
+    --register-indigo:
+        #6366f1;
+
+    --register-indigo-light:
+        #818cf8;
+
+    --register-indigo-dark:
+        #4f46e5;
+
+    --register-purple:
+        #8b5cf6;
+
+    --register-success:
+        #22c55e;
+
+    --register-danger:
+        #ef4444;
+
+    --register-font:
+        var(
+            --font-sans,
+            "Space Grotesk Variable",
+            "Space Grotesk",
+            sans-serif
+        );
 }
 
-/* --- Container va Sahifa Stili --- */
-/* Faqat Register sahifasiga ta'sir qiladigan stilni tanlash */
+
+/* =========================================================
+   FULL SCREEN PAGE
+   ========================================================= */
+
 .register-page-container {
-    font-family: 'Inter', sans-serif;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    width: 100%;
-    background-color: var(--dark-bg); 
-    color: var(--text-primary);
-    padding: 20px; /* Mobil qurilmalar uchun padding */
+    position:
+        fixed;
+
+    inset:
+        0;
+
+    z-index:
+        999;
+
+    width:
+        100vw;
+
+    height:
+        100vh;
+
+    height:
+        100dvh;
+
+    min-width:
+        100vw;
+
+    min-height:
+        100vh;
+
+    box-sizing:
+        border-box;
+
+    display:
+        flex;
+
+    align-items:
+        flex-start;
+
+    justify-content:
+        center;
+
+    overflow-x:
+        hidden;
+
+    overflow-y:
+        auto;
+
+    padding:
+        max(
+            26px,
+            env(
+                safe-area-inset-top
+            )
+        )
+        20px
+        max(
+            30px,
+            env(
+                safe-area-inset-bottom
+            )
+        );
+
+    color:
+        var(
+            --register-text
+        );
+
+    font-family:
+        var(
+            --register-font
+        );
+
+    background:
+        radial-gradient(
+            circle
+            at
+            50%
+            30%,
+
+            rgba(
+                99,
+                102,
+                241,
+                0.13
+            ),
+
+            transparent
+            34%
+        ),
+
+        radial-gradient(
+            circle
+            at
+            90%
+            15%,
+
+            rgba(
+                139,
+                92,
+                246,
+                0.08
+            ),
+
+            transparent
+            26%
+        ),
+
+        radial-gradient(
+            circle
+            at
+            8%
+            85%,
+
+            rgba(
+                34,
+                211,
+                238,
+                0.045
+            ),
+
+            transparent
+            25%
+        ),
+
+        var(
+            --register-bg
+        );
 }
 
-/* --- Maxsus UI Elementlari --- */
 
-.hero-gradient-text {
-    /* "Hisob Yaratish" sarlavhasi uchun */
-    background: linear-gradient(90deg, var(--indigo), var(--purple));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
+/* =========================================================
+   BACKGROUND GLOWS
+   ========================================================= */
 
-.input-dark {
-    /* Input maydonlari uchun */
-    background-color: var(--dark-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    transition: all 0.2s ease-in-out;
-}
-.input-dark:focus {
-    /* Input maydoni fokuslanganda */
-    border-color: var(--indigo);
-    outline: none;
-    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3);
-}
+.register-bg {
+    position:
+        fixed;
 
-.btn-primary {
-    /* Asosiy tugma ("Ro'yxatdan o'tish") */
-    background: var(--indigo);
-    transition: all 0.3s ease;
-}
-.btn-primary:hover {
-    background: var(--indigo-hover);
-    box-shadow: 0 0 20px rgba(79, 70, 229, 0.6);
-    transform: translateY(-2px);
-}
-.btn-primary:disabled {
-    background: #6366f1; /* Indigo-500 */
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
+    pointer-events:
+        none;
+
+    border-radius:
+        9999px;
+
+    filter:
+        blur(
+            110px
+        );
+
+    opacity:
+        0.75;
 }
 
-.social-btn {
-    /* Social Login tugmalari */
-    background-color: var(--dark-bg-secondary);
-    border: 1px solid var(--border-color);
-    transition: all 0.2s ease;
-    color: var(--text-primary);
-}
-.social-btn:hover {
-    border-color: #4b5563; 
-    background-color: #1f2937;
+
+.register-bg--center {
+    left:
+        50%;
+
+    top:
+        42%;
+
+    width:
+        470px;
+
+    height:
+        470px;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    background:
+        rgba(
+            99,
+            102,
+            241,
+            0.10
+        );
 }
 
-@keyframes fade-in {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+
+.register-bg--right {
+    right:
+        -140px;
+
+    top:
+        70px;
+
+    width:
+        320px;
+
+    height:
+        320px;
+
+    background:
+        rgba(
+            139,
+            92,
+            246,
+            0.08
+        );
 }
-.animate-fade-in {
-    animation: fade-in 0.5s ease-out forwards;
+
+
+.register-bg--left {
+    left:
+        -140px;
+
+    bottom:
+        50px;
+
+    width:
+        310px;
+
+    height:
+        310px;
+
+    background:
+        rgba(
+            34,
+            211,
+            238,
+            0.05
+        );
+}
+
+
+/* =========================================================
+   GRID
+   ========================================================= */
+
+.register-grid-overlay {
+    position:
+        fixed;
+
+    inset:
+        0;
+
+    pointer-events:
+        none;
+
+    opacity:
+        0.045;
+
+    background-image:
+        linear-gradient(
+            rgba(
+                255,
+                255,
+                255,
+                0.34
+            )
+            1px,
+
+            transparent
+            1px
+        ),
+
+        linear-gradient(
+            90deg,
+
+            rgba(
+                255,
+                255,
+                255,
+                0.34
+            )
+            1px,
+
+            transparent
+            1px
+        );
+
+    background-size:
+        42px
+        42px;
+
+    mask-image:
+        linear-gradient(
+            to bottom,
+
+            transparent,
+
+            black
+            15%,
+
+            black
+            85%,
+
+            transparent
+        );
+
+    -webkit-mask-image:
+        linear-gradient(
+            to bottom,
+
+            transparent,
+
+            black
+            15%,
+
+            black
+            85%,
+
+            transparent
+        );
+}
+
+
+/* =========================================================
+   CARD
+   ========================================================= */
+
+.register-card {
+    position:
+        relative;
+
+    z-index:
+        5;
+
+    width:
+        min(
+            100%,
+            460px
+        );
+
+    box-sizing:
+        border-box;
+
+    margin:
+        auto;
+
+    padding:
+        30px;
+
+    overflow:
+        hidden;
+
+    border:
+        1px
+        solid
+        var(
+            --register-border
+        );
+
+    border-radius:
+        26px;
+
+    background:
+        linear-gradient(
+            145deg,
+
+            rgba(
+                22,
+                27,
+                34,
+                0.97
+            ),
+
+            rgba(
+                13,
+                17,
+                23,
+                0.95
+            )
+        );
+
+    box-shadow:
+        0
+        30px
+        90px
+        rgba(
+            0,
+            0,
+            0,
+            0.48
+        ),
+
+        0
+        0
+        0
+        1px
+        rgba(
+            255,
+            255,
+            255,
+            0.015
+        ),
+
+        0
+        0
+        60px
+        rgba(
+            99,
+            102,
+            241,
+            0.055
+        );
+
+    backdrop-filter:
+        blur(
+            22px
+        );
+
+    -webkit-backdrop-filter:
+        blur(
+            22px
+        );
+}
+
+
+.register-card::before {
+    content:
+        "";
+
+    position:
+        absolute;
+
+    top:
+        0;
+
+    left:
+        12%;
+
+    width:
+        76%;
+
+    height:
+        1px;
+
+    background:
+        linear-gradient(
+            90deg,
+
+            transparent,
+
+            rgba(
+                129,
+                140,
+                248,
+                0.36
+            ),
+
+            transparent
+        );
+
+    pointer-events:
+        none;
+}
+
+
+/* =========================================================
+   CARD ANIMATION
+   ========================================================= */
+
+@keyframes registerFadeIn {
+    from {
+        opacity:
+            0;
+
+        transform:
+            translateY(
+                18px
+            )
+            scale(
+                0.985
+            );
+    }
+
+    to {
+        opacity:
+            1;
+
+        transform:
+            translateY(
+                0
+            )
+            scale(
+                1
+            );
+    }
+}
+
+
+.animate-register-fade-in {
+    animation:
+        registerFadeIn
+        0.5s
+        cubic-bezier(
+            0.16,
+            1,
+            0.3,
+            1
+        )
+        forwards;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.register-header {
+    text-align:
+        center;
+}
+
+
+.register-logo-link {
+    display:
+        inline-flex;
+
+    flex-direction:
+        column;
+
+    align-items:
+        center;
+
+    color:
+        inherit;
+
+    text-decoration:
+        none;
+}
+
+
+.register-logo {
+    width:
+        auto;
+
+    height:
+        74px;
+
+    object-fit:
+        contain;
+
+    transition:
+        transform
+            0.55s
+            cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+            ),
+
+        filter
+            0.35s
+            ease;
+}
+
+
+.register-logo-link:hover
+.register-logo {
+    transform:
+        rotate(
+            360deg
+        )
+        scale(
+            1.04
+        );
+
+    filter:
+        drop-shadow(
+            0
+            0
+            18px
+            rgba(
+                99,
+                102,
+                241,
+                0.38
+            )
+        );
+}
+
+
+.register-brand {
+    margin-top:
+        7px;
+
+    color:
+        #ffffff;
+
+    font-size:
+        29px;
+
+    font-weight:
+        700;
+
+    line-height:
+        1;
+
+    letter-spacing:
+        -0.055em;
+}
+
+
+.register-brand span {
+    color:
+        var(
+            --register-indigo
+        );
+}
+
+
+.register-header h1 {
+    margin:
+        22px
+        0
+        0;
+
+    color:
+        var(
+            --register-text
+        );
+
+    font-size:
+        22px;
+
+    font-weight:
+        700;
+
+    line-height:
+        1.25;
+
+    letter-spacing:
+        0.055em;
+
+    text-transform:
+        uppercase;
+}
+
+
+.register-header p {
+    margin:
+        8px
+        0
+        0;
+
+    color:
+        var(
+            --register-muted
+        );
+
+    font-size:
+        13px;
+
+    font-weight:
+        500;
+}
+
+
+/* =========================================================
+   GLOBAL ERROR
+   ========================================================= */
+
+.register-global-error {
+    display:
+        flex;
+
+    align-items:
+        flex-start;
+
+    gap:
+        9px;
+
+    margin-top:
+        20px;
+
+    padding:
+        11px
+        13px;
+
+    border:
+        1px
+        solid
+        rgba(
+            239,
+            68,
+            68,
+            0.23
+        );
+
+    border-radius:
+        12px;
+
+    background:
+        rgba(
+            239,
+            68,
+            68,
+            0.07
+        );
+
+    color:
+        #fca5a5;
+
+    font-size:
+        12px;
+
+    font-weight:
+        600;
+
+    line-height:
+        1.55;
+}
+
+
+.register-global-error svg {
+    flex-shrink:
+        0;
+
+    margin-top:
+        1px;
+}
+
+
+/* =========================================================
+   SOCIAL
+   ========================================================= */
+
+.register-social-grid {
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(
+                0,
+                1fr
+            )
+        );
+
+    gap:
+        12px;
+
+    margin-top:
+        23px;
+}
+
+
+.register-social-button {
+    min-height:
+        47px;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    gap:
+        9px;
+
+    padding:
+        0
+        14px;
+
+    border:
+        1px
+        solid
+        var(
+            --register-border
+        );
+
+    border-radius:
+        13px;
+
+    background:
+        rgba(
+            13,
+            17,
+            23,
+            0.82
+        );
+
+    color:
+        var(
+            --register-text
+        );
+
+    font-size:
+        13px;
+
+    font-weight:
+        600;
+
+    cursor:
+        pointer;
+
+    transition:
+        border-color
+            0.2s
+            ease,
+
+        background-color
+            0.2s
+            ease,
+
+        transform
+            0.2s
+            ease,
+
+        box-shadow
+            0.2s
+            ease;
+}
+
+
+.register-social-button svg {
+    flex-shrink:
+        0;
+}
+
+
+.register-social-button:hover:not(:disabled) {
+    border-color:
+        rgba(
+            99,
+            102,
+            241,
+            0.56
+        );
+
+    background:
+        rgba(
+            99,
+            102,
+            241,
+            0.065
+        );
+
+    transform:
+        translateY(
+            -1px
+        );
+
+    box-shadow:
+        0
+        8px
+        24px
+        rgba(
+            0,
+            0,
+            0,
+            0.20
+        );
+}
+
+
+.register-social-button:active:not(:disabled) {
+    transform:
+        scale(
+            0.985
+        );
+}
+
+
+.register-social-button:disabled {
+    cursor:
+        not-allowed;
+
+    opacity:
+        0.48;
+}
+
+
+/* =========================================================
+   DIVIDER
+   ========================================================= */
+
+.register-divider {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        12px;
+
+    margin:
+        21px
+        0;
+}
+
+
+.register-divider > span {
+    flex:
+        1;
+
+    height:
+        1px;
+
+    background:
+        linear-gradient(
+            to right,
+
+            transparent,
+
+            #30363d
+        );
+}
+
+
+.register-divider > span:last-child {
+    background:
+        linear-gradient(
+            to left,
+
+            transparent,
+
+            #30363d
+        );
+}
+
+
+.register-divider p {
+    flex-shrink:
+        0;
+
+    margin:
+        0;
+
+    color:
+        #626c79;
+
+    font-size:
+        9px;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        0.08em;
+
+    text-transform:
+        uppercase;
+}
+
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+.register-form {
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    gap:
+        16px;
+}
+
+
+/* =========================================================
+   FIELD
+   ========================================================= */
+
+.register-field {
+    width:
+        100%;
+}
+
+
+.register-field label {
+    display:
+        block;
+
+    margin-left:
+        4px;
+
+    margin-bottom:
+        7px;
+
+    color:
+        #7d8590;
+
+    font-size:
+        11px;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        0.10em;
+
+    text-transform:
+        uppercase;
+}
+
+
+/* =========================================================
+   INPUT WRAPPER
+   ========================================================= */
+
+.register-input-wrapper {
+    position:
+        relative;
+
+    width:
+        100%;
+}
+
+
+/* =========================================================
+   INPUT
+   ========================================================= */
+
+.register-input-wrapper input {
+    box-sizing:
+        border-box;
+
+    width:
+        100%;
+
+    height:
+        48px;
+
+    padding:
+        0
+        48px;
+
+    border:
+        1px
+        solid
+        var(
+            --register-border
+        );
+
+    border-radius:
+        13px;
+
+    outline:
+        none;
+
+    background:
+        rgba(
+            13,
+            17,
+            23,
+            0.88
+        );
+
+    color:
+        #ffffff;
+
+    font-family:
+        var(
+            --register-font
+        );
+
+    font-size:
+        14px;
+
+    font-weight:
+        500;
+
+    caret-color:
+        var(
+            --register-indigo-light
+        );
+
+    transition:
+        border-color
+            0.2s
+            ease,
+
+        box-shadow
+            0.2s
+            ease,
+
+        background-color
+            0.2s
+            ease;
+}
+
+
+.register-input-wrapper input::placeholder {
+    color:
+        #4f5865;
+
+    font-weight:
+        400;
+}
+
+
+.register-input-wrapper input:hover:not(:disabled) {
+    border-color:
+        var(
+            --register-border-hover
+        );
+}
+
+
+.register-input-wrapper input:focus {
+    border-color:
+        var(
+            --register-indigo
+        );
+
+    background:
+        var(
+            --register-input-focus
+        );
+
+    box-shadow:
+        0
+        0
+        0
+        3px
+        rgba(
+            99,
+            102,
+            241,
+            0.11
+        ),
+
+        0
+        8px
+        24px
+        rgba(
+            0,
+            0,
+            0,
+            0.16
+        );
+}
+
+
+.register-input-wrapper--error input {
+    border-color:
+        rgba(
+            239,
+            68,
+            68,
+            0.75
+        );
+}
+
+
+.register-input-wrapper--error input:focus {
+    border-color:
+        var(
+            --register-danger
+        );
+
+    box-shadow:
+        0
+        0
+        0
+        3px
+        rgba(
+            239,
+            68,
+            68,
+            0.10
+        );
+}
+
+
+.register-input-wrapper input:disabled {
+    cursor:
+        not-allowed;
+
+    opacity:
+        0.58;
+}
+
+
+/* =========================================================
+   AUTOFILL
+   ========================================================= */
+
+.register-input-wrapper input:-webkit-autofill,
+.register-input-wrapper input:-webkit-autofill:hover,
+.register-input-wrapper input:-webkit-autofill:focus {
+    -webkit-text-fill-color:
+        #ffffff;
+
+    -webkit-box-shadow:
+        0
+        0
+        0
+        1000px
+        #0d1117
+        inset;
+
+    caret-color:
+        #ffffff;
+
+    transition:
+        background-color
+        9999s
+        ease-in-out
+        0s;
+}
+
+
+/* =========================================================
+   INPUT ICON
+   ========================================================= */
+
+.register-input-icon {
+    position:
+        absolute;
+
+    z-index:
+        2;
+
+    left:
+        17px;
+
+    top:
+        50%;
+
+    width:
+        17px;
+
+    height:
+        17px;
+
+    transform:
+        translateY(
+            -50%
+        );
+
+    color:
+        #596270;
+
+    pointer-events:
+        none;
+
+    transition:
+        color
+            0.2s
+            ease;
+}
+
+
+.register-input-wrapper:focus-within
+.register-input-icon {
+    color:
+        var(
+            --register-indigo-light
+        );
+}
+
+
+.register-input-wrapper--error
+.register-input-icon {
+    color:
+        #f87171;
+}
+
+
+/* =========================================================
+   PASSWORD TOGGLE
+   ========================================================= */
+
+.register-password-toggle {
+    position:
+        absolute;
+
+    right:
+        9px;
+
+    top:
+        50%;
+
+    width:
+        36px;
+
+    height:
+        36px;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    padding:
+        0;
+
+    border:
+        none;
+
+    border-radius:
+        9px;
+
+    background:
+        transparent;
+
+    color:
+        #596270;
+
+    transform:
+        translateY(
+            -50%
+        );
+
+    cursor:
+        pointer;
+
+    transition:
+        color
+            0.2s
+            ease,
+
+        background-color
+            0.2s
+            ease;
+}
+
+
+.register-password-toggle:hover:not(:disabled) {
+    color:
+        #a5b4fc;
+
+    background:
+        rgba(
+            99,
+            102,
+            241,
+            0.08
+        );
+}
+
+
+.register-password-toggle:disabled {
+    cursor:
+        not-allowed;
+
+    opacity:
+        0.45;
+}
+
+
+/* =========================================================
+   FIELD HINT
+   ========================================================= */
+
+.register-field-hint {
+    margin:
+        5px
+        0
+        0
+        4px;
+
+    color:
+        #596270;
+
+    font-size:
+        10px;
+
+    font-weight:
+        500;
+
+    line-height:
+        1.45;
+}
+
+
+/* =========================================================
+   FIELD ERROR
+   ========================================================= */
+
+.register-field-error {
+    display:
+        flex;
+
+    align-items:
+        flex-start;
+
+    gap:
+        6px;
+
+    margin:
+        6px
+        0
+        0
+        2px;
+
+    padding:
+        8px
+        10px;
+
+    border:
+        1px
+        solid
+        rgba(
+            239,
+            68,
+            68,
+            0.18
+        );
+
+    border-radius:
+        10px;
+
+    background:
+        rgba(
+            239,
+            68,
+            68,
+            0.065
+        );
+
+    color:
+        #fca5a5;
+
+    font-size:
+        11px;
+
+    font-weight:
+        600;
+
+    line-height:
+        1.45;
+}
+
+
+.register-field-error svg {
+    flex-shrink:
+        0;
+
+    margin-top:
+        1px;
+}
+
+
+/* =========================================================
+   PASSWORD RULES
+   ========================================================= */
+
+.register-password-rules {
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(
+            3,
+            minmax(
+                0,
+                1fr
+            )
+        );
+
+    gap:
+        6px;
+
+    margin-top:
+        8px;
+
+    padding:
+        10px;
+
+    border:
+        1px
+        solid
+        rgba(
+            48,
+            54,
+            61,
+            0.75
+        );
+
+    border-radius:
+        12px;
+
+    background:
+        rgba(
+            13,
+            17,
+            23,
+            0.55
+        );
+}
+
+
+.register-password-rule {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        5px;
+
+    min-width:
+        0;
+
+    color:
+        #626c79;
+
+    font-size:
+        9px;
+
+    font-weight:
+        600;
+
+    line-height:
+        1.3;
+
+    transition:
+        color
+            0.2s
+            ease;
+}
+
+
+.register-password-rule svg {
+    flex-shrink:
+        0;
+}
+
+
+.register-password-rule--passed {
+    color:
+        #6ee7b7;
+}
+
+
+/* =========================================================
+   SUBMIT BUTTON
+   ========================================================= */
+
+.register-submit-button {
+    position:
+        relative;
+
+    width:
+        100%;
+
+    min-height:
+        50px;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    gap:
+        10px;
+
+    margin-top:
+        2px;
+
+    padding:
+        0
+        18px;
+
+    overflow:
+        hidden;
+
+    border:
+        none;
+
+    border-radius:
+        13px;
+
+    background:
+        linear-gradient(
+            135deg,
+
+            #4f46e5,
+
+            #6366f1
+            56%,
+
+            #7c3aed
+        );
+
+    color:
+        #ffffff;
+
+    font-size:
+        12px;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        0.11em;
+
+    text-transform:
+        uppercase;
+
+    cursor:
+        pointer;
+
+    box-shadow:
+        0
+        12px
+        30px
+        rgba(
+            79,
+            70,
+            229,
+            0.22
+        );
+
+    transition:
+        transform
+            0.2s
+            ease,
+
+        box-shadow
+            0.2s
+            ease,
+
+        filter
+            0.2s
+            ease;
+}
+
+
+.register-submit-button::before {
+    content:
+        "";
+
+    position:
+        absolute;
+
+    top:
+        0;
+
+    left:
+        -120%;
+
+    width:
+        70%;
+
+    height:
+        100%;
+
+    transform:
+        skewX(
+            -20deg
+        );
+
+    background:
+        linear-gradient(
+            90deg,
+
+            transparent,
+
+            rgba(
+                255,
+                255,
+                255,
+                0.10
+            ),
+
+            transparent
+        );
+
+    transition:
+        left
+            0.55s
+            ease;
+
+    pointer-events:
+        none;
+}
+
+
+.register-submit-button:hover:not(:disabled)::before {
+    left:
+        140%;
+}
+
+
+.register-submit-button:hover:not(:disabled) {
+    transform:
+        translateY(
+            -1px
+        );
+
+    filter:
+        brightness(
+            1.08
+        );
+
+    box-shadow:
+        0
+        17px
+        36px
+        rgba(
+            79,
+            70,
+            229,
+            0.30
+        );
+}
+
+
+.register-submit-button:active:not(:disabled) {
+    transform:
+        scale(
+            0.985
+        );
+}
+
+
+.register-submit-button:disabled {
+    cursor:
+        not-allowed;
+
+    background:
+        #312e81;
+
+    color:
+        rgba(
+            224,
+            231,
+            255,
+            0.55
+        );
+
+    box-shadow:
+        none;
+
+    opacity:
+        0.65;
+}
+
+
+/* =========================================================
+   SPINNER
+   ========================================================= */
+
+@keyframes registerSpinner {
+    to {
+        transform:
+            rotate(
+                360deg
+            );
+    }
+}
+
+
+.register-spinner {
+    flex-shrink:
+        0;
+
+    animation:
+        registerSpinner
+        0.8s
+        linear
+        infinite;
+}
+
+
+/* =========================================================
+   LOGIN LINK
+   ========================================================= */
+
+.register-login-text {
+    margin:
+        21px
+        0
+        0;
+
+    text-align:
+        center;
+
+    color:
+        var(
+            --register-muted
+        );
+
+    font-size:
+        13px;
+}
+
+
+.register-login-text a {
+    margin-left:
+        7px;
+
+    color:
+        var(
+            --register-indigo-light
+        );
+
+    font-weight:
+        700;
+
+    text-decoration:
+        none;
+
+    transition:
+        color
+            0.2s
+            ease;
+}
+
+
+.register-login-text a:hover {
+    color:
+        #a5b4fc;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (
+    max-width:
+    520px
+) {
+    .register-page-container {
+        padding:
+            18px
+            14px
+            28px;
+    }
+
+
+    .register-card {
+        width:
+            100%;
+
+        padding:
+            24px
+            20px;
+
+        border-radius:
+            22px;
+    }
+
+
+    .register-logo {
+        height:
+            66px;
+    }
+
+
+    .register-brand {
+        font-size:
+            26px;
+    }
+
+
+    .register-header h1 {
+        margin-top:
+            19px;
+
+        font-size:
+            19px;
+
+        letter-spacing:
+            0.04em;
+    }
+
+
+    .register-header p {
+        font-size:
+            12px;
+    }
+
+
+    .register-social-grid {
+        gap:
+            9px;
+    }
+
+
+    .register-social-button {
+        min-height:
+            45px;
+
+        font-size:
+            12px;
+    }
+
+
+    .register-divider {
+        margin:
+            19px
+            0;
+    }
+
+
+    .register-password-rules {
+        grid-template-columns:
+            1fr;
+    }
+}
+
+
+/* =========================================================
+   VERY SMALL
+   ========================================================= */
+
+@media (
+    max-width:
+    360px
+) {
+    .register-page-container {
+        padding-left:
+            10px;
+
+        padding-right:
+            10px;
+    }
+
+
+    .register-card {
+        padding:
+            22px
+            16px;
+    }
+
+
+    .register-social-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .register-header h1 {
+        font-size:
+            18px;
+    }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (
+    prefers-reduced-motion:
+    reduce
+) {
+    .animate-register-fade-in,
+    .register-spinner {
+        animation:
+            none;
+    }
+
+
+    .register-logo,
+    .register-social-button,
+    .register-input-wrapper input,
+    .register-input-icon,
+    .register-password-toggle,
+    .register-submit-button {
+        transition:
+            none;
+    }
+
+
+    .register-logo-link:hover
+    .register-logo {
+        transform:
+            none;
+    }
+
+
+    .register-submit-button::before {
+        display:
+            none;
+    }
 }

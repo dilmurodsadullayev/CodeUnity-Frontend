@@ -1,0 +1,658 @@
+/* =========================================================
+   AUTH TOAST VARIABLES
+   ========================================================= */
+
+:root {
+    --toast-bg:
+        rgba(
+            15,
+            20,
+            27,
+            0.96
+        );
+
+    --toast-border:
+        rgba(
+            255,
+            255,
+            255,
+            0.08
+        );
+
+    --toast-text:
+        #f0f6fc;
+
+    --toast-muted:
+        #9ba4b0;
+
+    --toast-error:
+        #ef4444;
+
+    --toast-success:
+        #22c55e;
+
+    --toast-warning:
+        #f59e0b;
+
+    --toast-info:
+        #6366f1;
+}
+
+
+/* =========================================================
+   TOAST
+   ========================================================= */
+
+.auth-toast {
+    position: relative;
+
+    width:
+        min(
+            calc(
+                100vw - 32px
+            ),
+            410px
+        );
+
+    min-height: 86px;
+
+    box-sizing: border-box;
+
+    display: grid;
+
+    grid-template-columns:
+        48px
+        minmax(
+            0,
+            1fr
+        );
+
+    gap: 13px;
+
+    padding:
+        15px
+        15px
+        16px;
+
+    overflow: hidden;
+
+    pointer-events: auto;
+
+    border:
+        1px solid
+        var(
+            --toast-border
+        );
+
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            145deg,
+
+            rgba(
+                22,
+                27,
+                34,
+                0.98
+            ),
+
+            rgba(
+                13,
+                17,
+                23,
+                0.98
+            )
+        );
+
+    box-shadow:
+        0
+        25px
+        70px
+        rgba(
+            0,
+            0,
+            0,
+            0.55
+        ),
+
+        inset
+        0
+        1px
+        0
+        rgba(
+            255,
+            255,
+            255,
+            0.025
+        );
+
+    backdrop-filter:
+        blur(22px);
+
+    -webkit-backdrop-filter:
+        blur(22px);
+
+    transform-origin:
+        top right;
+
+    transition:
+        opacity
+            0.28s ease,
+
+        transform
+            0.28s ease;
+}
+
+
+/* =========================================================
+   SHOW / HIDE
+   ========================================================= */
+
+.auth-toast--show {
+    opacity: 1;
+
+    transform:
+        translateX(0)
+        translateY(0)
+        scale(1);
+}
+
+
+.auth-toast--hide {
+    opacity: 0;
+
+    transform:
+        translateX(30px)
+        translateY(-5px)
+        scale(0.96);
+}
+
+
+/* =========================================================
+   LEFT ACCENT
+   ========================================================= */
+
+.auth-toast::before {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+
+    width: 3px;
+
+    border-radius:
+        0
+        4px
+        4px
+        0;
+
+    background:
+        var(
+            --toast-accent
+        );
+
+    box-shadow:
+        0
+        0
+        15px
+        var(
+            --toast-accent
+        );
+}
+
+
+/* =========================================================
+   TYPE COLORS
+   ========================================================= */
+
+.auth-toast--error {
+    --toast-accent:
+        var(
+            --toast-error
+        );
+}
+
+
+.auth-toast--success {
+    --toast-accent:
+        var(
+            --toast-success
+        );
+}
+
+
+.auth-toast--warning {
+    --toast-accent:
+        var(
+            --toast-warning
+        );
+}
+
+
+.auth-toast--info {
+    --toast-accent:
+        var(
+            --toast-info
+        );
+}
+
+
+/* =========================================================
+   ICON WRAPPER
+   ========================================================= */
+
+.auth-toast__icon-wrap {
+    position: relative;
+
+    width: 48px;
+    height: 48px;
+
+    display: grid;
+
+    place-items: center;
+
+    align-self: center;
+}
+
+
+.auth-toast__icon {
+    position: relative;
+
+    z-index: 2;
+
+    width: 42px;
+    height: 42px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 13px;
+
+    color:
+        var(
+            --toast-accent
+        );
+
+    background:
+        color-mix(
+            in srgb,
+            var(
+                --toast-accent
+            )
+            11%,
+            transparent
+        );
+
+    border:
+        1px solid
+        color-mix(
+            in srgb,
+            var(
+                --toast-accent
+            )
+            24%,
+            transparent
+        );
+
+    font-size: 19px;
+
+    box-shadow:
+        inset
+        0
+        1px
+        0
+        rgba(
+            255,
+            255,
+            255,
+            0.04
+        );
+}
+
+
+/* =========================================================
+   ICON PULSE
+   ========================================================= */
+
+@keyframes authToastPulse {
+
+    0% {
+        opacity: 0.3;
+
+        transform:
+            scale(0.82);
+    }
+
+    65% {
+        opacity: 0;
+
+        transform:
+            scale(1.35);
+    }
+
+    100% {
+        opacity: 0;
+
+        transform:
+            scale(1.35);
+    }
+}
+
+
+.auth-toast__pulse {
+    position: absolute;
+
+    inset: 4px;
+
+    border:
+        1px solid
+        var(
+            --toast-accent
+        );
+
+    border-radius: 14px;
+
+    opacity: 0;
+
+    animation:
+        authToastPulse
+        2.2s
+        ease-out
+        infinite;
+}
+
+
+/* =========================================================
+   CONTENT
+   ========================================================= */
+
+.auth-toast__content {
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    gap: 5px;
+}
+
+
+.auth-toast__header {
+    display: flex;
+
+    align-items: center;
+
+    justify-content:
+        space-between;
+
+    gap: 12px;
+}
+
+
+.auth-toast__header strong {
+    color:
+        var(
+            --toast-text
+        );
+
+    font-size: 13px;
+
+    font-weight: 900;
+
+    letter-spacing:
+        0.025em;
+}
+
+
+.auth-toast__content p {
+    margin: 0;
+
+    padding-right: 5px;
+
+    color:
+        var(
+            --toast-muted
+        );
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    line-height: 1.55;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   CLOSE BUTTON
+   ========================================================= */
+
+.auth-toast__close {
+    flex-shrink: 0;
+
+    width: 30px;
+    height: 30px;
+
+    display: grid;
+
+    place-items: center;
+
+    padding: 0;
+
+    border: none;
+
+    border-radius: 9px;
+
+    background:
+        transparent;
+
+    color: #626c79;
+
+    font-size: 12px;
+
+    cursor: pointer;
+
+    transition:
+        color
+            0.2s ease,
+
+        background-color
+            0.2s ease,
+
+        transform
+            0.2s ease;
+}
+
+
+.auth-toast__close:hover {
+    color: #ffffff;
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            0.06
+        );
+
+    transform:
+        rotate(90deg);
+}
+
+
+/* =========================================================
+   PROGRESS
+   ========================================================= */
+
+@keyframes authToastProgress {
+
+    from {
+        transform:
+            scaleX(1);
+    }
+
+    to {
+        transform:
+            scaleX(0);
+    }
+}
+
+
+.auth-toast__progress {
+    position: absolute;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    height: 3px;
+
+    overflow: hidden;
+
+    background:
+        rgba(
+            255,
+            255,
+            255,
+            0.025
+        );
+}
+
+
+.auth-toast__progress span {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    transform-origin: left;
+
+    background:
+        linear-gradient(
+            90deg,
+
+            var(
+                --toast-accent
+            ),
+
+            color-mix(
+                in srgb,
+
+                var(
+                    --toast-accent
+                )
+                55%,
+
+                white
+            )
+        );
+
+    box-shadow:
+        0
+        0
+        10px
+        var(
+            --toast-accent
+        );
+
+    animation:
+        authToastProgress
+        var(
+            --toast-duration
+        )
+        linear
+        forwards;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (
+    max-width: 520px
+) {
+
+    .auth-toast {
+        width:
+            calc(
+                100vw - 28px
+            );
+
+        min-height:
+            80px;
+
+        grid-template-columns:
+            43px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap: 10px;
+
+        padding:
+            13px
+            12px
+            14px;
+    }
+
+
+    .auth-toast__icon-wrap {
+        width: 43px;
+        height: 43px;
+    }
+
+
+    .auth-toast__icon {
+        width: 39px;
+        height: 39px;
+
+        border-radius:
+            12px;
+
+        font-size:
+            17px;
+    }
+
+
+    .auth-toast__header strong {
+        font-size:
+            12px;
+    }
+
+
+    .auth-toast__content p {
+        font-size:
+            11px;
+    }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (
+    prefers-reduced-motion:
+    reduce
+) {
+
+    .auth-toast,
+    .auth-toast__close {
+        transition: none;
+    }
+
+
+    .auth-toast__pulse {
+        animation: none;
+    }
+}

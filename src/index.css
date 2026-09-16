@@ -1,13 +1,1062 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* =========================================================
+   ROOT VARIABLES
+   ========================================================= */
+
+:root {
+
+    /* =========================================
+       FONT
+       ========================================= */
+
+    --font-sans:
+        "Space Grotesk Variable",
+        "Space Grotesk",
+        sans-serif;
+
+    --font-mono:
+        "JetBrains Mono Variable",
+        "JetBrains Mono",
+        monospace;
+
+
+    /* =========================================
+       BASE COLORS
+       ========================================= */
+
+    --app-bg:
+        #0d1117;
+
+    --app-surface:
+        #161b22;
+
+    --app-surface-elevated:
+        #1c2128;
+
+    --app-border:
+        #30363d;
+
+    --app-border-light:
+        #3d444d;
+
+
+    /* =========================================
+       TEXT
+       ========================================= */
+
+    --app-text:
+        #f0f6fc;
+
+    --app-text-secondary:
+        #c9d1d9;
+
+    --app-muted:
+        #8b949e;
+
+    --app-subtle:
+        #6e7681;
+
+
+    /* =========================================
+       BRAND
+       ========================================= */
+
+    --app-primary:
+        #6366f1;
+
+    --app-primary-dark:
+        #4f46e5;
+
+    --app-purple:
+        #8b5cf6;
+
+    --app-cyan:
+        #22d3ee;
+
+
+    /* =========================================
+       STATUS
+       ========================================= */
+
+    --app-success:
+        #22c55e;
+
+    --app-warning:
+        #f59e0b;
+
+    --app-danger:
+        #ef4444;
+
+
+    /* =========================================
+       RADIUS
+       ========================================= */
+
+    --radius-sm:
+        8px;
+
+    --radius-md:
+        12px;
+
+    --radius-lg:
+        16px;
+
+    --radius-xl:
+        22px;
+
+    --radius-2xl:
+        28px;
+
+
+    /* =========================================
+       SHADOW
+       ========================================= */
+
+    --shadow-card:
+        0
+        25px
+        70px
+        rgba(
+            0,
+            0,
+            0,
+            0.38
+        );
+
+    --shadow-indigo:
+        0
+        15px
+        40px
+        rgba(
+            79,
+            70,
+            229,
+            0.18
+        );
 }
 
+
+/* =========================================================
+   GLOBAL RESET
+   ========================================================= */
+
+*,
+*::before,
+*::after {
+    box-sizing:
+        border-box;
+}
+
+
+html {
+    min-height:
+        100%;
+
+    scroll-behavior:
+        smooth;
+
+    background:
+        var(
+            --app-bg
+        );
+}
+
+
+body {
+    min-width:
+        320px;
+
+    min-height:
+        100vh;
+
+    margin:
+        0;
+
+    padding:
+        0;
+
+    overflow-x:
+        hidden;
+
+    background:
+        var(
+            --app-bg
+        );
+
+    color:
+        var(
+            --app-text-secondary
+        );
+
+    font-family:
+        var(
+            --font-sans
+        );
+
+    font-size:
+        16px;
+
+    font-weight:
+        400;
+
+    line-height:
+        1.5;
+
+    text-rendering:
+        optimizeLegibility;
+
+    -webkit-font-smoothing:
+        antialiased;
+
+    -moz-osx-font-smoothing:
+        grayscale;
+}
+
+
+#root {
+    min-height:
+        100vh;
+}
+
+
+/* =========================================================
+   GLOBAL ELEMENTS
+   ========================================================= */
+
+button,
+input,
+textarea,
+select {
+    font:
+        inherit;
+}
+
+
+button {
+    border:
+        none;
+
+    font-family:
+        var(
+            --font-sans
+        );
+}
+
+
+input,
+textarea,
+select {
+    font-family:
+        var(
+            --font-sans
+        );
+}
+
+
+a {
+    color:
+        inherit;
+
+    text-decoration:
+        none;
+}
+
+
+img,
+picture,
+video,
+canvas,
+svg {
+    display:
+        block;
+
+    max-width:
+        100%;
+}
+
+
+/* =========================================================
+   TYPOGRAPHY
+   ========================================================= */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    margin:
+        0;
+
+    color:
+        var(
+            --app-text
+        );
+
+    font-family:
+        var(
+            --font-sans
+        );
+
+    font-weight:
+        700;
+
+    line-height:
+        1.15;
+
+    letter-spacing:
+        -0.025em;
+}
+
+
+p {
+    margin:
+        0;
+}
+
+
+strong,
+b {
+    font-weight:
+        700;
+}
+
+
+/* =========================================================
+   MONOSPACE
+   ========================================================= */
+
+code,
+pre,
+kbd,
+samp,
+.font-mono {
+    font-family:
+        var(
+            --font-mono
+        );
+}
+
+
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+    font-size:
+        0.9em;
+}
+
+
+pre {
+    overflow-x:
+        auto;
+
+    tab-size:
+        4;
+}
+
+
+/* =========================================================
+   SELECTION
+   ========================================================= */
+
+::selection {
+    color:
+        #ffffff;
+
+    background:
+        rgba(
+            99,
+            102,
+            241,
+            0.50
+        );
+}
+
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+::-webkit-scrollbar {
+    width:
+        10px;
+
+    height:
+        10px;
+}
+
+
+::-webkit-scrollbar-track {
+    background:
+        #0d1117;
+}
+
+
+::-webkit-scrollbar-thumb {
+    border:
+        2px solid
+        #0d1117;
+
+    border-radius:
+        999px;
+
+    background:
+        #30363d;
+
+    transition:
+        background-color
+        0.2s
+        ease;
+}
+
+
+::-webkit-scrollbar-thumb:hover {
+    background:
+        #484f58;
+}
+
+
+/* Firefox */
+
+* {
+    scrollbar-width:
+        thin;
+
+    scrollbar-color:
+        #30363d
+        #0d1117;
+}
+
+
+/* =========================================================
+   GLOBAL FOCUS
+   ========================================================= */
+
+:focus {
+    outline:
+        none;
+}
+
+
+:focus-visible {
+    outline:
+        2px solid
+        rgba(
+            99,
+            102,
+            241,
+            0.75
+        );
+
+    outline-offset:
+        3px;
+}
+
+
+/* =========================================================
+   AUTOFILL
+   ========================================================= */
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+
+    -webkit-text-fill-color:
+        #ffffff;
+
+    -webkit-box-shadow:
+        0
+        0
+        0
+        1000px
+        #0d1117
+        inset;
+
+    caret-color:
+        #ffffff;
+
+    transition:
+        background-color
+        9999s
+        ease-in-out
+        0s;
+}
+
+
+/* =========================================================
+   COMMON UTILITIES
+   ========================================================= */
+
+@layer utilities {
+
+    /* =========================================
+       TEXT GRADIENT
+       ========================================= */
+
+    .text-society-gradient {
+        background:
+            linear-gradient(
+                135deg,
+                #818cf8,
+                #6366f1,
+                #8b5cf6
+            );
+
+        -webkit-background-clip:
+            text;
+
+        background-clip:
+            text;
+
+        color:
+            transparent;
+    }
+
+
+    /* =========================================
+       GLASS
+       ========================================= */
+
+    .society-glass {
+        border:
+            1px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.07
+            );
+
+        background:
+            rgba(
+                22,
+                27,
+                34,
+                0.82
+            );
+
+        box-shadow:
+            0
+            20px
+            55px
+            rgba(
+                0,
+                0,
+                0,
+                0.30
+            );
+
+        backdrop-filter:
+            blur(
+                18px
+            );
+
+        -webkit-backdrop-filter:
+            blur(
+                18px
+            );
+    }
+
+
+    /* =========================================
+       BORDER GLOW
+       ========================================= */
+
+    .society-border-glow {
+        box-shadow:
+            0
+            0
+            0
+            1px
+            rgba(
+                99,
+                102,
+                241,
+                0.15
+            ),
+
+            0
+            0
+            30px
+            rgba(
+                99,
+                102,
+                241,
+                0.08
+            );
+    }
+
+
+    /* =========================================
+       CYBER GRID
+       ========================================= */
+
+    .society-grid {
+        background-image:
+            linear-gradient(
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.025
+                )
+                1px,
+
+                transparent
+                1px
+            ),
+
+            linear-gradient(
+                90deg,
+
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.025
+                )
+                1px,
+
+                transparent
+                1px
+            );
+
+        background-size:
+            42px
+            42px;
+    }
+
+
+    /* =========================================
+       TEXT BALANCE
+       ========================================= */
+
+    .text-balance {
+        text-wrap:
+            balance;
+    }
+}
+
+
+/* =========================================================
+   COMMON COMPONENTS
+   ========================================================= */
+
+@layer components {
+
+    /* =========================================
+       PAGE
+       ========================================= */
+
+    .society-page {
+        min-height:
+            100vh;
+
+        background:
+            radial-gradient(
+                circle
+                at
+                50%
+                -15%,
+
+                rgba(
+                    99,
+                    102,
+                    241,
+                    0.15
+                ),
+
+                transparent
+                40%
+            ),
+
+            #0d1117;
+    }
+
+
+    /* =========================================
+       CONTAINER
+       ========================================= */
+
+    .society-container {
+        width:
+            min(
+                calc(
+                    100% - 32px
+                ),
+                1440px
+            );
+
+        margin-inline:
+            auto;
+    }
+
+
+    /* =========================================
+       CARD
+       ========================================= */
+
+    .society-card {
+        border:
+            1px solid
+            var(
+                --app-border
+            );
+
+        border-radius:
+            18px;
+
+        background:
+            rgba(
+                22,
+                27,
+                34,
+                0.88
+            );
+
+        box-shadow:
+            var(
+                --shadow-card
+            );
+
+        backdrop-filter:
+            blur(
+                16px
+            );
+
+        -webkit-backdrop-filter:
+            blur(
+                16px
+            );
+
+        transition:
+            border-color
+                0.25s
+                ease,
+
+            transform
+                0.25s
+                ease,
+
+            box-shadow
+                0.25s
+                ease;
+    }
+
+
+    .society-card:hover {
+        border-color:
+            rgba(
+                99,
+                102,
+                241,
+                0.32
+            );
+    }
+
+
+    /* =========================================
+       PRIMARY BUTTON
+       ========================================= */
+
+    .society-button-primary {
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            44px;
+
+        padding:
+            0
+            18px;
+
+        border-radius:
+            12px;
+
+        background:
+            linear-gradient(
+                135deg,
+                #4f46e5,
+                #6366f1,
+                #7c3aed
+            );
+
+        color:
+            #ffffff;
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+
+        cursor:
+            pointer;
+
+        box-shadow:
+            0
+            10px
+            28px
+            rgba(
+                79,
+                70,
+                229,
+                0.22
+            );
+
+        transition:
+            transform
+                0.2s
+                ease,
+
+            filter
+                0.2s
+                ease,
+
+            box-shadow
+                0.2s
+                ease;
+    }
+
+
+    .society-button-primary:hover {
+        transform:
+            translateY(
+                -1px
+            );
+
+        filter:
+            brightness(
+                1.08
+            );
+
+        box-shadow:
+            0
+            14px
+            35px
+            rgba(
+                79,
+                70,
+                229,
+                0.30
+            );
+    }
+
+
+    .society-button-primary:active {
+        transform:
+            scale(
+                0.98
+            );
+    }
+
+
+    /* =========================================
+       SECONDARY BUTTON
+       ========================================= */
+
+    .society-button-secondary {
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            44px;
+
+        padding:
+            0
+            18px;
+
+        border:
+            1px solid
+            var(
+                --app-border
+            );
+
+        border-radius:
+            12px;
+
+        background:
+            rgba(
+                22,
+                27,
+                34,
+                0.70
+            );
+
+        color:
+            var(
+                --app-text
+            );
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+
+        cursor:
+            pointer;
+
+        transition:
+            border-color
+                0.2s
+                ease,
+
+            background-color
+                0.2s
+                ease,
+
+            transform
+                0.2s
+                ease;
+    }
+
+
+    .society-button-secondary:hover {
+        border-color:
+            rgba(
+                99,
+                102,
+                241,
+                0.45
+            );
+
+        background:
+            rgba(
+                99,
+                102,
+                241,
+                0.07
+            );
+
+        transform:
+            translateY(
+                -1px
+            );
+    }
+}
+
+
+/* =========================================================
+   GLOBAL ANIMATIONS
+   ========================================================= */
+
+@keyframes societyFadeUp {
+
+    from {
+        opacity:
+            0;
+
+        transform:
+            translateY(
+                12px
+            );
+    }
+
+
+    to {
+        opacity:
+            1;
+
+        transform:
+            translateY(
+                0
+            );
+    }
+}
+
+
+@keyframes societySpin {
+
+    to {
+        transform:
+            rotate(
+                360deg
+            );
+    }
+}
+
+
+.society-spinner {
+    animation:
+        societySpin
+        0.8s
+        linear
+        infinite;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (
+    max-width: 640px
+) {
+
+    body {
+        font-size:
+            15px;
+    }
+
+
+    .society-container {
+        width:
+            min(
+                calc(
+                    100% - 24px
+                ),
+                1440px
+            );
+    }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (
+    prefers-reduced-motion:
+    reduce
+) {
+
+    *,
+    *::before,
+    *::after {
+        scroll-behavior:
+            auto !important;
+
+        animation-duration:
+            0.01ms !important;
+
+        animation-iteration-count:
+            1 !important;
+
+        transition-duration:
+            0.01ms !important;
+    }
 }

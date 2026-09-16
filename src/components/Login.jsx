@@ -1,6 +1,28 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
+import React, {
+    useEffect,
+    useRef,
+    useState,
+} from "react";
+
+import {
+    useDispatch,
+    useSelector,
+} from "react-redux";
+
+import {
+    Link,
+    useNavigate,
+} from "react-router-dom";
+
+import {
+    ArrowRight,
+    Eye,
+    EyeOff,
+    Github,
+    LoaderCircle,
+    LockKeyhole,
+    UserRound,
+} from "lucide-react";
 
 import "./Login.css";
 
@@ -12,262 +34,966 @@ import {
 } from "../features/auth/Auth";
 
 import AuthService from "../services/auth";
-import { GOOGLE_AUTH_URL, GITHUB_AUTH_URL } from "../services/config";
+
+import {
+    GOOGLE_AUTH_URL,
+    GITHUB_AUTH_URL,
+} from "../services/config";
+
+import {
+    authToast,
+} from "./ui/AuthToast";
+
+import GoogleIcon from "./ui/GoogleIcon";
 
 import FSocietyLogo from "../assests/logo/f_society.png";
 
-const selectAuthState = (state) => state.auth;
+
+const selectAuthState =
+    (state) => state.auth;
+
+
+// =========================================================
+// LOGIN
+// =========================================================
 
 const Login = () => {
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
+    const dispatch =
+        useDispatch();
 
-    const { isLoading, isLoggedIn, error } = useSelector(selectAuthState);
+    const navigate =
+        useNavigate();
 
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-    const passwordInputType = isPasswordVisible ? "text" : "password";
+    const {
+        isLoading,
+        isLoggedIn,
+    } = useSelector(
+        selectAuthState
+    );
+
+
+    // =====================================================
+    // REFS
+    // =====================================================
+
+    const usernameInputRef =
+        useRef(null);
+
+    const passwordInputRef =
+        useRef(null);
+
+
+    // =====================================================
+    // STATE
+    // =====================================================
+
+    const [
+        username,
+        setUsername,
+    ] = useState("");
+
+
+    const [
+        password,
+        setPassword,
+    ] = useState("");
+
+
+    const [
+        isPasswordVisible,
+        setIsPasswordVisible,
+    ] = useState(false);
+
+
+    const passwordInputType =
+        isPasswordVisible
+            ? "text"
+            : "password";
+
+
+    // =====================================================
+    // EFFECTS
+    // =====================================================
 
     useEffect(() => {
-        dispatch(clearAuthError());
+        dispatch(
+            clearAuthError()
+        );
+
+
+        const timer =
+            setTimeout(() => {
+                usernameInputRef
+                    .current
+                    ?.focus();
+            }, 100);
+
 
         return () => {
-            dispatch(clearAuthError());
+            clearTimeout(timer);
+
+            dispatch(
+                clearAuthError()
+            );
         };
-    }, [dispatch]);
+    }, [
+        dispatch,
+    ]);
+
 
     useEffect(() => {
         if (isLoggedIn) {
-            navigate("/", { replace: true });
+            navigate(
+                "/",
+                {
+                    replace: true,
+                }
+            );
         }
-    }, [isLoggedIn, navigate]);
+    }, [
+        isLoggedIn,
+        navigate,
+    ]);
 
-    const getLoginErrorMessage = (err) => {
-        return (
-            err?.message ||
-            err?.response?.data?.msg ||
+
+    // =====================================================
+    // ERROR PARSER
+    // =====================================================
+
+    const getLoginErrorMessage = (
+        err
+    ) => {
+        const message =
+            err?.serverData?.detail ||
+            err?.serverData?.msg ||
+            err?.serverData?.error ||
+
             err?.response?.data?.detail ||
-            "Foydalanuvchi nomi yoki parol noto‘g‘ri."
+            err?.response?.data?.msg ||
+            err?.response?.data?.error ||
+
+            err?.message;
+
+
+        if (!message) {
+            return (
+                "Login qilishda noma’lum "
+                + "xatolik yuz berdi."
+            );
+        }
+
+
+        const normalized =
+            String(message)
+                .toLowerCase();
+
+
+        // =============================================
+        // NETWORK
+        // =============================================
+
+        if (
+            normalized.includes(
+                "network error"
+            ) ||
+            normalized.includes(
+                "failed to fetch"
+            ) ||
+            normalized.includes(
+                "server bilan bog"
+            )
+        ) {
+            return (
+                "Server bilan bog‘lanib bo‘lmadi. "
+                + "Backend ishlayotganini tekshiring."
+            );
+        }
+
+
+        // =============================================
+        // USERNAME
+        // =============================================
+
+        if (
+            normalized.includes(
+                "username topilmadi"
+            ) ||
+            normalized.includes(
+                "foydalanuvchi topilmadi"
+            ) ||
+            normalized.includes(
+                "user not found"
+            )
+        ) {
+            return (
+                "Bunday username bilan "
+                + "foydalanuvchi topilmadi."
+            );
+        }
+
+
+        // =============================================
+        // PASSWORD
+        // =============================================
+
+        if (
+            normalized.includes(
+                "parol noto"
+            ) ||
+            normalized.includes(
+                "incorrect password"
+            ) ||
+            normalized.includes(
+                "wrong password"
+            )
+        ) {
+            return (
+                "Parol noto‘g‘ri. "
+                + "Qaytadan urinib ko‘ring."
+            );
+        }
+
+
+        // =============================================
+        // INACTIVE
+        // =============================================
+
+        if (
+            normalized.includes(
+                "akkaunt faol emas"
+            ) ||
+            normalized.includes(
+                "account is inactive"
+            )
+        ) {
+            return (
+                "Bu akkaunt faol emas. "
+                + "Administrator bilan bog‘laning."
+            );
+        }
+
+
+        // =============================================
+        // INVALID CREDENTIALS
+        // =============================================
+
+        if (
+            normalized.includes(
+                "invalid credentials"
+            )
+        ) {
+            return (
+                "Username yoki parol noto‘g‘ri."
+            );
+        }
+
+
+        return String(message);
+    };
+
+
+    // =====================================================
+    // USERNAME ENTER
+    // =====================================================
+
+    const handleUsernameKeyDown = (
+        e
+    ) => {
+        if (
+            e.key !== "Enter"
+        ) {
+            return;
+        }
+
+
+        e.preventDefault();
+
+
+        const cleanUsername =
+            username.trim();
+
+
+        if (!cleanUsername) {
+            authToast.warning(
+                "Avval username kiriting.",
+                {
+                    title:
+                        "Username kerak",
+                }
+            );
+
+
+            usernameInputRef
+                .current
+                ?.focus();
+
+
+            return;
+        }
+
+
+        passwordInputRef
+            .current
+            ?.focus();
+    };
+
+
+    // =====================================================
+    // LOGIN
+    // =====================================================
+
+    const loginHandler =
+        async (e) => {
+            e.preventDefault();
+
+
+            if (isLoading) {
+                return;
+            }
+
+
+            const cleanUsername =
+                username.trim();
+
+
+            // =============================================
+            // USERNAME EMPTY
+            // =============================================
+
+            if (!cleanUsername) {
+                authToast.warning(
+                    "Tizimga kirish uchun username kiriting.",
+                    {
+                        title:
+                            "Username kiritilmadi",
+                    }
+                );
+
+
+                usernameInputRef
+                    .current
+                    ?.focus();
+
+
+                return;
+            }
+
+
+            // =============================================
+            // PASSWORD EMPTY
+            // =============================================
+
+            if (!password) {
+                authToast.warning(
+                    "Tizimga kirish uchun parolingizni kiriting.",
+                    {
+                        title:
+                            "Parol kiritilmadi",
+                    }
+                );
+
+
+                passwordInputRef
+                    .current
+                    ?.focus();
+
+
+                return;
+            }
+
+
+            dispatch(
+                clearAuthError()
+            );
+
+
+            dispatch(
+                signUserStart()
+            );
+
+
+            try {
+                // =============================================
+                // REQUEST
+                // =============================================
+
+                const response =
+                    await AuthService
+                        .userLogin({
+                            username:
+                                cleanUsername,
+
+                            password,
+                        });
+
+
+                const loggedUser =
+                    response?.user ||
+                    response;
+
+
+                if (
+                    !loggedUser ||
+                    !loggedUser.id
+                ) {
+                    throw new Error(
+                        "Login amalga oshdi, "
+                        + "ammo foydalanuvchi "
+                        + "ma’lumoti olinmadi."
+                    );
+                }
+
+
+                // =============================================
+                // REDUX
+                // =============================================
+
+                dispatch(
+                    signUserSuccess(
+                        loggedUser
+                    )
+                );
+
+
+                // =============================================
+                // SUCCESS TOAST
+                // =============================================
+
+                authToast.success(
+                    `Xush kelibsiz, ${loggedUser.username}!`,
+                    {
+                        title:
+                            "Tizimga kirildi",
+
+                        duration:
+                            3000,
+                    }
+                );
+
+
+                // Global AuthToast App.js ichida,
+                // shuning uchun route o'zgarsa ham toast qoladi.
+
+                setTimeout(
+                    () => {
+                        navigate(
+                            "/",
+                            {
+                                replace:
+                                    true,
+                            }
+                        );
+                    },
+                    250
+                );
+
+            } catch (err) {
+                console.error(
+                    "Login error:",
+                    err
+                );
+
+
+                const message =
+                    getLoginErrorMessage(
+                        err
+                    );
+
+
+                dispatch(
+                    signUserFailure(
+                        message
+                    )
+                );
+
+
+                authToast.error(
+                    message,
+                    {
+                        title:
+                            "Kirish amalga oshmadi",
+                    }
+                );
+
+
+                requestAnimationFrame(
+                    () => {
+                        passwordInputRef
+                            .current
+                            ?.focus();
+
+
+                        passwordInputRef
+                            .current
+                            ?.select();
+                    }
+                );
+            }
+        };
+
+
+    // =====================================================
+    // SOCIAL LOGIN
+    // =====================================================
+
+    const handleSocialLogin = (
+        url
+    ) => {
+        if (!url) {
+            const message =
+                "Social login URL topilmadi.";
+
+
+            dispatch(
+                signUserFailure(
+                    message
+                )
+            );
+
+
+            authToast.error(
+                message,
+                {
+                    title:
+                        "Social login xatosi",
+                }
+            );
+
+
+            return;
+        }
+
+
+        window.location.assign(
+            url
         );
     };
 
-    const loginHandler = async (e) => {
-        e.preventDefault();
 
-        const cleanUsername = username.trim();
-
-        if (!cleanUsername || !password) {
-            dispatch(signUserFailure("Username va parolni kiriting."));
-            return;
-        }
-
-        dispatch(signUserStart());
-
-        try {
-            const response = await AuthService.userLogin({
-                username: cleanUsername,
-                password,
-            });
-
-            const loggedUser = response?.user || response;
-
-            if (!loggedUser || !loggedUser.id) {
-                throw new Error("Login bo‘ldi, lekin user ma’lumoti kelmadi.");
-            }
-
-            dispatch(signUserSuccess(loggedUser));
-            navigate("/", { replace: true });
-        } catch (err) {
-            console.error("Login error:", err);
-
-            dispatch(signUserFailure(getLoginErrorMessage(err)));
-        }
-    };
-
-    const handleSocialLogin = (url) => {
-        if (!url) {
-            dispatch(signUserFailure("Social login URL topilmadi."));
-            return;
-        }
-
-        window.location.assign(url);
-    };
-
-    const isSubmitDisabled = isLoading || !username.trim() || !password;
+    // =====================================================
+    // JSX
+    // =====================================================
 
     return (
-        <div className="login-page-container relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0d1117] px-4">
-            <div className="pointer-events-none absolute left-1/2 top-1/2 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/10 blur-[110px]" />
-            <div className="pointer-events-none absolute -right-32 top-20 h-72 w-72 rounded-full bg-pink-500/10 blur-[100px]" />
-            <div className="pointer-events-none absolute -left-32 bottom-20 h-72 w-72 rounded-full bg-purple-500/10 blur-[100px]" />
+        <div className="login-page-container">
 
-            <div className="animate-fade-in relative z-10 w-full max-w-md space-y-6 rounded-3xl border border-[#30363d] bg-[#161b22]/95 p-8 shadow-2xl shadow-black/40 backdrop-blur-xl">
-                <div className="text-center">
-                    <Link to="/" className="group inline-flex flex-col items-center">
+
+            {/* =============================================
+                BACKGROUND
+            ============================================== */}
+
+            <div className="login-bg login-bg--center" />
+
+            <div className="login-bg login-bg--right" />
+
+            <div className="login-bg login-bg--left" />
+
+            <div className="login-grid-overlay" />
+
+
+            {/* =============================================
+                CARD
+            ============================================== */}
+
+            <main className="login-card animate-fade-in">
+
+
+                {/* =========================================
+                    HEADER
+                ========================================== */}
+
+                <div className="login-header">
+
+                    <Link
+                        to="/"
+                        className="login-logo-link"
+                    >
+
                         <img
                             src={FSocietyLogo}
                             alt="F.Society Logo"
-                            className="h-24 w-auto object-contain transition-transform duration-500 group-hover:rotate-[360deg]"
+                            className="login-logo"
                         />
 
-                        <span className="mt-2 text-3xl font-black tracking-tighter text-white">
-                            F<span className="text-indigo-500">Society</span>
+
+                        <span className="login-brand">
+
+                            F
+
+                            <span>
+                                Society
+                            </span>
+
                         </span>
+
                     </Link>
 
-                    <h1 className="mt-6 text-2xl font-black uppercase tracking-widest text-gray-100">
+
+                    <h1>
                         Xush kelibsiz
                     </h1>
 
-                    <p className="mt-1 text-sm font-semibold text-gray-500">
+
+                    <p>
                         Jamiyatga qaytganingiz bilan!
                     </p>
+
                 </div>
 
-                {error && typeof error === "string" && (
-                    <div className="rounded-2xl border border-red-800/50 bg-red-900/30 p-3 text-center text-sm font-semibold text-red-300">
-                        <i className="fas fa-exclamation-circle mr-2"></i>
-                        {error}
-                    </div>
-                )}
 
-                <div className="grid grid-cols-2 gap-4">
-                    <button
-                        type="button"
-                        onClick={() => handleSocialLogin(GITHUB_AUTH_URL)}
-                        disabled={isLoading}
-                        className="flex items-center justify-center rounded-xl border border-[#30363d] bg-[#0d1117] py-3 text-sm font-black text-white shadow-lg transition-all hover:border-indigo-500/50 hover:bg-[#30363d] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                        <i className="fab fa-github mr-2 text-lg"></i>
-                        GitHub
-                    </button>
+                {/* =========================================
+                    SOCIAL LOGIN
+                ========================================== */}
+
+                <div className="login-social-grid">
+
+                    {/* GITHUB */}
 
                     <button
                         type="button"
-                        onClick={() => handleSocialLogin(GOOGLE_AUTH_URL)}
-                        disabled={isLoading}
-                        className="flex items-center justify-center rounded-xl border border-[#30363d] bg-[#0d1117] py-3 text-sm font-black text-white shadow-lg transition-all hover:border-indigo-500/50 hover:bg-[#30363d] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="login-social-button"
+                        onClick={() =>
+                            handleSocialLogin(
+                                GITHUB_AUTH_URL
+                            )
+                        }
+                        disabled={
+                            isLoading
+                        }
                     >
-                        <i className="fab fa-google mr-2 text-lg text-red-500"></i>
-                        Google
+
+                        <Github
+                            size={19}
+                            strokeWidth={2}
+                            aria-hidden="true"
+                        />
+
+
+                        <span>
+                            GitHub
+                        </span>
+
                     </button>
+
+
+                    {/* GOOGLE */}
+
+                    <button
+                        type="button"
+                        className="login-social-button"
+                        onClick={() =>
+                            handleSocialLogin(
+                                GOOGLE_AUTH_URL
+                            )
+                        }
+                        disabled={
+                            isLoading
+                        }
+                    >
+
+                        <GoogleIcon
+                            size={19}
+                        />
+
+
+                        <span>
+                            Google
+                        </span>
+
+                    </button>
+
                 </div>
 
-                <div className="flex items-center justify-center space-x-3">
-                    <span className="h-px w-full bg-gray-800"></span>
-                    <span className="text-xs font-black uppercase tracking-tighter text-gray-600">
+
+                {/* =========================================
+                    DIVIDER
+                ========================================== */}
+
+                <div className="login-divider">
+
+                    <span />
+
+                    <p>
                         yoki
-                    </span>
-                    <span className="h-px w-full bg-gray-800"></span>
+                    </p>
+
+                    <span />
+
                 </div>
 
-                <form className="space-y-5" onSubmit={loginHandler}>
-                    <div>
+
+                {/* =========================================
+                    FORM
+                ========================================== */}
+
+                <form
+                    className="login-form"
+                    onSubmit={
+                        loginHandler
+                    }
+                    noValidate
+                >
+
+
+                    {/* =====================================
+                        USERNAME
+                    ====================================== */}
+
+                    <div className="login-field">
+
                         <label
                             htmlFor="username"
-                            className="ml-1 text-xs font-black uppercase tracking-widest text-gray-500"
                         >
                             Username
                         </label>
 
-                        <div className="relative mt-1.5">
-                            <i className="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"></i>
+
+                        <div className="login-input-wrapper">
+
+                            <UserRound
+                                className="login-input-icon"
+                                size={17}
+                                strokeWidth={2}
+                                aria-hidden="true"
+                            />
+
 
                             <input
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                type="text"
+                                ref={
+                                    usernameInputRef
+                                }
+
                                 id="username"
+
+                                name="username"
+
+                                type="text"
+
+                                value={
+                                    username
+                                }
+
+                                onChange={(e) =>
+                                    setUsername(
+                                        e.target.value
+                                    )
+                                }
+
+                                onKeyDown={
+                                    handleUsernameKeyDown
+                                }
+
                                 autoComplete="username"
-                                required
-                                disabled={isLoading}
-                                className="w-full rounded-xl border border-[#30363d] bg-[#0d1117] py-3.5 pl-12 pr-4 text-white outline-none transition-all placeholder:text-gray-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+
+                                autoCapitalize="none"
+
+                                spellCheck="false"
+
+                                disabled={
+                                    isLoading
+                                }
+
                                 placeholder="foydalanuvchi_nomi"
                             />
+
                         </div>
+
                     </div>
 
-                    <div>
-                        <div className="flex items-center justify-between">
+
+                    {/* =====================================
+                        PASSWORD
+                    ====================================== */}
+
+                    <div className="login-field">
+
+                        <div className="login-label-row">
+
                             <label
                                 htmlFor="password"
-                                className="ml-1 text-xs font-black uppercase tracking-widest text-gray-500"
                             >
                                 Parol
                             </label>
 
+
                             <Link
                                 to="#"
-                                className="text-xs font-bold text-indigo-400 hover:text-indigo-300"
+                                className="login-forgot-link"
                             >
                                 Unutdingizmi?
                             </Link>
+
                         </div>
 
-                        <div className="relative mt-1.5">
-                            <i className="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"></i>
+
+                        <div className="login-input-wrapper">
+
+                            <LockKeyhole
+                                className="login-input-icon"
+                                size={17}
+                                strokeWidth={2}
+                                aria-hidden="true"
+                            />
+
 
                             <input
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                ref={
+                                    passwordInputRef
+                                }
+
                                 id="password"
-                                type={passwordInputType}
+
+                                name="password"
+
+                                type={
+                                    passwordInputType
+                                }
+
+                                value={
+                                    password
+                                }
+
+                                onChange={(e) =>
+                                    setPassword(
+                                        e.target.value
+                                    )
+                                }
+
                                 autoComplete="current-password"
-                                required
-                                disabled={isLoading}
-                                className="w-full rounded-xl border border-[#30363d] bg-[#0d1117] py-3.5 pl-12 pr-12 text-white outline-none transition-all placeholder:text-gray-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+
+                                disabled={
+                                    isLoading
+                                }
+
                                 placeholder="••••••••"
                             />
 
+
+                            {/* PASSWORD VISIBILITY */}
+
                             <button
                                 type="button"
+
+                                className="login-password-toggle"
+
                                 onClick={() =>
-                                    setIsPasswordVisible((prev) => !prev)
+                                    setIsPasswordVisible(
+                                        (prev) =>
+                                            !prev
+                                    )
                                 }
-                                disabled={isLoading}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 transition-colors hover:text-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
+
+                                disabled={
+                                    isLoading
+                                }
+
+                                aria-label={
+                                    isPasswordVisible
+                                        ? "Parolni yashirish"
+                                        : "Parolni ko‘rsatish"
+                                }
                             >
-                                <i
-                                    className={`fa-solid ${
-                                        isPasswordVisible
-                                            ? "fa-eye-slash"
-                                            : "fa-eye"
-                                    }`}
-                                ></i>
+
+                                {isPasswordVisible ? (
+
+                                    <EyeOff
+                                        size={18}
+                                        strokeWidth={2}
+                                        aria-hidden="true"
+                                    />
+
+                                ) : (
+
+                                    <Eye
+                                        size={18}
+                                        strokeWidth={2}
+                                        aria-hidden="true"
+                                    />
+
+                                )}
+
                             </button>
+
                         </div>
+
                     </div>
+
+
+                    {/* =====================================
+                        SUBMIT
+                    ====================================== */}
 
                     <button
                         type="submit"
-                        disabled={isSubmitDisabled}
-                        className="w-full rounded-xl bg-indigo-600 py-4 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-indigo-600/20 transition-all hover:bg-indigo-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-indigo-900 disabled:text-indigo-200/60"
+
+                        className="login-submit-button"
+
+                        disabled={
+                            isLoading
+                        }
                     >
+
                         {isLoading ? (
+
                             <>
-                                <i className="fa-solid fa-spinner fa-spin mr-2"></i>
-                                Kirilmoqda...
+                                <LoaderCircle
+                                    size={17}
+                                    strokeWidth={2.2}
+                                    className="login-spinner"
+                                    aria-hidden="true"
+                                />
+
+
+                                <span>
+                                    Kirilmoqda...
+                                </span>
                             </>
+
                         ) : (
-                            "Tizimga Kirish"
+
+                            <>
+                                <span>
+                                    Tizimga kirish
+                                </span>
+
+
+                                <ArrowRight
+                                    size={17}
+                                    strokeWidth={2.2}
+                                    aria-hidden="true"
+                                />
+                            </>
+
                         )}
+
                     </button>
+
                 </form>
 
-                <p className="pt-2 text-center text-sm text-gray-500">
+
+                {/* =========================================
+                    REGISTER
+                ========================================== */}
+
+                <p className="login-register-text">
+
                     Hisobingiz yo‘qmi?
+
+
                     <Link
                         to="/register"
-                        className="ml-2 font-black text-indigo-400 transition-colors hover:text-indigo-300"
                     >
                         Ro‘yxatdan o‘ting
                     </Link>
+
                 </p>
-            </div>
+
+            </main>
+
         </div>
     );
 };
+
 
 export default Login;

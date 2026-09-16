@@ -1,241 +1,791 @@
-// src/components/notifications/NotificationPagination.jsx
-
 import React from "react";
-import { motion } from "framer-motion";
 
-export const PER_PAGE_OPTIONS = [5, 10, 20];
+import {
+    BellOff,
+    ChevronLeft,
+    ChevronRight,
+    Inbox,
+} from "lucide-react";
 
-const getPageNumbers = (currentPage, totalPages) => {
-    if (totalPages <= 1) return [];
 
-    if (totalPages <= 7) {
-        return Array.from({ length: totalPages }, (_, index) => index + 1);
+// =========================================================
+// PAGE NUMBERS
+// =========================================================
+
+const getPageNumbers = (
+    currentPage,
+    totalPages
+) => {
+    if (
+        totalPages <=
+        7
+    ) {
+        return Array.from(
+            {
+                length:
+                    totalPages,
+            },
+            (
+                _,
+                index
+            ) =>
+                index + 1
+        );
     }
 
-    if (currentPage <= 4) {
-        return [1, 2, 3, 4, 5, "...", totalPages];
-    }
 
-    if (currentPage >= totalPages - 3) {
-        return [
+    const pages =
+        [
             1,
-            "...",
-            totalPages - 4,
-            totalPages - 3,
-            totalPages - 2,
-            totalPages - 1,
-            totalPages,
         ];
+
+
+    const start =
+        Math.max(
+            2,
+            currentPage - 1
+        );
+
+
+    const end =
+        Math.min(
+            totalPages - 1,
+            currentPage + 1
+        );
+
+
+    if (
+        start >
+        2
+    ) {
+        pages.push(
+            "left-ellipsis"
+        );
     }
 
-    return [
-        1,
-        "...",
-        currentPage - 1,
-        currentPage,
-        currentPage + 1,
-        "...",
-        totalPages,
-    ];
+
+    for (
+        let page = start;
+        page <= end;
+        page += 1
+    ) {
+        pages.push(
+            page
+        );
+    }
+
+
+    if (
+        end <
+        totalPages - 1
+    ) {
+        pages.push(
+            "right-ellipsis"
+        );
+    }
+
+
+    pages.push(
+        totalPages
+    );
+
+
+    return pages;
 };
 
-export const NotificationEmptyState = ({ filter, onShowAll }) => {
-    const title =
-        filter === "unread"
-            ? "O‘qilmagan bildirishnoma yo‘q"
-            : filter === "read"
-              ? "O‘qilgan bildirishnoma yo‘q"
-              : "Hali bildirishnomalar mavjud emas";
 
-    const description =
-        filter === "unread"
-            ? "Hamma xabarlar o‘qilgan. Yangi xabar kelganda shu yerda ko‘rinadi."
-            : filter === "read"
-              ? "Siz hali hech qaysi bildirishnomani o‘qilgan deb belgilamagansiz."
-              : "Problem, post, FCoin, badge yoki star bo‘yicha xabarlar shu yerda chiqadi.";
+// =========================================================
+// EMPTY STATE
+// =========================================================
+
+export const NotificationEmptyState = ({
+    filter = "all",
+    onShowAll,
+}) => {
+    const isFiltered =
+        filter !==
+        "all";
+
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-3xl border border-dashed border-gray-700 bg-gray-900/60 p-10 text-center shadow-2xl shadow-black/20"
+        <div
+            className="
+                rounded-3xl
+
+                border
+                border-white/[0.06]
+
+                bg-[#0d121a]/75
+
+                px-5
+                py-16
+
+                text-center
+
+                shadow-2xl
+                shadow-black/20
+            "
         >
-            <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full border border-gray-700 bg-gray-950/80 shadow-xl shadow-black/30">
-                <i className="fa-solid fa-bell-slash text-5xl text-gray-700"></i>
+
+            <div
+                className="
+                    mx-auto
+
+                    grid
+                    h-20
+                    w-20
+
+                    place-items-center
+
+                    rounded-3xl
+
+                    border
+                    border-white/[0.06]
+
+                    bg-white/[0.025]
+
+                    text-gray-700
+                "
+            >
+
+                {isFiltered ? (
+
+                    <Inbox
+                        size={32}
+                        strokeWidth={1.7}
+                    />
+
+                ) : (
+
+                    <BellOff
+                        size={32}
+                        strokeWidth={1.7}
+                    />
+
+                )}
+
             </div>
 
-            <h3 className="text-2xl font-black text-white">{title}</h3>
 
-            <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-7 text-gray-500">
-                {description}
+            <h3
+                className="
+                    mt-5
+
+                    text-xl
+                    font-bold
+
+                    text-white
+                "
+            >
+                {filter ===
+                    "unread"
+                    ? "O‘qilmagan xabar yo‘q"
+                    : filter ===
+                        "read"
+                        ? "O‘qilgan xabar yo‘q"
+                        : "Bildirishnomalar mavjud emas"}
+            </h3>
+
+
+            <p
+                className="
+                    mx-auto
+                    mt-2
+
+                    max-w-md
+
+                    text-sm
+                    font-medium
+                    leading-6
+
+                    text-gray-600
+                "
+            >
+                {isFiltered
+                    ? "Bu filter bo‘yicha hozircha bildirishnoma topilmadi."
+                    : "Yangi notificationlar kelganda ular shu yerda paydo bo‘ladi."}
             </p>
 
-            {filter !== "all" && (
+
+            {isFiltered && (
+
                 <button
                     type="button"
-                    onClick={onShowAll}
-                    className="mt-6 rounded-2xl border border-indigo-400/30 bg-indigo-500/10 px-5 py-3 text-sm font-black text-indigo-300 transition hover:bg-indigo-500/20"
+
+                    onClick={
+                        onShowAll
+                    }
+
+                    className="
+                        mt-6
+
+                        rounded-xl
+
+                        border
+                        border-indigo-400/15
+
+                        bg-indigo-500/[0.07]
+
+                        px-5
+                        py-2.5
+
+                        text-xs
+                        font-bold
+
+                        text-indigo-300
+
+                        transition-all
+
+                        hover:border-indigo-400/30
+                        hover:bg-indigo-500/10
+                        hover:text-indigo-200
+                    "
                 >
-                    Barcha bildirishnomalarni ko‘rish
+                    Hammasini ko‘rsatish
                 </button>
+
             )}
-        </motion.div>
-    );
-};
 
-export const NotificationSkeletonCard = () => {
-    return (
-        <div className="relative overflow-hidden rounded-3xl border border-gray-800 bg-gray-900/70 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-5">
-            <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white/[0.03] to-transparent" />
-
-            <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-start">
-                <div className="relative shrink-0">
-                    <div className="h-14 w-14 animate-pulse rounded-2xl bg-gray-800" />
-                    <div className="absolute -bottom-2 -right-2 h-8 w-8 animate-pulse rounded-2xl border border-gray-700 bg-gray-800" />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
-                        <div className="h-6 w-20 animate-pulse rounded-full bg-gray-800" />
-                        <div className="h-6 w-28 animate-pulse rounded-full bg-gray-800" />
-                    </div>
-
-                    <div className="space-y-2">
-                        <div className="h-5 w-full animate-pulse rounded-full bg-gray-800" />
-                        <div className="h-5 w-4/5 animate-pulse rounded-full bg-gray-800" />
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap gap-3">
-                        <div className="h-7 w-24 animate-pulse rounded-full bg-gray-800" />
-                        <div className="h-7 w-28 animate-pulse rounded-full bg-gray-800" />
-                        <div className="h-7 w-20 animate-pulse rounded-full bg-gray-800" />
-                    </div>
-                </div>
-
-                <div className="flex shrink-0 items-center justify-between gap-3 sm:flex-col sm:items-end">
-                    <div className="h-8 w-24 animate-pulse rounded-full bg-gray-800" />
-                    <div className="h-4 w-16 animate-pulse rounded-full bg-gray-800" />
-                </div>
-            </div>
         </div>
     );
 };
 
-export const NotificationLoadingState = ({ count = 10 }) => {
-    const safeCount = Math.max(3, Math.min(Number(count) || 10, 20));
+
+// =========================================================
+// LOADING
+// =========================================================
+
+export const NotificationLoadingState = ({
+    count = 6,
+}) => {
+    const safeCount =
+        Math.min(
+            Math.max(
+                Number(
+                    count
+                ) ||
+                6,
+                1
+            ),
+            10
+        );
+
 
     return (
-        <div className="space-y-4">
-            <div className="mb-4 rounded-3xl border border-indigo-400/20 bg-indigo-500/10 p-4 text-center shadow-2xl shadow-black/20">
-                <div className="inline-flex items-center gap-3 text-sm font-black text-indigo-300">
-                    <span className="relative flex h-3 w-3">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75"></span>
-                        <span className="relative inline-flex h-3 w-3 rounded-full bg-indigo-400"></span>
-                    </span>
-                    Bildirishnomalar yuklanmoqda...
-                </div>
-            </div>
+        <div
+            className="
+                space-y-4
+            "
+        >
 
-            {Array.from({ length: safeCount }).map((_, index) => (
-                <NotificationSkeletonCard key={index} />
-            ))}
+            {Array
+                .from({
+                    length:
+                        safeCount,
+                })
+                .map(
+                    (
+                        _,
+                        index
+                    ) => (
+
+                    <div
+                        key={
+                            index
+                        }
+
+                        className="
+                            flex
+                            animate-pulse
+                            gap-4
+
+                            rounded-3xl
+
+                            border
+                            border-white/[0.05]
+
+                            bg-[#0d121a]/65
+
+                            p-5
+                        "
+                    >
+
+                        <div
+                            className="
+                                h-14
+                                w-14
+
+                                flex-shrink-0
+
+                                rounded-2xl
+
+                                bg-white/[0.05]
+                            "
+                        />
+
+
+                        <div
+                            className="
+                                flex-1
+                                space-y-3
+                                pt-1
+                            "
+                        >
+
+                            <div
+                                className="
+                                    h-3
+                                    w-24
+
+                                    rounded-full
+
+                                    bg-white/[0.055]
+                                "
+                            />
+
+
+                            <div
+                                className="
+                                    h-4
+                                    w-full
+
+                                    rounded-full
+
+                                    bg-white/[0.06]
+                                "
+                            />
+
+
+                            <div
+                                className="
+                                    h-3
+                                    w-2/3
+
+                                    rounded-full
+
+                                    bg-white/[0.04]
+                                "
+                            />
+
+                        </div>
+
+                    </div>
+
+                )
+            )}
+
         </div>
     );
 };
+
+
+// =========================================================
+// PAGINATION
+// =========================================================
 
 const NotificationPagination = ({
-    currentPage,
-    totalPages,
-    totalItems,
-    perPage,
-    startItem,
-    endItem,
+    currentPage = 1,
+    totalPages = 1,
+    totalItems = 0,
+    perPage = 10,
+    startItem = 0,
+    endItem = 0,
     onPageChange,
     onPerPageChange,
 }) => {
-    const pages = getPageNumbers(currentPage, totalPages);
+    const pages =
+        getPageNumbers(
+            currentPage,
+            totalPages
+        );
 
-    if (totalItems === 0) return null;
+
+    if (
+        totalItems ===
+        0
+    ) {
+        return null;
+    }
+
 
     return (
-        <div className="mt-8 rounded-3xl border border-gray-800 bg-gray-900/70 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="text-center text-xs font-bold text-gray-500 lg:text-left">
-                    <span className="text-indigo-300">{startItem}</span>
-                    {" - "}
-                    <span className="text-indigo-300">{endItem}</span>
-                    {" / "}
-                    <span className="text-white">{totalItems}</span>
-                    {" ta notification ko‘rsatilmoqda"}
-                </div>
+        <div
+            className="
+                mt-8
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
-                    <div className="flex items-center justify-center gap-2 rounded-2xl border border-gray-800 bg-gray-950/60 px-3 py-2">
-                        <span className="text-xs font-black uppercase tracking-wider text-gray-500">
-                            Sahifada
-                        </span>
+                flex
+                flex-col
 
-                        <select
-                            value={perPage}
-                            onChange={(event) =>
-                                onPerPageChange(Number(event.target.value))
-                            }
-                            className="rounded-xl border border-gray-700 bg-gray-900 px-3 py-1.5 text-xs font-black text-white outline-none transition focus:border-indigo-500"
+                gap-4
+
+                rounded-2xl
+
+                border
+                border-white/[0.06]
+
+                bg-[#0d121a]/70
+
+                p-4
+
+                sm:flex-row
+                sm:items-center
+                sm:justify-between
+            "
+        >
+
+            {/* =================================================
+                INFO
+            ================================================== */}
+
+            <div
+                className="
+                    flex
+                    flex-wrap
+                    items-center
+
+                    gap-3
+                "
+            >
+
+                <p
+                    className="
+                        text-xs
+                        font-medium
+
+                        text-gray-600
+                    "
+                >
+                    <span
+                        className="
+                            font-mono
+                            text-gray-400
+                        "
+                    >
+                        {
+                            startItem
+                        }-{endItem}
+                    </span>
+
+                    {" "} / {" "}
+
+                    <span
+                        className="
+                            font-mono
+                            text-gray-400
+                        "
+                    >
+                        {
+                            totalItems
+                        }
+                    </span>
+                </p>
+
+
+                {/* PER PAGE */}
+
+                <label
+                    className="
+                        flex
+                        items-center
+                        gap-2
+
+                        text-[10px]
+                        font-semibold
+
+                        text-gray-600
+                    "
+                >
+                    Sahifada
+
+                    <select
+                        value={
+                            perPage
+                        }
+
+                        onChange={(event) =>
+                            onPerPageChange?.(
+                                Number(
+                                    event.target.value
+                                )
+                            )
+                        }
+
+                        className="
+                            rounded-lg
+
+                            border
+                            border-white/[0.07]
+
+                            bg-[#080c12]
+
+                            px-2
+                            py-1.5
+
+                            font-mono
+
+                            text-[10px]
+
+                            text-gray-300
+
+                            outline-none
+
+                            transition
+
+                            focus:border-indigo-400/30
+                        "
+                    >
+                        <option
+                            value={5}
                         >
-                            {PER_PAGE_OPTIONS.map((option) => (
-                                <option key={option} value={option}>
-                                    {option}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                            5
+                        </option>
 
-                    <div className="flex flex-wrap items-center justify-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => onPageChange(currentPage - 1)}
-                            disabled={currentPage <= 1}
-                            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-gray-700 bg-gray-950 text-indigo-300 transition hover:border-indigo-400/40 hover:bg-indigo-500/10 disabled:cursor-not-allowed disabled:opacity-30"
-                            title="Oldingi sahifa"
+                        <option
+                            value={10}
                         >
-                            <i className="fa-solid fa-chevron-left"></i>
-                        </button>
+                            10
+                        </option>
 
-                        {pages.map((page, index) => (
-                            <button
-                                key={`${page}-${index}`}
-                                type="button"
-                                onClick={() => {
-                                    if (typeof page === "number") {
-                                        onPageChange(page);
-                                    }
-                                }}
-                                className={`flex h-10 min-w-10 items-center justify-center rounded-2xl border px-3 text-sm font-black transition ${
-                                    currentPage === page
-                                        ? "border-transparent bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
-                                        : page === "..."
-                                          ? "pointer-events-none border-transparent bg-transparent text-gray-600"
-                                          : "border-gray-700 bg-gray-950 text-gray-500 hover:border-gray-600 hover:text-white"
-                                }`}
-                            >
-                                {page}
-                            </button>
-                        ))}
-
-                        <button
-                            type="button"
-                            onClick={() => onPageChange(currentPage + 1)}
-                            disabled={currentPage >= totalPages}
-                            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-gray-700 bg-gray-950 text-indigo-300 transition hover:border-indigo-400/40 hover:bg-indigo-500/10 disabled:cursor-not-allowed disabled:opacity-30"
-                            title="Keyingi sahifa"
+                        <option
+                            value={20}
                         >
-                            <i className="fa-solid fa-chevron-right"></i>
-                        </button>
-                    </div>
-                </div>
+                            20
+                        </option>
+
+                        <option
+                            value={50}
+                        >
+                            50
+                        </option>
+                    </select>
+
+                </label>
+
             </div>
+
+
+            {/* =================================================
+                BUTTONS
+            ================================================== */}
+
+            <div
+                className="
+                    flex
+                    items-center
+                    gap-1.5
+                "
+            >
+
+                {/* PREVIOUS */}
+
+                <button
+                    type="button"
+
+                    disabled={
+                        currentPage <=
+                        1
+                    }
+
+                    onClick={() =>
+                        onPageChange?.(
+                            currentPage -
+                            1
+                        )
+                    }
+
+                    aria-label="Oldingi sahifa"
+
+                    className="
+                        grid
+                        h-9
+                        w-9
+
+                        place-items-center
+
+                        rounded-xl
+
+                        border
+                        border-white/[0.07]
+
+                        bg-white/[0.025]
+
+                        text-gray-500
+
+                        transition-all
+
+                        hover:border-indigo-400/20
+                        hover:bg-indigo-500/[0.06]
+                        hover:text-indigo-300
+
+                        disabled:cursor-not-allowed
+                        disabled:opacity-30
+                    "
+                >
+                    <ChevronLeft
+                        size={16}
+                        strokeWidth={2}
+                    />
+                </button>
+
+
+                {/* NUMBERS */}
+
+                {pages.map(
+                    (
+                        page,
+                        index
+                    ) => {
+
+                        if (
+                            typeof page !==
+                            "number"
+                        ) {
+                            return (
+                                <span
+                                    key={`${page}-${index}`}
+
+                                    className="
+                                        grid
+                                        h-9
+                                        min-w-8
+                                        place-items-center
+
+                                        text-xs
+
+                                        text-gray-700
+                                    "
+                                >
+                                    ...
+                                </span>
+                            );
+                        }
+
+
+                        const active =
+                            page ===
+                            currentPage;
+
+
+                        return (
+                            <button
+                                key={
+                                    page
+                                }
+
+                                type="button"
+
+                                onClick={() =>
+                                    onPageChange?.(
+                                        page
+                                    )
+                                }
+
+                                className={`
+                                    grid
+
+                                    h-9
+                                    min-w-9
+
+                                    place-items-center
+
+                                    rounded-xl
+
+                                    border
+
+                                    px-2
+
+                                    font-mono
+
+                                    text-[10px]
+                                    font-bold
+
+                                    transition-all
+
+                                    ${
+                                        active
+                                            ? `
+                                                border-indigo-400/25
+                                                bg-indigo-600
+                                                text-white
+                                                shadow-lg
+                                                shadow-indigo-600/15
+                                            `
+                                            : `
+                                                border-white/[0.07]
+                                                bg-white/[0.025]
+                                                text-gray-500
+                                                hover:border-indigo-400/20
+                                                hover:bg-indigo-500/[0.06]
+                                                hover:text-indigo-300
+                                            `
+                                    }
+                                `}
+                            >
+                                {
+                                    page
+                                }
+                            </button>
+                        );
+                    }
+                )}
+
+
+                {/* NEXT */}
+
+                <button
+                    type="button"
+
+                    disabled={
+                        currentPage >=
+                        totalPages
+                    }
+
+                    onClick={() =>
+                        onPageChange?.(
+                            currentPage +
+                            1
+                        )
+                    }
+
+                    aria-label="Keyingi sahifa"
+
+                    className="
+                        grid
+                        h-9
+                        w-9
+
+                        place-items-center
+
+                        rounded-xl
+
+                        border
+                        border-white/[0.07]
+
+                        bg-white/[0.025]
+
+                        text-gray-500
+
+                        transition-all
+
+                        hover:border-indigo-400/20
+                        hover:bg-indigo-500/[0.06]
+                        hover:text-indigo-300
+
+                        disabled:cursor-not-allowed
+                        disabled:opacity-30
+                    "
+                >
+                    <ChevronRight
+                        size={16}
+                        strokeWidth={2}
+                    />
+                </button>
+
+            </div>
+
         </div>
     );
 };
+
 
 export default NotificationPagination;
