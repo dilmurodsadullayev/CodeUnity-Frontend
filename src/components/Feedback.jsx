@@ -1,719 +1,2334 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import FeedbackCard from "./FeedbackCard";
-import FeedbackModal from "./FeedbackModal";
+import React, {
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
+} from "react";
 
 import {
-    getFeedbackStart,
-    getFeedbackSuccess,
-    getFeedbackFailure,
-    postFeedbackStart,
-    postFeedbackSuccess,
-    postFeedbackFailure,
-    updateFeedbackStart,
-    updateFeedbackSuccess,
-    updateFeedbackFailure,
-    deleteFeedbackStart,
-    deleteFeedbackSuccess,
-    deleteFeedbackFailure,
-} from "../features/feedback";
-
-import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
-import FeedbackService from "../services/feedback";
+    useSelector,
+} from "react-redux";
 
 import {
-    AlertTriangle,
+    useNavigate,
+} from "react-router-dom";
+
+import {
+    motion,
+} from "framer-motion";
+
+import toast, {
+    Toaster,
+} from "react-hot-toast";
+
+import {
+    AlertCircle,
     Bug,
     CheckCircle2,
-    ChevronDown,
-    CircleDashed,
-    Filter,
-    Lightbulb,
+    Clock3,
+    Coins,
+    Gift,
     Loader2,
-    MessageSquarePlus,
     MessageSquareText,
+    Plus,
     RefreshCcw,
-    Search,
     ShieldCheck,
     Sparkles,
-    Star,
-    ThumbsUp,
-    WandSparkles,
-    X,
+    XCircle,
 } from "lucide-react";
 
-const STATUS_TABS = [
+import FeedbackService from "../services/feedback";
+
+import FeedbackCreateModal from "./feedback/FeedbackCreateModal";
+
+import FeedbackEditModal from "./feedback/FeedbackEditModal";
+
+import FeedbackCard from "./feedback/FeedbackCard";
+
+import DeleteConfirmationModal from "./DeleteConfirmationModal";
+
+
+// =========================================================
+// STATUS FILTERS
+// =========================================================
+
+const STATUS_FILTERS = [
     {
         value: "all",
         label: "Barchasi",
-        icon: MessageSquareText,
     },
+
     {
         value: "pending",
-        label: "Kutilmoqda",
-        icon: CircleDashed,
+        label: "Pending",
     },
+
     {
-        value: "reviewed",
-        label: "Ko‘rib chiqilgan",
-        icon: ShieldCheck,
+        value: "approved",
+        label: "Approved",
     },
+
     {
-        value: "resolved",
-        label: "Hal etilgan",
-        icon: CheckCircle2,
+        value: "rejected",
+        label: "Rejected",
     },
 ];
 
-const getTypeMeta = (type) => {
-    const map = {
-        bug: {
-            label: "Bug",
-            icon: Bug,
-            className: "border-red-400/30 bg-red-500/10 text-red-300",
-        },
-        suggestion: {
-            label: "Taklif",
-            icon: Lightbulb,
-            className: "border-yellow-400/30 bg-yellow-500/10 text-yellow-300",
-        },
-        praise: {
-            label: "Maqtov",
-            icon: ThumbsUp,
-            className: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300",
-        },
-        other: {
-            label: "Boshqa",
-            icon: Star,
-            className: "border-indigo-400/30 bg-indigo-500/10 text-indigo-300",
-        },
-    };
 
-    return (
-        map[type] || {
-            label: "Noma’lum",
-            icon: Star,
-            className: "border-gray-500/30 bg-gray-500/10 text-gray-300",
-        }
-    );
-};
+// =========================================================
+// ERROR PARSER
+// =========================================================
 
-const getStatusMeta = (status) => {
-    const map = {
-        pending: {
-            label: "Kutilmoqda",
-            className: "border-yellow-400/30 bg-yellow-500/10 text-yellow-300",
-        },
-        reviewed: {
-            label: "Ko‘rib chiqilgan",
-            className: "border-sky-400/30 bg-sky-500/10 text-sky-300",
-        },
-        resolved: {
-            label: "Hal etilgan",
-            className: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300",
-        },
-    };
+const getErrorMessage = (
+    error
+) => {
+    const data =
+        error?.response?.data;
 
-    return (
-        map[status] || {
-            label: "Noma’lum",
-            className: "border-gray-500/30 bg-gray-500/10 text-gray-300",
-        }
-    );
-};
 
-const Feedback = () => {
-    const dispatch = useDispatch();
+    if (!data) {
+        return (
+            error?.message
+            ||
+            "Server bilan bog‘lanishda xatolik yuz berdi."
+        );
+    }
 
-    const { feedbacks = [], isLoading, error } = useSelector(
-        (state) => state.feedback || {}
-    );
 
-    const { isLoggedIn } = useSelector((state) => state.auth || {});
+    if (
+        typeof data ===
+        "string"
+    ) {
+        return data;
+    }
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [feedbackToEdit, setFeedbackToEdit] = useState(null);
-    const [visibleItems, setVisibleItems] = useState(6);
-    const [activeStatus, setActiveStatus] = useState("all");
-    const [search, setSearch] = useState("");
-    const [toast, setToast] = useState(null);
 
-    const safeFeedbacks = Array.isArray(feedbacks) ? feedbacks : [];
+    if (
+        data?.detail
+    ) {
+        return data.detail;
+    }
 
-    const getFeedbacks = useCallback(async () => {
-        dispatch(getFeedbackStart());
 
-        try {
-            const response = await FeedbackService.getFeedbacks();
-            dispatch(getFeedbackSuccess(response));
-        } catch (err) {
-            console.error("Fikrlarni olishda xatolik yuz berdi:", err);
+    if (
+        data?.message
+    ) {
+        return data.message;
+    }
 
-            dispatch(
-                getFeedbackFailure(
-                    err?.message ||
-                        "Fikr-mulohazalarni yuklashda xatolik yuz berdi."
+
+    if (
+        data?.error
+    ) {
+        return data.error;
+    }
+
+
+    if (
+        typeof data ===
+        "object"
+    ) {
+        const firstKey =
+            Object.keys(
+                data
+            )[0];
+
+
+        if (firstKey) {
+            const value =
+                data[
+                    firstKey
+                ];
+
+
+            if (
+                Array.isArray(
+                    value
                 )
-            );
-        }
-    }, [dispatch]);
-
-    const closeModal = useCallback(() => {
-        setIsModalOpen(false);
-        setFeedbackToEdit(null);
-    }, []);
-
-    useEffect(() => {
-        getFeedbacks();
-    }, [getFeedbacks]);
-
-    useEffect(() => {
-        const handleEsc = (event) => {
-            if (event.key === "Escape") {
-                closeModal();
-            }
-        };
-
-        window.addEventListener("keydown", handleEsc);
-
-        return () => {
-            window.removeEventListener("keydown", handleEsc);
-        };
-    }, [closeModal]);
-
-    useEffect(() => {
-        setVisibleItems(6);
-    }, [activeStatus, search]);
-
-    const showToast = (type, message) => {
-        setToast({ type, message });
-
-        setTimeout(() => {
-            setToast(null);
-        }, 2600);
-    };
-
-    const stats = useMemo(() => {
-        return {
-            all: safeFeedbacks.length,
-            pending: safeFeedbacks.filter((item) => item?.status === "pending")
-                .length,
-            reviewed: safeFeedbacks.filter((item) => item?.status === "reviewed")
-                .length,
-            resolved: safeFeedbacks.filter((item) => item?.status === "resolved")
-                .length,
-        };
-    }, [safeFeedbacks]);
-
-    const filteredFeedbacks = useMemo(() => {
-        const query = search.trim().toLowerCase();
-
-        return safeFeedbacks.filter((feedback) => {
-            const matchesStatus =
-                activeStatus === "all" || feedback?.status === activeStatus;
-
-            const title = String(feedback?.title || "").toLowerCase();
-            const message = String(feedback?.message || "").toLowerCase();
-            const username = String(feedback?.user?.username || "").toLowerCase();
-            const feedbackType = String(feedback?.feedback_type || "").toLowerCase();
-
-            const matchesSearch =
-                !query ||
-                title.includes(query) ||
-                message.includes(query) ||
-                username.includes(query) ||
-                feedbackType.includes(query);
-
-            return matchesStatus && matchesSearch;
-        });
-    }, [safeFeedbacks, activeStatus, search]);
-
-    const visibleFeedbacks = filteredFeedbacks.slice(0, visibleItems);
-    const hasMore = filteredFeedbacks.length > visibleItems;
-
-    const openCreateModal = () => {
-        setFeedbackToEdit(null);
-        setIsModalOpen(true);
-    };
-
-    const handleEditFeedback = (feedback) => {
-        setFeedbackToEdit(feedback);
-        setIsModalOpen(true);
-    };
-
-    const handleModalSubmit = async (feedbackData) => {
-        if (feedbackToEdit) {
-            dispatch(updateFeedbackStart());
-
-            try {
-                const response = await FeedbackService.updateFeedback(
-                    feedbackToEdit.id,
-                    feedbackData
+            ) {
+                return (
+                    value[0]
+                    ||
+                    "Xatolik yuz berdi."
                 );
-
-                dispatch(updateFeedbackSuccess(response));
-                closeModal();
-                showToast("success", "Fikr-mulohaza muvaffaqiyatli tahrirlandi.");
-            } catch (err) {
-                console.error("Fikr-mulohazani tahrirlashda xatolik:", err);
-
-                const message =
-                    err?.message ||
-                    "Fikr-mulohazani tahrirlashda xatolik yuz berdi.";
-
-                dispatch(updateFeedbackFailure(message));
-                showToast("error", message);
             }
 
-            return;
+
+            if (
+                typeof value ===
+                "string"
+            ) {
+                return value;
+            }
         }
+    }
 
-        dispatch(postFeedbackStart());
-
-        try {
-            const response = await FeedbackService.postFeedback(feedbackData);
-
-            dispatch(postFeedbackSuccess(response));
-            closeModal();
-            showToast("success", "Fikr-mulohazangiz muvaffaqiyatli yuborildi.");
-        } catch (err) {
-            console.error("Fikr-mulohazani yuborishda xatolik:", err);
-
-            const message =
-                err?.message || "Fikr-mulohazani yuborishda xatolik yuz berdi.";
-
-            dispatch(postFeedbackFailure(message));
-            showToast("error", message);
-        }
-    };
-
-    const handleDeleteFeedbackSuccess = (deletedFeedbackId) => {
-        dispatch(deleteFeedbackStart());
-
-        try {
-            dispatch(deleteFeedbackSuccess(deletedFeedbackId));
-            showToast("success", "Fikr-mulohaza muvaffaqiyatli o‘chirildi.");
-        } catch (err) {
-            console.error("Redux state yangilashda xatolik:", err);
-
-            const message =
-                err?.message ||
-                "O‘chirishdan keyin state yangilashda xatolik yuz berdi.";
-
-            dispatch(deleteFeedbackFailure(message));
-            showToast("error", message);
-        }
-    };
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-[#05070a] text-white">
-            {/* BACKGROUND EFFECTS */}
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.06)_1px,transparent_1px)] bg-[size:58px_58px] [mask-image:radial-gradient(circle_at_center,black_0%,transparent_74%)]" />
-
-            <div className="pointer-events-none absolute left-1/2 top-24 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-indigo-600/15 blur-[115px]" />
-            <div className="pointer-events-none absolute -right-36 top-[38%] h-[360px] w-[360px] rounded-full bg-pink-500/10 blur-[110px]" />
-            <div className="pointer-events-none absolute -left-36 bottom-24 h-[360px] w-[360px] rounded-full bg-emerald-500/10 blur-[110px]" />
-
-            {toast && (
-                <Toast
-                    type={toast.type}
-                    message={toast.message}
-                    onClose={() => setToast(null)}
-                />
-            )}
-
-            <main className="relative z-10">
-                {/* HERO */}
-                <section className="container mx-auto px-4 pb-10 pt-24 sm:pt-28 lg:pt-32">
-                    <div className="mx-auto max-w-5xl text-center">
-                        <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-400/25 bg-indigo-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-indigo-300 shadow-lg shadow-indigo-500/10">
-                            <WandSparkles size={16} />
-                            FSociety Feedback Hub
-                        </div>
-
-                        <h1 className="text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-8xl">
-                            Fikrlar{" "}
-                            <span className="bg-gradient-to-br from-indigo-300 via-pink-500 to-yellow-300 bg-clip-text italic text-transparent drop-shadow-[0_0_24px_rgba(129,140,248,0.22)]">
-                                markazi
-                            </span>
-                        </h1>
-
-                        <p className="mx-auto mt-6 max-w-3xl text-sm font-medium leading-7 text-gray-400 sm:text-lg sm:leading-8">
-                            Hamjamiyatimizning yuragi shu yerda uradi. Xatolik,
-                            taklif, maqtov yoki yangi g‘oyangizni yuboring —
-                            FSociety’ni birga kuchaytiramiz.
-                        </p>
-
-                        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                            {isLoggedIn ? (
-                                <button
-                                    type="button"
-                                    onClick={openCreateModal}
-                                    className="group inline-flex items-center justify-center gap-3 rounded-2xl border border-indigo-400/40 bg-indigo-600 px-6 py-3 text-sm font-black text-white shadow-2xl shadow-indigo-600/25 transition-all hover:-translate-y-0.5 hover:bg-indigo-500 active:scale-95"
-                                >
-                                    <MessageSquarePlus size={19} />
-                                    Fikr qo‘shish
-                                    <Sparkles
-                                        size={16}
-                                        className="transition-transform group-hover:rotate-12"
-                                    />
-                                </button>
-                            ) : (
-                                <>
-                                    <Link
-                                        to="/login"
-                                        className="inline-flex items-center justify-center rounded-2xl border border-indigo-400/40 bg-indigo-600 px-6 py-3 text-sm font-black text-white shadow-2xl shadow-indigo-600/25 transition hover:bg-indigo-500"
-                                    >
-                                        Kirish
-                                    </Link>
-
-                                    <Link
-                                        to="/register"
-                                        className="inline-flex items-center justify-center rounded-2xl border border-gray-600/70 bg-gray-900/80 px-6 py-3 text-sm font-black text-white transition hover:bg-gray-800"
-                                    >
-                                        Ro‘yxatdan o‘tish
-                                    </Link>
-                                </>
-                            )}
-
-                            <button
-                                type="button"
-                                onClick={getFeedbacks}
-                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-600/70 bg-gray-900/70 px-5 py-3 text-sm font-black text-gray-200 transition hover:bg-gray-800"
-                            >
-                                <RefreshCcw size={17} />
-                                Yangilash
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* STATS */}
-                    <div className="mx-auto mt-12 grid max-w-6xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <StatCard
-                            title="Jami fikrlar"
-                            value={stats.all}
-                            icon={MessageSquareText}
-                            gradient="from-indigo-500/15"
-                        />
-
-                        <StatCard
-                            title="Kutilmoqda"
-                            value={stats.pending}
-                            icon={CircleDashed}
-                            gradient="from-yellow-500/15"
-                        />
-
-                        <StatCard
-                            title="Ko‘rib chiqilgan"
-                            value={stats.reviewed}
-                            icon={ShieldCheck}
-                            gradient="from-sky-500/15"
-                        />
-
-                        <StatCard
-                            title="Hal etilgan"
-                            value={stats.resolved}
-                            icon={CheckCircle2}
-                            gradient="from-emerald-500/15"
-                        />
-                    </div>
-                </section>
-
-                {/* CONTROL PANEL */}
-                <section className="container mx-auto px-4 pb-8">
-                    <div className="mx-auto max-w-6xl overflow-hidden rounded-[28px] border border-gray-700/70 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.09),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(236,72,153,0.06),transparent_38%),rgba(17,24,39,0.64)] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.045)] backdrop-blur-xl sm:p-5">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="relative flex-1">
-                                <Search
-                                    size={18}
-                                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"
-                                />
-
-                                <input
-                                    type="text"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Fikr, title, username yoki turi bo‘yicha qidirish..."
-                                    className="w-full rounded-2xl border border-gray-700 bg-gray-950/60 py-3 pl-11 pr-4 text-sm font-semibold text-white outline-none transition placeholder:text-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                                />
-                            </div>
-
-                            <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin] [scrollbar-color:rgba(99,102,241,0.45)_transparent] lg:pb-0">
-                                {STATUS_TABS.map((tab) => {
-                                    const Icon = tab.icon;
-                                    const isActive = activeStatus === tab.value;
-
-                                    return (
-                                        <button
-                                            key={tab.value}
-                                            type="button"
-                                            onClick={() => setActiveStatus(tab.value)}
-                                            className={`inline-flex shrink-0 items-center gap-2 rounded-2xl border px-4 py-3 text-xs font-black transition-all ${
-                                                isActive
-                                                    ? "border-indigo-400/50 bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
-                                                    : "border-gray-700 bg-gray-950/40 text-gray-400 hover:border-gray-600 hover:bg-gray-900 hover:text-white"
-                                            }`}
-                                        >
-                                            <Icon size={16} />
-                                            {tab.label}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        <div className="mt-4 flex flex-col gap-3 border-t border-gray-800 pt-4 text-xs font-semibold text-gray-500 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex items-center gap-2">
-                                <Filter size={15} className="text-indigo-300" />
-                                <span>{filteredFeedbacks.length} ta natija topildi</span>
-                            </div>
-
-                            <span>
-                                Ko‘rsatilmoqda: {visibleFeedbacks.length} /{" "}
-                                {filteredFeedbacks.length}
-                            </span>
-                        </div>
-                    </div>
-                </section>
-
-                {/* FEEDBACK LIST */}
-                <section className="container mx-auto px-4 pb-20">
-                    <div className="mx-auto max-w-6xl">
-                        {isLoading && <FeedbackSkeleton />}
-
-                        {!isLoading && error && (
-                            <ErrorState message={error} onRetry={getFeedbacks} />
-                        )}
-
-                        {!isLoading && !error && filteredFeedbacks.length === 0 && (
-                            <EmptyState
-                                search={search}
-                                activeStatus={activeStatus}
-                                onCreate={openCreateModal}
-                                isLoggedIn={isLoggedIn}
-                            />
-                        )}
-
-                        {!isLoading && !error && filteredFeedbacks.length > 0 && (
-                            <>
-                                <div className="grid gap-6 lg:grid-cols-2">
-                                    {visibleFeedbacks.map((feedback, index) => {
-                                        const typeMeta = getTypeMeta(
-                                            feedback?.feedback_type
-                                        );
-                                        const statusMeta = getStatusMeta(
-                                            feedback?.status
-                                        );
-                                        const TypeIcon = typeMeta.icon;
-
-                                        return (
-                                            <div
-                                                key={feedback?.id || index}
-                                                className="rounded-[28px] border border-gray-700/70 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.09),transparent_38%),rgba(17,24,39,0.52)] p-3.5 shadow-[0_24px_70px_rgba(0,0,0,0.28)] transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400/40 hover:bg-gray-900/75"
-                                            >
-                                                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                                                    <div
-                                                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-wider ${typeMeta.className}`}
-                                                    >
-                                                        <TypeIcon size={14} />
-                                                        {typeMeta.label}
-                                                    </div>
-
-                                                    <div
-                                                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-wider ${statusMeta.className}`}
-                                                    >
-                                                        {statusMeta.label}
-                                                    </div>
-                                                </div>
-
-                                                <FeedbackCard
-                                                    feedback={feedback}
-                                                    onEdit={handleEditFeedback}
-                                                    onDeleteSuccess={
-                                                        handleDeleteFeedbackSuccess
-                                                    }
-                                                />
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-
-                                {hasMore && (
-                                    <div className="mt-12 text-center">
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setVisibleItems((prev) => prev + 6)
-                                            }
-                                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-600/70 bg-gray-900/80 px-6 py-3 text-sm font-black text-white shadow-xl shadow-black/20 transition hover:-translate-y-0.5 hover:bg-gray-800 active:scale-95"
-                                        >
-                                            Ko‘proq yuklash
-                                            <ChevronDown size={18} />
-                                        </button>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </section>
-            </main>
-
-            <FeedbackModal
-                isOpen={isModalOpen}
-                onClose={closeModal}
-                onSubmit={handleModalSubmit}
-                feedbackToEdit={feedbackToEdit}
-            />
-        </div>
+        "Feedback bilan ishlashda "
+        + "xatolik yuz berdi."
     );
 };
 
-const StatCard = ({ title, value, icon: Icon, gradient = "from-indigo-500/15" }) => {
-    return (
-        <div
-            className={`group relative overflow-hidden rounded-3xl border border-gray-700/70 bg-gradient-to-br ${gradient} to-transparent p-5 shadow-[0_24px_80px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.045)] backdrop-blur-xl transition-all hover:-translate-y-1`}
-        >
-            <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-white/5 blur-2xl transition group-hover:bg-indigo-500/10" />
 
-            <div className="relative z-10 flex items-center justify-between gap-4">
+// =========================================================
+// STAT CARD
+// =========================================================
+
+const StatCard = ({
+    title,
+    value,
+    Icon,
+    description,
+}) => {
+    return (
+        <motion.div
+            whileHover={{
+                y: -3,
+            }}
+            transition={{
+                duration: 0.18,
+            }}
+            className="
+                relative
+                overflow-hidden
+                rounded-2xl
+                border
+                border-white/[0.06]
+                bg-white/[0.025]
+                p-5
+                transition
+                hover:border-indigo-400/15
+                hover:bg-white/[0.035]
+            "
+        >
+
+            <div
+                className="
+                    pointer-events-none
+                    absolute
+                    -right-10
+                    -top-10
+                    h-28
+                    w-28
+                    rounded-full
+                    bg-indigo-500/[0.07]
+                    blur-3xl
+                "
+            />
+
+
+            <div
+                className="
+                    relative
+                    flex
+                    items-start
+                    justify-between
+                    gap-4
+                "
+            >
+
                 <div>
-                    <p className="text-xs font-black uppercase tracking-wider text-gray-500">
+
+                    <p
+                        className="
+                            text-[10px]
+                            font-bold
+                            uppercase
+                            tracking-[0.16em]
+                            text-gray-600
+                        "
+                    >
                         {title}
                     </p>
 
-                    <p className="mt-2 text-4xl font-black text-white">{value}</p>
+
+                    <h3
+                        className="
+                            mt-2
+                            text-2xl
+                            font-black
+                            text-white
+                        "
+                    >
+                        {value}
+                    </h3>
+
+
+                    <p
+                        className="
+                            mt-1
+                            text-[10px]
+                            leading-5
+                            text-gray-600
+                        "
+                    >
+                        {description}
+                    </p>
+
                 </div>
 
-                <div className="flex h-14 w-14 items-center justify-center rounded-3xl border border-indigo-400/20 bg-indigo-500/10 text-indigo-300">
-                    <Icon size={27} />
-                </div>
-            </div>
-        </div>
-    );
-};
 
-const FeedbackSkeleton = () => {
-    return (
-        <div className="grid gap-6 lg:grid-cols-2">
-            {[1, 2, 3, 4].map((item) => (
                 <div
-                    key={item}
-                    className="rounded-3xl border border-gray-700/70 bg-gray-900/60 p-5 shadow-2xl shadow-black/20"
+                    className="
+                        grid
+                        h-10
+                        w-10
+                        flex-shrink-0
+                        place-items-center
+                        rounded-xl
+                        border
+                        border-indigo-400/10
+                        bg-indigo-500/[0.06]
+                        text-indigo-300
+                    "
                 >
-                    <div className="mb-4 flex items-center justify-between">
-                        <div className="h-7 w-28 animate-pulse rounded-full bg-gray-800" />
-                        <div className="h-7 w-32 animate-pulse rounded-full bg-gray-800" />
-                    </div>
 
-                    <div className="space-y-4">
-                        <div className="h-6 w-3/4 animate-pulse rounded-xl bg-gray-800" />
-                        <div className="h-4 w-full animate-pulse rounded-xl bg-gray-800" />
-                        <div className="h-4 w-5/6 animate-pulse rounded-xl bg-gray-800" />
-                        <div className="h-12 w-full animate-pulse rounded-2xl bg-gray-800" />
-                    </div>
+                    <Icon
+                        size={18}
+                    />
+
                 </div>
-            ))}
-        </div>
-    );
-};
 
-const ErrorState = ({ message, onRetry }) => {
-    return (
-        <div className="mx-auto max-w-2xl rounded-[32px] border border-red-500/30 bg-red-500/10 p-8 text-center shadow-2xl shadow-black/30">
-            <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full border border-red-400/25 bg-red-500/10 text-red-300">
-                <AlertTriangle size={42} />
             </div>
 
-            <h3 className="text-2xl font-black text-white">Fikrlar yuklanmadi</h3>
-
-            <p className="mx-auto mt-3 max-w-xl text-sm font-semibold leading-7 text-red-200/80">
-                {message}
-            </p>
-
-            <button
-                type="button"
-                onClick={onRetry}
-                className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white transition hover:bg-red-500"
-            >
-                <RefreshCcw size={17} />
-                Qayta urinish
-            </button>
-        </div>
+        </motion.div>
     );
 };
 
-const EmptyState = ({ search, activeStatus, onCreate, isLoggedIn }) => {
-    const hasFilter = search.trim() || activeStatus !== "all";
 
-    return (
-        <div className="mx-auto max-w-2xl rounded-[32px] border border-gray-700/70 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.09),transparent_35%),rgba(17,24,39,0.64)] p-8 text-center shadow-2xl shadow-black/30 backdrop-blur-xl">
-            <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full border border-gray-700 bg-gray-950/60 text-gray-500">
-                <MessageSquareText size={42} />
-            </div>
+// =========================================================
+// EMPTY STATE
+// =========================================================
 
-            <h3 className="text-2xl font-black text-white">
-                {hasFilter
-                    ? "Bu filter bo‘yicha fikr topilmadi"
-                    : "Hozircha fikr-mulohaza mavjud emas"}
-            </h3>
-
-            <p className="mx-auto mt-3 max-w-xl text-sm font-semibold leading-7 text-gray-500">
-                {hasFilter
-                    ? "Qidiruv matnini yoki status filterini o‘zgartirib ko‘ring."
-                    : "Birinchi bo‘lib taklif, xato yoki maqtovingizni yuboring."}
-            </p>
-
-            {isLoggedIn && (
-                <button
-                    type="button"
-                    onClick={onCreate}
-                    className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white transition hover:bg-indigo-500"
-                >
-                    <MessageSquarePlus size={17} />
-                    Fikr qo‘shish
-                </button>
-            )}
-        </div>
-    );
-};
-
-const Toast = ({ type, message, onClose }) => {
-    const isSuccess = type === "success";
-
+const EmptyState = ({
+    title,
+    description,
+}) => {
     return (
         <div
-            className={`fixed right-4 top-24 z-[70] flex w-[calc(100%-2rem)] max-w-md items-start gap-3 rounded-2xl border p-4 shadow-2xl backdrop-blur-xl sm:right-6 ${
-                isSuccess
-                    ? "border-emerald-400/30 bg-emerald-950/80 text-emerald-200"
-                    : "border-red-400/30 bg-red-950/80 text-red-200"
-            }`}
+            className="
+                rounded-3xl
+                border
+                border-dashed
+                border-white/[0.08]
+                bg-white/[0.015]
+                px-6
+                py-16
+                text-center
+            "
         >
+
             <div
-                className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-                    isSuccess
-                        ? "bg-emerald-500/15 text-emerald-300"
-                        : "bg-red-500/15 text-red-300"
-                }`}
+                className="
+                    mx-auto
+                    grid
+                    h-14
+                    w-14
+                    place-items-center
+                    rounded-2xl
+                    border
+                    border-white/[0.06]
+                    bg-white/[0.025]
+                    text-gray-600
+                "
             >
-                {isSuccess ? <CheckCircle2 size={19} /> : <AlertTriangle size={19} />}
+
+                <MessageSquareText
+                    size={24}
+                />
+
             </div>
 
-            <div className="min-w-0 flex-1">
-                <p className="text-sm font-black">
-                    {isSuccess ? "Muvaffaqiyatli" : "Xatolik"}
-                </p>
-                <p className="mt-1 text-sm font-semibold opacity-90">{message}</p>
-            </div>
 
-            <button
-                type="button"
-                onClick={onClose}
-                className="rounded-lg p-1 opacity-70 transition hover:bg-white/10 hover:opacity-100"
+            <h3
+                className="
+                    mt-4
+                    text-sm
+                    font-black
+                    text-gray-300
+                "
             >
-                <X size={18} />
-            </button>
+                {title}
+            </h3>
+
+
+            <p
+                className="
+                    mx-auto
+                    mt-2
+                    max-w-md
+                    text-xs
+                    leading-6
+                    text-gray-600
+                "
+            >
+                {description}
+            </p>
+
         </div>
     );
 };
+
+
+// =========================================================
+// FEEDBACK PAGE
+// =========================================================
+
+const Feedback = () => {
+
+    const navigate =
+        useNavigate();
+
+
+    // =====================================================
+    // AUTH
+    // =====================================================
+
+    const {
+        isLoggedIn,
+    } = useSelector(
+        (
+            state
+        ) =>
+            state.auth
+    );
+
+
+    // =====================================================
+    // DATA
+    // =====================================================
+
+    const [
+        publicFeedbacks,
+        setPublicFeedbacks,
+    ] = useState([]);
+
+
+    const [
+        myFeedbacks,
+        setMyFeedbacks,
+    ] = useState([]);
+
+
+    const [
+        stats,
+        setStats,
+    ] = useState({
+        total: 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        earned_fcoin: 0,
+        approved_bugs: 0,
+    });
+
+
+    // =====================================================
+    // FILTER
+    // =====================================================
+
+    const [
+        activeStatus,
+        setActiveStatus,
+    ] = useState(
+        "all"
+    );
+
+
+    // =====================================================
+    // MODALS
+    // =====================================================
+
+    const [
+        isCreateModalOpen,
+        setIsCreateModalOpen,
+    ] = useState(
+        false
+    );
+
+
+    const [
+        editingFeedback,
+        setEditingFeedback,
+    ] = useState(
+        null
+    );
+
+
+    const [
+        deletingFeedback,
+        setDeletingFeedback,
+    ] = useState(
+        null
+    );
+
+
+    // =====================================================
+    // LOADING
+    // =====================================================
+
+    const [
+        isLoading,
+        setIsLoading,
+    ] = useState(
+        true
+    );
+
+
+    const [
+        isRefreshing,
+        setIsRefreshing,
+    ] = useState(
+        false
+    );
+
+
+    const [
+        isDeleting,
+        setIsDeleting,
+    ] = useState(
+        false
+    );
+
+
+    // =====================================================
+    // PAGE ERROR
+    // =====================================================
+
+    const [
+        error,
+        setError,
+    ] = useState("");
+
+
+    // =====================================================
+    // FILTERED MY FEEDBACKS
+    // =====================================================
+
+    const filteredMyFeedbacks =
+        useMemo(
+            () => {
+
+                if (
+                    activeStatus ===
+                    "all"
+                ) {
+                    return (
+                        myFeedbacks
+                    );
+                }
+
+
+                return (
+                    myFeedbacks.filter(
+                        (
+                            feedback
+                        ) =>
+                            feedback.status ===
+                            activeStatus
+                    )
+                );
+
+            },
+            [
+                activeStatus,
+                myFeedbacks,
+            ]
+        );
+
+
+    // =====================================================
+    // LOAD PUBLIC
+    // =====================================================
+
+    const loadPublicFeedbacks =
+        useCallback(
+            async () => {
+
+                const data =
+                    await FeedbackService
+                        .getFeedbacks();
+
+
+                setPublicFeedbacks(
+                    Array.isArray(
+                        data
+                    )
+                        ? data
+                        : []
+                );
+
+            },
+            []
+        );
+
+
+    // =====================================================
+    // LOAD MY FEEDBACKS
+    // =====================================================
+
+    const loadMyFeedbacks =
+        useCallback(
+            async () => {
+
+                if (
+                    !isLoggedIn
+                ) {
+
+                    setMyFeedbacks(
+                        []
+                    );
+
+                    return;
+                }
+
+
+                const data =
+                    await FeedbackService
+                        .getMyFeedbacks();
+
+
+                setMyFeedbacks(
+                    Array.isArray(
+                        data
+                    )
+                        ? data
+                        : []
+                );
+
+            },
+            [
+                isLoggedIn,
+            ]
+        );
+
+
+    // =====================================================
+    // LOAD STATS
+    // =====================================================
+
+    const loadStats =
+        useCallback(
+            async () => {
+
+                if (
+                    !isLoggedIn
+                ) {
+
+                    setStats({
+                        total: 0,
+                        pending: 0,
+                        approved: 0,
+                        rejected: 0,
+                        earned_fcoin: 0,
+                        approved_bugs: 0,
+                    });
+
+                    return;
+                }
+
+
+                const data =
+                    await FeedbackService
+                        .getMyFeedbackStats();
+
+
+                setStats({
+                    total:
+                        data?.total
+                        ?? 0,
+
+                    pending:
+                        data?.pending
+                        ?? 0,
+
+                    approved:
+                        data?.approved
+                        ?? 0,
+
+                    rejected:
+                        data?.rejected
+                        ?? 0,
+
+                    earned_fcoin:
+                        data?.earned_fcoin
+                        ?? 0,
+
+                    approved_bugs:
+                        data?.approved_bugs
+                        ?? 0,
+                });
+
+            },
+            [
+                isLoggedIn,
+            ]
+        );
+
+
+    // =====================================================
+    // LOAD ALL
+    // =====================================================
+
+    const loadAllData =
+        useCallback(
+            async () => {
+
+                await Promise.all([
+                    loadPublicFeedbacks(),
+                    loadMyFeedbacks(),
+                    loadStats(),
+                ]);
+
+            },
+            [
+                loadPublicFeedbacks,
+                loadMyFeedbacks,
+                loadStats,
+            ]
+        );
+
+
+    // =====================================================
+    // INITIAL LOAD
+    // =====================================================
+
+    useEffect(
+        () => {
+
+            let mounted =
+                true;
+
+
+            const load =
+                async () => {
+
+                    setIsLoading(
+                        true
+                    );
+
+                    setError("");
+
+
+                    try {
+
+                        await loadAllData();
+
+                    } catch (
+                        requestError
+                    ) {
+
+                        if (
+                            mounted
+                        ) {
+
+                            setError(
+                                getErrorMessage(
+                                    requestError
+                                )
+                            );
+
+                        }
+
+                    } finally {
+
+                        if (
+                            mounted
+                        ) {
+
+                            setIsLoading(
+                                false
+                            );
+
+                        }
+                    }
+                };
+
+
+            load();
+
+
+            return () => {
+
+                mounted =
+                    false;
+
+            };
+
+        },
+        [
+            loadAllData,
+        ]
+    );
+
+
+    // =====================================================
+    // REFRESH
+    // =====================================================
+
+    const handleRefresh =
+        async () => {
+
+            if (
+                isRefreshing
+            ) {
+                return;
+            }
+
+
+            const toastId =
+                toast.loading(
+                    "Feedbacklar yangilanmoqda..."
+                );
+
+
+            setIsRefreshing(
+                true
+            );
+
+            setError("");
+
+
+            try {
+
+                await loadAllData();
+
+
+                toast.success(
+                    "Feedback ma’lumotlari yangilandi.",
+                    {
+                        id:
+                            toastId,
+                    }
+                );
+
+            } catch (
+                requestError
+            ) {
+
+                const message =
+                    getErrorMessage(
+                        requestError
+                    );
+
+
+                setError(
+                    message
+                );
+
+
+                toast.error(
+                    message,
+                    {
+                        id:
+                            toastId,
+
+                        duration:
+                            5000,
+                    }
+                );
+
+            } finally {
+
+                setIsRefreshing(
+                    false
+                );
+
+            }
+        };
+
+
+    // =====================================================
+    // OPEN CREATE
+    // =====================================================
+
+    const handleOpenCreate =
+        () => {
+
+            if (
+                !isLoggedIn
+            ) {
+
+                toast.error(
+                    "Feedback yuborish uchun avval tizimga kiring."
+                );
+
+
+                navigate(
+                    "/login"
+                );
+
+                return;
+            }
+
+
+            setIsCreateModalOpen(
+                true
+            );
+        };
+
+
+    // =====================================================
+    // CREATED
+    // =====================================================
+
+    const handleCreated =
+        async (
+            createdFeedback
+        ) => {
+
+            setActiveStatus(
+                "all"
+            );
+
+
+            setIsCreateModalOpen(
+                false
+            );
+
+
+            if (
+                createdFeedback?.id
+            ) {
+
+                setMyFeedbacks(
+                    (
+                        current
+                    ) => [
+                        createdFeedback,
+                        ...current.filter(
+                            (
+                                item
+                            ) =>
+                                item.id !==
+                                createdFeedback.id
+                        ),
+                    ]
+                );
+
+            }
+
+
+            try {
+
+                await Promise.all([
+                    loadMyFeedbacks(),
+                    loadStats(),
+                    loadPublicFeedbacks(),
+                ]);
+
+            } catch (
+                requestError
+            ) {
+
+                console.error(
+                    "Feedback create refresh error:",
+                    requestError
+                );
+
+            }
+        };
+
+
+    // =====================================================
+    // EDIT OPEN
+    // =====================================================
+
+    const handleEdit =
+        (
+            feedback
+        ) => {
+
+            if (
+                !feedback
+                    ?.can_user_modify
+            ) {
+
+                toast.error(
+                    "Faqat pending feedbackni tahrirlash mumkin."
+                );
+
+                return;
+            }
+
+
+            setEditingFeedback(
+                feedback
+            );
+        };
+
+
+    // =====================================================
+    // UPDATED
+    // =====================================================
+
+    const handleUpdated =
+        async (
+            updatedFeedback
+        ) => {
+
+            setEditingFeedback(
+                null
+            );
+
+
+            if (
+                updatedFeedback?.id
+            ) {
+
+                setMyFeedbacks(
+                    (
+                        current
+                    ) =>
+                        current.map(
+                            (
+                                item
+                            ) =>
+                                item.id ===
+                                updatedFeedback.id
+
+                                    ? updatedFeedback
+
+                                    : item
+                        )
+                );
+
+            }
+
+
+            try {
+
+                await Promise.all([
+                    loadMyFeedbacks(),
+                    loadStats(),
+                    loadPublicFeedbacks(),
+                ]);
+
+            } catch (
+                requestError
+            ) {
+
+                console.error(
+                    "Feedback update refresh error:",
+                    requestError
+                );
+
+            }
+        };
+
+
+    // =====================================================
+    // DELETE OPEN
+    // =====================================================
+
+    const handleDelete =
+        (
+            feedback
+        ) => {
+
+            if (
+                !feedback
+                    ?.can_user_modify
+            ) {
+
+                toast.error(
+                    "Faqat pending feedbackni o‘chirish mumkin."
+                );
+
+                return;
+            }
+
+
+            setDeletingFeedback(
+                feedback
+            );
+        };
+
+
+    // =====================================================
+    // DELETE CLOSE
+    // =====================================================
+
+    const handleDeleteClose =
+        () => {
+
+            if (
+                isDeleting
+            ) {
+                return;
+            }
+
+
+            setDeletingFeedback(
+                null
+            );
+        };
+
+
+    // =====================================================
+    // DELETE CONFIRM
+    // =====================================================
+
+    const handleDeleteConfirm =
+        async () => {
+
+            if (
+                !deletingFeedback?.id
+                ||
+                isDeleting
+            ) {
+                return;
+            }
+
+
+            const feedbackId =
+                deletingFeedback.id;
+
+
+            const feedbackTitle =
+                deletingFeedback.title
+                || "Feedback";
+
+
+            const toastId =
+                toast.loading(
+                    "Feedback o‘chirilmoqda..."
+                );
+
+
+            setIsDeleting(
+                true
+            );
+
+            setError("");
+
+
+            try {
+
+                await FeedbackService
+                    .deleteFeedback(
+                        feedbackId
+                    );
+
+
+                setMyFeedbacks(
+                    (
+                        current
+                    ) =>
+                        current.filter(
+                            (
+                                feedback
+                            ) =>
+                                feedback.id !==
+                                feedbackId
+                        )
+                );
+
+
+                setDeletingFeedback(
+                    null
+                );
+
+
+                toast.success(
+                    `"${feedbackTitle}" muvaffaqiyatli o‘chirildi.`,
+                    {
+                        id:
+                            toastId,
+
+                        duration:
+                            3500,
+                    }
+                );
+
+
+                try {
+
+                    await Promise.all([
+                        loadStats(),
+                        loadPublicFeedbacks(),
+                    ]);
+
+                } catch (
+                    refreshError
+                ) {
+
+                    console.error(
+                        "Delete refresh error:",
+                        refreshError
+                    );
+
+                }
+
+            } catch (
+                requestError
+            ) {
+
+                const message =
+                    getErrorMessage(
+                        requestError
+                    );
+
+
+                setError(
+                    message
+                );
+
+
+                toast.error(
+                    message,
+                    {
+                        id:
+                            toastId,
+
+                        duration:
+                            5000,
+                    }
+                );
+
+            } finally {
+
+                setIsDeleting(
+                    false
+                );
+
+            }
+        };
+
+
+    // =====================================================
+    // STAT CARDS
+    // =====================================================
+
+    const statCards =
+        useMemo(
+            () => [
+                {
+                    title:
+                        "Jami",
+
+                    value:
+                        stats.total,
+
+                    Icon:
+                        MessageSquareText,
+
+                    description:
+                        "Yuborgan feedbacklaringiz",
+                },
+
+                {
+                    title:
+                        "Pending",
+
+                    value:
+                        stats.pending,
+
+                    Icon:
+                        Clock3,
+
+                    description:
+                        "Admin tekshiruvini kutmoqda",
+                },
+
+                {
+                    title:
+                        "Approved",
+
+                    value:
+                        stats.approved,
+
+                    Icon:
+                        CheckCircle2,
+
+                    description:
+                        "Tasdiqlangan feedbacklar",
+                },
+
+                {
+                    title:
+                        "Rejected",
+
+                    value:
+                        stats.rejected,
+
+                    Icon:
+                        XCircle,
+
+                    description:
+                        "Rad etilgan feedbacklar",
+                },
+
+                {
+                    title:
+                        "Earned FCoin",
+
+                    value:
+                        stats.earned_fcoin,
+
+                    Icon:
+                        Coins,
+
+                    description:
+                        "Feedback orqali topilgan",
+                },
+
+                {
+                    title:
+                        "Approved Bugs",
+
+                    value:
+                        stats.approved_bugs,
+
+                    Icon:
+                        Bug,
+
+                    description:
+                        "Tasdiqlangan bug reportlar",
+                },
+            ],
+            [
+                stats,
+            ]
+        );
+
+
+    // =====================================================
+    // LOADING
+    // =====================================================
+
+    if (
+        isLoading
+    ) {
+        return (
+            <>
+                <Toaster
+                    position="top-right"
+                    containerStyle={{
+                        zIndex:
+                            2147483647,
+
+                        top:
+                            24,
+
+                        right:
+                            24,
+                    }}
+                    toastOptions={{
+                        duration:
+                            4000,
+
+                        style: {
+                            background:
+                                "#161b22",
+
+                            color:
+                                "#f0f6fc",
+
+                            border:
+                                "1px solid #30363d",
+
+                            borderRadius:
+                                "14px",
+
+                            padding:
+                                "14px 16px",
+
+                            fontSize:
+                                "13px",
+
+                            fontWeight:
+                                "600",
+
+                            boxShadow:
+                                "0 20px 60px rgba(0, 0, 0, 0.55)",
+
+                            maxWidth:
+                                "420px",
+                        },
+
+                        success: {
+                            iconTheme: {
+                                primary:
+                                    "#22c55e",
+
+                                secondary:
+                                    "#161b22",
+                            },
+                        },
+
+                        error: {
+                            iconTheme: {
+                                primary:
+                                    "#ef4444",
+
+                                secondary:
+                                    "#161b22",
+                            },
+                        },
+
+                        loading: {
+                            iconTheme: {
+                                primary:
+                                    "#818cf8",
+
+                                secondary:
+                                    "#161b22",
+                            },
+                        },
+                    }}
+                />
+
+
+                <div
+                    className="
+                        flex
+                        min-h-[70vh]
+                        items-center
+                        justify-center
+                    "
+                >
+
+                    <div
+                        className="
+                            text-center
+                        "
+                    >
+
+                        <Loader2
+                            size={34}
+                            className="
+                                mx-auto
+                                animate-spin
+                                text-indigo-400
+                            "
+                        />
+
+
+                        <p
+                            className="
+                                mt-3
+                                text-xs
+                                font-semibold
+                                text-gray-600
+                            "
+                        >
+                            Feedbacklar yuklanmoqda...
+                        </p>
+
+                    </div>
+
+                </div>
+            </>
+        );
+    }
+
+
+    // =====================================================
+    // JSX
+    // =====================================================
+
+    return (
+        <>
+
+            {/* =============================================
+                TOAST
+            ============================================== */}
+
+            <Toaster
+                position="top-right"
+                containerStyle={{
+                    zIndex:
+                        2147483647,
+
+                    top:
+                        24,
+
+                    right:
+                        24,
+                }}
+                toastOptions={{
+                    duration:
+                        4000,
+
+                    style: {
+                        background:
+                            "#161b22",
+
+                        color:
+                            "#f0f6fc",
+
+                        border:
+                            "1px solid #30363d",
+
+                        borderRadius:
+                            "14px",
+
+                        padding:
+                            "14px 16px",
+
+                        fontSize:
+                            "13px",
+
+                        fontWeight:
+                            "600",
+
+                        boxShadow:
+                            "0 20px 60px rgba(0, 0, 0, 0.55)",
+
+                        maxWidth:
+                            "420px",
+                    },
+
+                    success: {
+                        iconTheme: {
+                            primary:
+                                "#22c55e",
+
+                            secondary:
+                                "#161b22",
+                        },
+                    },
+
+                    error: {
+                        iconTheme: {
+                            primary:
+                                "#ef4444",
+
+                            secondary:
+                                "#161b22",
+                        },
+                    },
+
+                    loading: {
+                        iconTheme: {
+                            primary:
+                                "#818cf8",
+
+                            secondary:
+                                "#161b22",
+                        },
+                    },
+                }}
+            />
+
+
+            <main
+                className="
+                    relative
+                    min-h-screen
+                    overflow-hidden
+                    bg-[#06080d]
+                    pb-24
+                "
+            >
+
+                {/* =========================================
+                    BACKGROUND
+                ========================================== */}
+
+                <div
+                    className="
+                        pointer-events-none
+                        absolute
+                        left-1/2
+                        top-0
+                        h-[500px]
+                        w-[700px]
+                        -translate-x-1/2
+                        rounded-full
+                        bg-indigo-600/[0.08]
+                        blur-[140px]
+                    "
+                />
+
+
+                <div
+                    className="
+                        pointer-events-none
+                        absolute
+                        -right-40
+                        top-[500px]
+                        h-[400px]
+                        w-[400px]
+                        rounded-full
+                        bg-cyan-500/[0.05]
+                        blur-[130px]
+                    "
+                />
+
+
+                {/* =========================================
+                    CONTAINER
+                ========================================== */}
+
+                <div
+                    className="
+                        relative
+                        z-10
+                        mx-auto
+                        w-full
+                        max-w-7xl
+                        px-4
+                        py-10
+                        sm:px-6
+                        lg:px-8
+                    "
+                >
+
+                    {/* =====================================
+                        HERO
+                    ====================================== */}
+
+                    <section
+                        className="
+                            overflow-hidden
+                            rounded-[32px]
+                            border
+                            border-white/[0.06]
+                            bg-white/[0.02]
+                            px-6
+                            py-8
+                            sm:px-8
+                            sm:py-10
+                        "
+                    >
+
+                        <div
+                            className="
+                                flex
+                                flex-col
+                                gap-8
+                                lg:flex-row
+                                lg:items-center
+                                lg:justify-between
+                            "
+                        >
+
+                            <div
+                                className="
+                                    max-w-3xl
+                                "
+                            >
+
+                                <div
+                                    className="
+                                        inline-flex
+                                        items-center
+                                        gap-2
+                                        rounded-full
+                                        border
+                                        border-indigo-400/15
+                                        bg-indigo-500/[0.05]
+                                        px-3
+                                        py-1.5
+                                        text-[10px]
+                                        font-black
+                                        uppercase
+                                        tracking-[0.15em]
+                                        text-indigo-300
+                                    "
+                                >
+
+                                    <Sparkles
+                                        size={12}
+                                    />
+
+                                    Community Feedback
+
+                                </div>
+
+
+                                <h1
+                                    className="
+                                        mt-5
+                                        text-3xl
+                                        font-black
+                                        tracking-tight
+                                        text-white
+                                        sm:text-4xl
+                                        lg:text-5xl
+                                    "
+                                >
+
+                                    F.Society’ni
+                                    {" "}
+
+                                    <span
+                                        className="
+                                            bg-gradient-to-r
+                                            from-indigo-400
+                                            via-cyan-300
+                                            to-indigo-400
+                                            bg-clip-text
+                                            text-transparent
+                                        "
+                                    >
+                                        birga yaxshilaymiz.
+                                    </span>
+
+                                </h1>
+
+
+                                <p
+                                    className="
+                                        mt-4
+                                        max-w-2xl
+                                        text-sm
+                                        leading-7
+                                        text-gray-500
+                                    "
+                                >
+                                    Bug topdingizmi,
+                                    yangi feature g‘oyangiz
+                                    bormi yoki platforma
+                                    haqida fikringizni
+                                    aytmoqchimisiz?
+                                    Feedback yuboring.
+                                    Admin tasdiqlagan foydali
+                                    feedbacklar uchun FCoin
+                                    mukofoti beriladi.
+                                </p>
+
+                            </div>
+
+
+                            <div
+                                className="
+                                    flex
+                                    flex-wrap
+                                    gap-3
+                                "
+                            >
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        handleRefresh
+                                    }
+                                    disabled={
+                                        isRefreshing
+                                    }
+                                    className="
+                                        inline-flex
+                                        items-center
+                                        justify-center
+                                        gap-2
+                                        rounded-xl
+                                        border
+                                        border-white/[0.07]
+                                        bg-white/[0.025]
+                                        px-4
+                                        py-3
+                                        text-xs
+                                        font-bold
+                                        text-gray-400
+                                        transition
+                                        hover:bg-white/[0.06]
+                                        hover:text-white
+                                        disabled:cursor-not-allowed
+                                        disabled:opacity-50
+                                    "
+                                >
+
+                                    <RefreshCcw
+                                        size={16}
+                                        className={
+                                            isRefreshing
+                                                ? "animate-spin"
+                                                : ""
+                                        }
+                                    />
+
+                                    Yangilash
+
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        handleOpenCreate
+                                    }
+                                    className="
+                                        inline-flex
+                                        items-center
+                                        justify-center
+                                        gap-2
+                                        rounded-xl
+                                        bg-indigo-600
+                                        px-5
+                                        py-3
+                                        text-xs
+                                        font-black
+                                        text-white
+                                        shadow-lg
+                                        shadow-indigo-950/30
+                                        transition
+                                        hover:bg-indigo-500
+                                    "
+                                >
+
+                                    <Plus
+                                        size={17}
+                                    />
+
+                                    Feedback yuborish
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    {/* =====================================
+                        ERROR
+                    ====================================== */}
+
+                    {error && (
+
+                        <div
+                            className="
+                                mt-6
+                                flex
+                                items-start
+                                gap-3
+                                rounded-2xl
+                                border
+                                border-red-400/15
+                                bg-red-500/[0.05]
+                                px-4
+                                py-3
+                                text-xs
+                                text-red-300
+                            "
+                        >
+
+                            <AlertCircle
+                                size={17}
+                                className="
+                                    mt-0.5
+                                    flex-shrink-0
+                                "
+                            />
+
+                            <div
+                                className="
+                                    flex-1
+                                "
+                            >
+                                {error}
+                            </div>
+
+                        </div>
+
+                    )}
+
+
+                    {/* =====================================
+                        STATS
+                    ====================================== */}
+
+                    {isLoggedIn && (
+
+                        <section
+                            className="
+                                mt-8
+                            "
+                        >
+
+                            <div
+                                className="
+                                    mb-4
+                                    flex
+                                    items-center
+                                    justify-between
+                                "
+                            >
+
+                                <div>
+
+                                    <h2
+                                        className="
+                                            text-lg
+                                            font-black
+                                            text-white
+                                        "
+                                    >
+                                        Mening statistikam
+                                    </h2>
+
+
+                                    <p
+                                        className="
+                                            mt-1
+                                            text-xs
+                                            text-gray-600
+                                        "
+                                    >
+                                        Feedback faoliyatingiz
+                                        va FCoin natijalari.
+                                    </p>
+
+                                </div>
+
+
+                                <Gift
+                                    size={20}
+                                    className="
+                                        text-amber-300
+                                    "
+                                />
+
+                            </div>
+
+
+                            <div
+                                className="
+                                    grid
+                                    grid-cols-2
+                                    gap-3
+                                    md:grid-cols-3
+                                    xl:grid-cols-6
+                                "
+                            >
+
+                                {statCards.map(
+                                    (
+                                        card
+                                    ) => (
+
+                                        <StatCard
+                                            key={
+                                                card.title
+                                            }
+                                            {...card}
+                                        />
+
+                                    )
+                                )}
+
+                            </div>
+
+                        </section>
+
+                    )}
+
+
+                    {/* =====================================
+                        MY FEEDBACKS
+                    ====================================== */}
+
+                    {isLoggedIn && (
+
+                        <section
+                            className="
+                                mt-12
+                            "
+                        >
+
+                            <div
+                                className="
+                                    flex
+                                    flex-col
+                                    gap-4
+                                    sm:flex-row
+                                    sm:items-end
+                                    sm:justify-between
+                                "
+                            >
+
+                                <div>
+
+                                    <h2
+                                        className="
+                                            text-xl
+                                            font-black
+                                            text-white
+                                        "
+                                    >
+                                        Mening feedbacklarim
+                                    </h2>
+
+
+                                    <p
+                                        className="
+                                            mt-1
+                                            text-xs
+                                            text-gray-600
+                                        "
+                                    >
+                                        Yuborgan feedbacklaringiz
+                                        holatini kuzating.
+                                    </p>
+
+                                </div>
+
+
+                                <div
+                                    className="
+                                        flex
+                                        flex-wrap
+                                        gap-2
+                                    "
+                                >
+
+                                    {STATUS_FILTERS.map(
+                                        (
+                                            item
+                                        ) => {
+
+                                            const active =
+                                                activeStatus ===
+                                                item.value;
+
+
+                                            return (
+                                                <button
+                                                    key={
+                                                        item.value
+                                                    }
+                                                    type="button"
+                                                    onClick={
+                                                        () =>
+                                                            setActiveStatus(
+                                                                item.value
+                                                            )
+                                                    }
+                                                    className={`
+                                                        rounded-xl
+                                                        border
+                                                        px-3
+                                                        py-2
+                                                        text-[10px]
+                                                        font-bold
+                                                        transition
+
+                                                        ${
+                                                            active
+                                                                ? `
+                                                                    border-indigo-400/25
+                                                                    bg-indigo-500/[0.10]
+                                                                    text-indigo-300
+                                                                `
+                                                                : `
+                                                                    border-white/[0.06]
+                                                                    bg-white/[0.02]
+                                                                    text-gray-600
+                                                                    hover:bg-white/[0.05]
+                                                                    hover:text-gray-300
+                                                                `
+                                                        }
+                                                    `}
+                                                >
+                                                    {
+                                                        item.label
+                                                    }
+                                                </button>
+                                            );
+                                        }
+                                    )}
+
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                className="
+                                    mt-5
+                                    grid
+                                    grid-cols-1
+                                    gap-4
+                                    lg:grid-cols-2
+                                "
+                            >
+
+                                {filteredMyFeedbacks.length ? (
+
+                                    filteredMyFeedbacks.map(
+                                        (
+                                            feedback
+                                        ) => (
+
+                                            <FeedbackCard
+                                                key={
+                                                    feedback.id
+                                                }
+                                                feedback={
+                                                    feedback
+                                                }
+                                                onEdit={
+                                                    handleEdit
+                                                }
+                                                onDelete={
+                                                    handleDelete
+                                                }
+                                            />
+
+                                        )
+                                    )
+
+                                ) : (
+
+                                    <div
+                                        className="
+                                            lg:col-span-2
+                                        "
+                                    >
+
+                                        <EmptyState
+                                            title="Feedback topilmadi"
+                                            description={
+                                                activeStatus ===
+                                                "all"
+                                                    ? (
+                                                        "Siz hali feedback "
+                                                        + "yubormagansiz."
+                                                    )
+                                                    : (
+                                                        `Hozircha ${activeStatus} `
+                                                        + "holatidagi feedback yo‘q."
+                                                    )
+                                            }
+                                        />
+
+                                    </div>
+
+                                )}
+
+                            </div>
+
+                        </section>
+
+                    )}
+
+
+                    {/* =====================================
+                        COMMUNITY
+                    ====================================== */}
+
+                    <section
+                        className="
+                            mt-14
+                        "
+                    >
+
+                        <div
+                            className="
+                                flex
+                                items-end
+                                justify-between
+                                gap-4
+                            "
+                        >
+
+                            <div>
+
+                                <div
+                                    className="
+                                        flex
+                                        items-center
+                                        gap-2
+                                    "
+                                >
+
+                                    <ShieldCheck
+                                        size={18}
+                                        className="
+                                            text-emerald-300
+                                        "
+                                    />
+
+
+                                    <h2
+                                        className="
+                                            text-xl
+                                            font-black
+                                            text-white
+                                        "
+                                    >
+                                        Tasdiqlangan feedbacklar
+                                    </h2>
+
+                                </div>
+
+
+                                <p
+                                    className="
+                                        mt-1
+                                        text-xs
+                                        text-gray-600
+                                    "
+                                >
+                                    Admin tomonidan
+                                    tasdiqlangan hamjamiyat
+                                    feedbacklari.
+                                </p>
+
+                            </div>
+
+
+                            <span
+                                className="
+                                    rounded-full
+                                    border
+                                    border-white/[0.06]
+                                    bg-white/[0.02]
+                                    px-3
+                                    py-1.5
+                                    text-[10px]
+                                    font-bold
+                                    text-gray-500
+                                "
+                            >
+                                {
+                                    publicFeedbacks.length
+                                }
+                                {" "}
+                                ta
+                            </span>
+
+                        </div>
+
+
+                        <div
+                            className="
+                                mt-5
+                                grid
+                                grid-cols-1
+                                gap-4
+                                lg:grid-cols-2
+                            "
+                        >
+
+                            {publicFeedbacks.length ? (
+
+                                publicFeedbacks.map(
+                                    (
+                                        feedback
+                                    ) => (
+
+                                        <FeedbackCard
+                                            key={
+                                                feedback.id
+                                            }
+                                            feedback={
+                                                feedback
+                                            }
+                                            showStatus={
+                                                false
+                                            }
+                                        />
+
+                                    )
+                                )
+
+                            ) : (
+
+                                <div
+                                    className="
+                                        lg:col-span-2
+                                    "
+                                >
+
+                                    <EmptyState
+                                        title="Hozircha tasdiqlangan feedback yo‘q"
+                                        description={
+                                            "Birinchi foydali feedbackni "
+                                            + "siz yuborishingiz mumkin."
+                                        }
+                                    />
+
+                                </div>
+
+                            )}
+
+                        </div>
+
+                    </section>
+
+                </div>
+
+            </main>
+
+
+            {/* =============================================
+                CREATE MODAL
+            ============================================== */}
+
+            <FeedbackCreateModal
+                isOpen={
+                    isCreateModalOpen
+                }
+                onClose={
+                    () =>
+                        setIsCreateModalOpen(
+                            false
+                        )
+                }
+                onCreated={
+                    handleCreated
+                }
+            />
+
+
+            {/* =============================================
+                EDIT MODAL
+            ============================================== */}
+
+            <FeedbackEditModal
+                isOpen={
+                    Boolean(
+                        editingFeedback
+                    )
+                }
+                feedback={
+                    editingFeedback
+                }
+                onClose={
+                    () =>
+                        setEditingFeedback(
+                            null
+                        )
+                }
+                onUpdated={
+                    handleUpdated
+                }
+            />
+
+
+            {/* =============================================
+                DELETE MODAL
+            ============================================== */}
+
+            <DeleteConfirmationModal
+                isOpen={
+                    Boolean(
+                        deletingFeedback
+                    )
+                }
+                onClose={
+                    handleDeleteClose
+                }
+                onConfirm={
+                    handleDeleteConfirm
+                }
+                itemTitle={
+                    deletingFeedback
+                        ?.title
+                    ||
+                    "ushbu feedbackni"
+                }
+            />
+
+        </>
+    );
+};
+
 
 export default Feedback;

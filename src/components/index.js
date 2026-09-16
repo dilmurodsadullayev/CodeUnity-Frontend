@@ -18,8 +18,6 @@ export { default as ProblemCreate } from './ProblemCreate';
 export { default as ProblemSolutionUpdate } from './ProblemSolutionUpdate';
 
 export { default as Feedback } from './Feedback';
-export { default as FeedbackCard } from './FeedbackCard';
-export { default as FeedbackModal } from './FeedbackModal';
 
 export { default as FCoin } from './FCoin';
 export { default as FCoinHistory } from './FCoinHistory';

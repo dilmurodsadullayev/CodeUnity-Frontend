@@ -15,12 +15,20 @@ import {
 } from "framer-motion";
 
 import {
+    AlertTriangle,
     ArrowRight,
+    Award,
     Bell,
     BellOff,
     CheckCheck,
     CheckCircle2,
+    Clock3,
     Coins,
+    Info,
+    ListChecks,
+    MessageSquareText,
+    Newspaper,
+    Star,
     UserRound,
     Wifi,
     WifiOff,
@@ -38,16 +46,8 @@ import {
 } from "../middleware/notificationMiddleware";
 
 import {
-    formatNotificationDateTime,
-    getAbsoluteImageUrl,
-    getNotificationCoins,
-    getNotificationDeadline,
-    getNotificationMeta,
-    getNotificationText,
-    getNotificationUrl,
-    getSenderUsername,
-    sortNotificationsByNewest,
-} from "../utils/notificationUtils";
+    BACKEND_URL,
+} from "../services/config";
 
 
 // =========================================================
@@ -57,34 +57,772 @@ import {
 const dropdownVariants = {
     hidden: {
         opacity: 0,
+
         y: -10,
+
         scale: 0.97,
-        filter: "blur(5px)",
+
+        filter:
+            "blur(5px)",
     },
 
     visible: {
         opacity: 1,
+
         y: 0,
+
         scale: 1,
-        filter: "blur(0px)",
+
+        filter:
+            "blur(0px)",
 
         transition: {
             duration: 0.2,
-            ease: "easeOut",
+
+            ease:
+                "easeOut",
         },
     },
 
     exit: {
         opacity: 0,
+
         y: -8,
+
         scale: 0.97,
-        filter: "blur(5px)",
+
+        filter:
+            "blur(5px)",
 
         transition: {
             duration: 0.15,
-            ease: "easeIn",
+
+            ease:
+                "easeIn",
         },
     },
+};
+
+
+// =========================================================
+// VALID TYPES
+// =========================================================
+
+const VALID_CONTENT_TYPES = [
+    "problem",
+    "solution",
+    "coin",
+    "post",
+    "task",
+    "star",
+    "info",
+    "badge",
+    "feedback",
+];
+
+
+// =========================================================
+// URL HELPERS
+// =========================================================
+
+const normalizeBaseUrl = (
+    url
+) => {
+    if (!url) {
+        return (
+            typeof window !==
+            "undefined"
+
+                ? window.location.origin
+
+                : ""
+        );
+    }
+
+
+    return String(
+        url
+    ).replace(
+        /\/+$/,
+        ""
+    );
+};
+
+
+const getAbsoluteImageUrl = (
+    image
+) => {
+    if (!image) {
+        return PlaceholderUserImage;
+    }
+
+
+    const value =
+        String(
+            image
+        ).trim();
+
+
+    if (!value) {
+        return PlaceholderUserImage;
+    }
+
+
+    // Already absolute URL
+
+    if (
+        /^https?:\/\//i.test(
+            value
+        )
+    ) {
+        return value;
+    }
+
+
+    // Browser generated image
+
+    if (
+        value.startsWith(
+            "blob:"
+        ) ||
+        value.startsWith(
+            "data:"
+        )
+    ) {
+        return value;
+    }
+
+
+    const baseUrl =
+        normalizeBaseUrl(
+            BACKEND_URL
+        );
+
+
+    const path =
+        value.startsWith(
+            "/"
+        )
+
+            ? value
+
+            : `/${value}`;
+
+
+    return (
+        `${baseUrl}${path}`
+    );
+};
+
+
+// =========================================================
+// SENDER
+// =========================================================
+
+const getSenderUsername = (
+    sender
+) => {
+    if (!sender) {
+        return "FSociety";
+    }
+
+
+    if (
+        typeof sender ===
+        "string"
+    ) {
+        return sender;
+    }
+
+
+    return (
+        sender.username ||
+        sender.full_name ||
+        sender.first_name ||
+        sender.email ||
+        "FSociety"
+    );
+};
+
+
+// =========================================================
+// CONTENT TYPE
+// =========================================================
+
+const getContentType = (
+    notification
+) => {
+    const contentType =
+        notification?.content_type ||
+        notification?.notification_type ||
+        notification?.category;
+
+
+    if (
+        VALID_CONTENT_TYPES.includes(
+            contentType
+        )
+    ) {
+        return contentType;
+    }
+
+
+    if (
+        VALID_CONTENT_TYPES.includes(
+            notification?.type
+        )
+    ) {
+        return notification.type;
+    }
+
+
+    return "info";
+};
+
+
+// =========================================================
+// DATE
+// =========================================================
+
+const formatDateTime = (
+    value
+) => {
+    if (!value) {
+        return "Hozirgina";
+    }
+
+
+    const date =
+        new Date(
+            value
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return "Hozirgina";
+    }
+
+
+    const time =
+        date.toLocaleTimeString(
+            "uz-UZ",
+            {
+                hour:
+                    "2-digit",
+
+                minute:
+                    "2-digit",
+            }
+        );
+
+
+    const day =
+        date.toLocaleDateString(
+            "uz-UZ"
+        );
+
+
+    return (
+        `${time} • ${day}`
+    );
+};
+
+
+// =========================================================
+// NOTIFICATION URL
+// =========================================================
+
+const getNotificationUrl = (
+    notification
+) => {
+    const contentType =
+        getContentType(
+            notification
+        );
+
+
+    const objectId =
+        notification?.object_id;
+
+
+    // =====================================================
+    // PROBLEM / SOLUTION / STAR
+    // =====================================================
+
+    if (
+        contentType ===
+            "problem" ||
+        contentType ===
+            "solution" ||
+        contentType ===
+            "star"
+    ) {
+        return objectId
+
+            ? `/problem/${objectId}/detail`
+
+            : "/problems";
+    }
+
+
+    // =====================================================
+    // POST
+    // =====================================================
+
+    if (
+        contentType ===
+        "post"
+    ) {
+        const senderUsername =
+            getSenderUsername(
+                notification?.sender
+            );
+
+
+        const slug =
+            notification
+                ?.post
+                ?.slug ||
+            notification
+                ?.slug;
+
+
+        if (
+            senderUsername &&
+            slug
+        ) {
+            return (
+                `/${senderUsername}/post/${slug}/`
+            );
+        }
+
+
+        return "/notifications";
+    }
+
+
+    // =====================================================
+    // COIN
+    // =====================================================
+
+    if (
+        contentType ===
+        "coin"
+    ) {
+        return "/fcoin-history";
+    }
+
+
+    // =====================================================
+    // BADGE
+    // =====================================================
+
+    if (
+        contentType ===
+        "badge"
+    ) {
+        const username =
+            notification
+                ?.recipient
+                ?.username ||
+            notification
+                ?.sender
+                ?.username;
+
+
+        return username
+
+            ? `/${username}/profile`
+
+            : "/notifications";
+    }
+
+
+    // =====================================================
+    // FEEDBACK
+    // =====================================================
+
+    if (
+        contentType ===
+        "feedback"
+    ) {
+        return "/feedback";
+    }
+
+
+    return "/notifications";
+};
+
+
+// =========================================================
+// NOTIFICATION META
+// =========================================================
+
+const getNotificationMeta = (
+    notification
+) => {
+    const contentType =
+        getContentType(
+            notification
+        );
+
+
+    const feedbackStatus =
+        notification
+            ?.metadata
+            ?.feedback_status;
+
+
+    if (
+        contentType ===
+        "feedback"
+    ) {
+
+        if (
+            feedbackStatus ===
+            "approved"
+        ) {
+            return {
+                Icon:
+                    CheckCircle2,
+
+                label:
+                    "Feedback tasdiqlandi",
+
+                iconBox:
+                    "border-emerald-400/20 bg-emerald-500/10 text-emerald-300",
+
+                glow:
+                    "from-emerald-500/[0.10]",
+
+                pill:
+                    "border-emerald-400/20 bg-emerald-500/[0.07] text-emerald-300",
+            };
+        }
+
+
+        if (
+            feedbackStatus ===
+            "rejected"
+        ) {
+            return {
+                Icon:
+                    AlertTriangle,
+
+                label:
+                    "Feedback rad etildi",
+
+                iconBox:
+                    "border-red-400/20 bg-red-500/10 text-red-300",
+
+                glow:
+                    "from-red-500/[0.10]",
+
+                pill:
+                    "border-red-400/20 bg-red-500/[0.07] text-red-300",
+            };
+        }
+    }
+
+
+    const map = {
+
+        problem: {
+            Icon:
+                AlertTriangle,
+
+            label:
+                "Problem",
+
+            iconBox:
+                "border-red-400/20 bg-red-500/10 text-red-300",
+
+            glow:
+                "from-red-500/[0.10]",
+
+            pill:
+                "border-red-400/20 bg-red-500/[0.07] text-red-300",
+        },
+
+
+        solution: {
+            Icon:
+                CheckCircle2,
+
+            label:
+                "Yechim",
+
+            iconBox:
+                "border-emerald-400/20 bg-emerald-500/10 text-emerald-300",
+
+            glow:
+                "from-emerald-500/[0.10]",
+
+            pill:
+                "border-emerald-400/20 bg-emerald-500/[0.07] text-emerald-300",
+        },
+
+
+        coin: {
+            Icon:
+                Coins,
+
+            label:
+                "FCoin",
+
+            iconBox:
+                "border-amber-400/20 bg-amber-500/10 text-amber-300",
+
+            glow:
+                "from-amber-500/[0.10]",
+
+            pill:
+                "border-amber-400/20 bg-amber-500/[0.07] text-amber-300",
+        },
+
+
+        post: {
+            Icon:
+                Newspaper,
+
+            label:
+                "Post",
+
+            iconBox:
+                "border-violet-400/20 bg-violet-500/10 text-violet-300",
+
+            glow:
+                "from-violet-500/[0.10]",
+
+            pill:
+                "border-violet-400/20 bg-violet-500/[0.07] text-violet-300",
+        },
+
+
+        task: {
+            Icon:
+                ListChecks,
+
+            label:
+                "Task",
+
+            iconBox:
+                "border-blue-400/20 bg-blue-500/10 text-blue-300",
+
+            glow:
+                "from-blue-500/[0.10]",
+
+            pill:
+                "border-blue-400/20 bg-blue-500/[0.07] text-blue-300",
+        },
+
+
+        star: {
+            Icon:
+                Star,
+
+            label:
+                "Star",
+
+            iconBox:
+                "border-yellow-400/20 bg-yellow-500/10 text-yellow-300",
+
+            glow:
+                "from-yellow-500/[0.10]",
+
+            pill:
+                "border-yellow-400/20 bg-yellow-500/[0.07] text-yellow-300",
+        },
+
+
+        badge: {
+            Icon:
+                Award,
+
+            label:
+                "Badge",
+
+            iconBox:
+                "border-orange-400/20 bg-orange-500/10 text-orange-300",
+
+            glow:
+                "from-orange-500/[0.10]",
+
+            pill:
+                "border-orange-400/20 bg-orange-500/[0.07] text-orange-300",
+        },
+
+
+        feedback: {
+            Icon:
+                MessageSquareText,
+
+            label:
+                "Feedback",
+
+            iconBox:
+                "border-cyan-400/20 bg-cyan-500/10 text-cyan-300",
+
+            glow:
+                "from-cyan-500/[0.10]",
+
+            pill:
+                "border-cyan-400/20 bg-cyan-500/[0.07] text-cyan-300",
+        },
+
+
+        info: {
+            Icon:
+                Info,
+
+            label:
+                "Info",
+
+            iconBox:
+                "border-indigo-400/20 bg-indigo-500/10 text-indigo-300",
+
+            glow:
+                "from-indigo-500/[0.10]",
+
+            pill:
+                "border-indigo-400/20 bg-indigo-500/[0.07] text-indigo-300",
+        },
+    };
+
+
+    return (
+        map[
+            contentType
+        ] ||
+        map.info
+    );
+};
+
+
+// =========================================================
+// NOTIFICATION TEXT
+// =========================================================
+
+const getNotificationText = (
+    notification
+) => {
+    if (
+        notification?.message
+    ) {
+        return (
+            notification.message
+        );
+    }
+
+
+    const contentType =
+        getContentType(
+            notification
+        );
+
+
+    switch (
+        contentType
+    ) {
+
+        case "coin":
+            return (
+                "Sizga FCoin mukofot berildi."
+            );
+
+
+        case "badge":
+            return (
+                "Siz yangi nishon qo‘lga kiritdingiz."
+            );
+
+
+        case "star":
+            return (
+                "Sizga yangi star berildi."
+            );
+
+
+        case "post":
+            return (
+                "Yangi post bo‘yicha bildirishnoma."
+            );
+
+
+        case "problem":
+            return (
+                "Yangi problem bo‘yicha bildirishnoma."
+            );
+
+
+        case "solution":
+            return (
+                "Yangi yechim bo‘yicha bildirishnoma."
+            );
+
+
+        case "task":
+            return (
+                "Task bo‘yicha yangi bildirishnoma."
+            );
+
+
+        case "feedback": {
+            const status =
+                notification
+                    ?.metadata
+                    ?.feedback_status;
+
+
+            const rewardAmount =
+                Number(
+                    notification
+                        ?.metadata
+                        ?.reward_amount ||
+                    0
+                );
+
+
+            if (
+                status ===
+                "approved"
+            ) {
+                return rewardAmount > 0
+
+                    ? (
+                        `Feedbackingiz tasdiqlandi. ` +
+                        `+${rewardAmount} FCoin berildi.`
+                    )
+
+                    : "Feedbackingiz tasdiqlandi.";
+            }
+
+
+            if (
+                status ===
+                "rejected"
+            ) {
+                return (
+                    "Feedbackingiz rad etildi."
+                );
+            }
+
+
+            return (
+                "Feedback holati yangilandi."
+            );
+        }
+
+
+        default:
+            return (
+                "Yangi bildirishnoma."
+            );
+    }
 };
 
 
@@ -141,15 +879,22 @@ const NotificationItem = ({
 
 
     const coins =
-        getNotificationCoins(
-            notification
-        );
+        notification
+            ?.metadata
+            ?.reward_amount ??
+        notification?.coins ??
+        notification?.amount ??
+        notification?.offered_coins ??
+        notification
+            ?.problem
+            ?.offered_coins;
 
 
     const deadline =
-        getNotificationDeadline(
-            notification
-        );
+        notification?.deadline ||
+        notification
+            ?.problem
+            ?.deadline;
 
 
     // =====================================================
@@ -158,6 +903,7 @@ const NotificationItem = ({
 
     const handleClick =
         () => {
+
             if (
                 notification?.id &&
                 isUnread
@@ -188,10 +934,20 @@ const NotificationItem = ({
     };
 
 
+    // =====================================================
+    // JSX
+    // =====================================================
+
     return (
         <Link
-            to={notificationUrl}
-            onClick={handleClick}
+            to={
+                notificationUrl
+            }
+
+            onClick={
+                handleClick
+            }
+
             className={`
                 group
                 relative
@@ -205,11 +961,20 @@ const NotificationItem = ({
 
                 ${
                     isUnread
-                        ? "bg-indigo-500/[0.055] hover:bg-indigo-500/[0.09]"
-                        : "bg-transparent hover:bg-white/[0.025]"
+
+                        ? `
+                            bg-indigo-500/[0.055]
+                            hover:bg-indigo-500/[0.09]
+                        `
+
+                        : `
+                            bg-transparent
+                            hover:bg-white/[0.025]
+                        `
                 }
             `}
         >
+
             {/* GLOW */}
 
             <div
@@ -239,7 +1004,10 @@ const NotificationItem = ({
                     py-4
                 "
             >
-                {/* AVATAR */}
+
+                {/* =============================
+                    AVATAR
+                ============================== */}
 
                 <div
                     className="
@@ -247,10 +1015,20 @@ const NotificationItem = ({
                         flex-shrink-0
                     "
                 >
+
                     <img
-                        src={imageSrc}
-                        alt={senderUsername}
-                        onError={handleImageError}
+                        src={
+                            imageSrc
+                        }
+
+                        alt={
+                            senderUsername
+                        }
+
+                        onError={
+                            handleImageError
+                        }
+
                         className="
                             h-11
                             w-11
@@ -280,15 +1058,20 @@ const NotificationItem = ({
                             ${meta.iconBox}
                         `}
                     >
+
                         <Icon
                             size={13}
                             strokeWidth={2.2}
                         />
+
                     </div>
+
                 </div>
 
 
-                {/* CONTENT */}
+                {/* =============================
+                    CONTENT
+                ============================== */}
 
                 <div
                     className="
@@ -296,6 +1079,7 @@ const NotificationItem = ({
                         flex-1
                     "
                 >
+
                     <div
                         className="
                             flex
@@ -304,7 +1088,13 @@ const NotificationItem = ({
                             gap-3
                         "
                     >
-                        <div className="min-w-0">
+
+                        <div
+                            className="
+                                min-w-0
+                            "
+                        >
+
                             {/* TAGS */}
 
                             <div
@@ -316,6 +1106,7 @@ const NotificationItem = ({
                                     gap-1.5
                                 "
                             >
+
                                 <span
                                     className={`
                                         rounded-full
@@ -330,11 +1121,14 @@ const NotificationItem = ({
                                         ${meta.pill}
                                     `}
                                 >
-                                    {meta.label}
+                                    {
+                                        meta.label
+                                    }
                                 </span>
 
 
                                 {isUnread && (
+
                                     <span
                                         className="
                                             rounded-full
@@ -353,7 +1147,9 @@ const NotificationItem = ({
                                     >
                                         Yangi
                                     </span>
+
                                 )}
+
                             </div>
 
 
@@ -372,12 +1168,14 @@ const NotificationItem = ({
                             >
                                 {text}
                             </p>
+
                         </div>
 
 
                         {/* UNREAD DOT */}
 
                         {isUnread && (
+
                             <span
                                 className="
                                     mt-1.5
@@ -389,11 +1187,15 @@ const NotificationItem = ({
                                     shadow-[0_0_10px_rgba(129,140,248,0.8)]
                                 "
                             />
+
                         )}
+
                     </div>
 
 
-                    {/* META */}
+                    {/* =============================
+                        META
+                    ============================== */}
 
                     <div
                         className="
@@ -408,6 +1210,9 @@ const NotificationItem = ({
                             text-gray-600
                         "
                     >
+
+                        {/* USER */}
+
                         <span
                             className="
                                 inline-flex
@@ -415,37 +1220,51 @@ const NotificationItem = ({
                                 gap-1
                             "
                         >
+
                             <UserRound
                                 size={12}
                                 strokeWidth={2}
                             />
 
-                            @{senderUsername}
+                            @
+                            {
+                                senderUsername
+                            }
+
                         </span>
 
+
+                        {/* COINS */}
 
                         {coins !== undefined &&
                             coins !== null &&
                             Number(coins) > 0 && (
-                                <span
-                                    className="
-                                        inline-flex
-                                        items-center
-                                        gap-1
-                                        text-amber-300
-                                    "
-                                >
-                                    <Coins
-                                        size={12}
-                                        strokeWidth={2}
-                                    />
 
-                                    {coins} FCoin
-                                </span>
-                            )}
+                            <span
+                                className="
+                                    inline-flex
+                                    items-center
+                                    gap-1
+                                    text-amber-300
+                                "
+                            >
 
+                                <Coins
+                                    size={12}
+                                    strokeWidth={2}
+                                />
+
+                                {coins} FCoin
+
+                            </span>
+
+                        )}
+
+
+                        {/* DEADLINE */}
 
                         {deadline && (
+
                             <span
                                 className="
                                     inline-flex
@@ -454,20 +1273,22 @@ const NotificationItem = ({
                                     text-red-300
                                 "
                             >
-                                <span
-                                    className="
-                                        h-1.5
-                                        w-1.5
-                                        rounded-full
-                                        bg-red-400
-                                    "
+
+                                <Clock3
+                                    size={12}
+                                    strokeWidth={2}
                                 />
 
-                                {timeUntilDeadline(
-                                    deadline
-                                )}
+                                {
+                                    timeUntilDeadline(
+                                        deadline
+                                    )
+                                }
+
                             </span>
+
                         )}
+
                     </div>
 
 
@@ -483,12 +1304,18 @@ const NotificationItem = ({
                             text-gray-700
                         "
                     >
-                        {formatNotificationDateTime(
-                            notification?.created_at
-                        )}
+                        {
+                            formatDateTime(
+                                notification
+                                    ?.created_at
+                            )
+                        }
                     </div>
+
                 </div>
+
             </div>
+
         </Link>
     );
 };
@@ -502,7 +1329,8 @@ const EmptyState = ({
     type,
 }) => {
     const isReadState =
-        type === "read";
+        type ===
+        "read";
 
 
     const EmptyIcon =
@@ -519,6 +1347,7 @@ const EmptyState = ({
                 text-center
             "
         >
+
             <div
                 className={`
                     mx-auto
@@ -532,15 +1361,27 @@ const EmptyState = ({
 
                     ${
                         isReadState
-                            ? "border-emerald-400/15 bg-emerald-500/[0.06] text-emerald-400"
-                            : "border-white/[0.06] bg-white/[0.025] text-gray-700"
+
+                            ? `
+                                border-emerald-400/15
+                                bg-emerald-500/[0.06]
+                                text-emerald-400
+                            `
+
+                            : `
+                                border-white/[0.06]
+                                bg-white/[0.025]
+                                text-gray-700
+                            `
                     }
                 `}
             >
+
                 <EmptyIcon
                     size={28}
                     strokeWidth={1.8}
                 />
+
             </div>
 
 
@@ -551,9 +1392,13 @@ const EmptyState = ({
                     text-white
                 "
             >
-                {isReadState
-                    ? "Barcha bildirishnomalar o‘qilgan"
-                    : "Hali bildirishnomalar mavjud emas"}
+                {
+                    isReadState
+
+                        ? "Barcha bildirishnomalar o‘qilgan"
+
+                        : "Hali bildirishnomalar mavjud emas"
+                }
             </h4>
 
 
@@ -568,10 +1413,22 @@ const EmptyState = ({
                     text-gray-600
                 "
             >
-                {isReadState
-                    ? "Yangi xabarlar kelganda bu yerda yana ko‘rinadi."
-                    : "Problem, post, FCoin yoki badge bo‘yicha xabarlar shu yerda chiqadi."}
+                {
+                    isReadState
+
+                        ? (
+                            "Yangi xabarlar kelganda "
+                            + "bu yerda yana ko‘rinadi."
+                        )
+
+                        : (
+                            "Problem, post, FCoin yoki "
+                            + "badge bo‘yicha xabarlar "
+                            + "shu yerda chiqadi."
+                        )
+                }
             </p>
+
         </div>
     );
 };
@@ -581,80 +1438,95 @@ const EmptyState = ({
 // LOADING STATE
 // =========================================================
 
-const NotificationSkeleton = () => {
-    return (
-        <div
-            className="
-                space-y-2
-                p-3
-            "
-        >
-            {[1, 2, 3].map(
-                (item) => (
-                    <div
-                        key={item}
-                        className="
-                            flex
-                            animate-pulse
-                            gap-3
-                            rounded-2xl
-                            border
-                            border-white/[0.05]
-                            bg-white/[0.02]
-                            p-3
-                        "
-                    >
-                        <div
-                            className="
-                                h-11
-                                w-11
-                                flex-shrink-0
-                                rounded-xl
-                                bg-white/[0.05]
-                            "
-                        />
+const NotificationSkeleton =
+    () => {
 
+        return (
+            <div
+                className="
+                    space-y-2
+                    p-3
+                "
+            >
+
+                {[1, 2, 3].map(
+                    (
+                        item
+                    ) => (
 
                         <div
+                            key={
+                                item
+                            }
+
                             className="
-                                flex-1
-                                space-y-2
-                                pt-1
+                                flex
+                                animate-pulse
+                                gap-3
+                                rounded-2xl
+                                border
+                                border-white/[0.05]
+                                bg-white/[0.02]
+                                p-3
                             "
                         >
+
                             <div
                                 className="
-                                    h-2.5
-                                    w-20
-                                    rounded-full
+                                    h-11
+                                    w-11
+                                    flex-shrink-0
+                                    rounded-xl
                                     bg-white/[0.05]
                                 "
                             />
 
-                            <div
-                                className="
-                                    h-3.5
-                                    w-full
-                                    rounded-full
-                                    bg-white/[0.06]
-                                "
-                            />
 
                             <div
                                 className="
-                                    h-2.5
-                                    w-2/3
-                                    rounded-full
-                                    bg-white/[0.04]
+                                    flex-1
+                                    space-y-2
+                                    pt-1
                                 "
-                            />
+                            >
+
+                                <div
+                                    className="
+                                        h-2.5
+                                        w-20
+                                        rounded-full
+                                        bg-white/[0.05]
+                                    "
+                                />
+
+                                <div
+                                    className="
+                                        h-3.5
+                                        w-full
+                                        rounded-full
+                                        bg-white/[0.06]
+                                    "
+                                />
+
+                                <div
+                                    className="
+                                        h-2.5
+                                        w-2/3
+                                        rounded-full
+                                        bg-white/[0.04]
+                                    "
+                                />
+
+                            </div>
+
                         </div>
-                    </div>
-                )
-            )}
-        </div>
-    );
-};
+
+                    )
+                )}
+
+            </div>
+        );
+    };
 
 
 // =========================================================
@@ -677,14 +1549,16 @@ const NotificationDropdown = ({
         wsError = null,
         loading = false,
     } = useSelector(
-        (state) =>
+        (
+            state
+        ) =>
             state.notifications ||
             {}
     );
 
 
     // =====================================================
-    // DATA
+    // SAFE DATA
     // =====================================================
 
     const safeNotifications =
@@ -696,91 +1570,148 @@ const NotificationDropdown = ({
 
 
     const sortedNotifications =
-        sortNotificationsByNewest(
-            safeNotifications
+        [
+            ...safeNotifications,
+        ].sort(
+            (
+                a,
+                b
+            ) => {
+                return (
+                    new Date(
+                        b.created_at ||
+                        0
+                    ) -
+                    new Date(
+                        a.created_at ||
+                        0
+                    )
+                );
+            }
         );
 
 
     const unreadNotifications =
         sortedNotifications.filter(
-            (item) =>
-                !item?.is_read
+            (
+                item
+            ) =>
+                !item.is_read
         );
 
 
     const unreadCount =
-        typeof totalUnreadCount === "number"
+        typeof totalUnreadCount ===
+        "number"
+
             ? totalUnreadCount
+
             : unreadNotifications.length;
 
 
-    // Unread notificationlar ustun.
-    // Unread qolmasa oxirgi notificationlarni ko'rsatamiz.
+    // Avval unread notificationlar.
+    // Agar unread qolmasa oxirgi notificationlar.
 
     const dropdownItems =
-        unreadNotifications.length > 0
-            ? unreadNotifications.slice(
-                0,
-                8
-            )
-            : sortedNotifications.slice(
-                0,
-                8
-            );
+        unreadNotifications.length >
+        0
+
+            ? unreadNotifications
+                .slice(
+                    0,
+                    8
+                )
+
+            : sortedNotifications
+                .slice(
+                    0,
+                    8
+                );
 
 
     // =====================================================
     // ACTIONS
     // =====================================================
 
-    const handleMarkOneAsRead = (
-        notificationId
-    ) => {
-        dispatch(
-            markNotificationAsRead(
-                notificationId
-            )
-        );
-    };
+    const handleMarkOneAsRead =
+        (
+            notificationId
+        ) => {
+
+            dispatch(
+                markNotificationAsRead(
+                    notificationId
+                )
+            );
+
+        };
 
 
     const handleMarkAllAsRead =
         () => {
+
             dispatch(
                 markAllNotificationsAsRead()
             );
+
         };
 
 
     const closeDropdown =
         () => {
+
             setOpenNotifications(
                 false
             );
+
         };
 
 
     const toggleDropdown =
         () => {
+
             setOpenNotifications(
-                (previous) =>
+                (
+                    previous
+                ) =>
                     !previous
             );
+
         };
 
 
+    // =====================================================
+    // JSX
+    // =====================================================
+
     return (
         <div
-            ref={notificationsRef}
-            className="relative"
+            ref={
+                notificationsRef
+            }
+
+            className="
+                relative
+            "
         >
-            {/* BELL BUTTON */}
+
+            {/* =============================================
+                BELL BUTTON
+            ============================================== */}
 
             <button
                 type="button"
-                onClick={toggleDropdown}
+
+                onClick={
+                    toggleDropdown
+                }
+
                 aria-label="Bildirishnomalar"
-                aria-expanded={openNotifications}
+
+                aria-expanded={
+                    openNotifications
+                }
+
                 className={`
                     group
                     relative
@@ -796,11 +1727,27 @@ const NotificationDropdown = ({
 
                     ${
                         openNotifications
-                            ? "border-indigo-400/25 bg-indigo-500/10 text-indigo-300"
-                            : "border-white/[0.07] bg-white/[0.035] text-gray-400 hover:border-indigo-400/25 hover:bg-indigo-500/[0.06] hover:text-indigo-300"
+
+                            ? `
+                                border-indigo-400/25
+                                bg-indigo-500/10
+                                text-indigo-300
+                            `
+
+                            : `
+                                border-white/[0.07]
+                                bg-white/[0.035]
+                                text-gray-400
+                                hover:border-indigo-400/25
+                                hover:bg-indigo-500/[0.06]
+                                hover:text-indigo-300
+                            `
                     }
                 `}
             >
+
+                {/* GLOW */}
+
                 <span
                     className="
                         pointer-events-none
@@ -818,7 +1765,9 @@ const NotificationDropdown = ({
 
                 <Bell
                     size={18}
+
                     strokeWidth={2}
+
                     className="
                         relative
                         z-10
@@ -826,7 +1775,10 @@ const NotificationDropdown = ({
                 />
 
 
+                {/* UNREAD COUNT */}
+
                 {unreadCount > 0 && (
+
                     <span
                         className="
                             absolute
@@ -851,14 +1803,23 @@ const NotificationDropdown = ({
                             shadow-[0_0_12px_rgba(239,68,68,0.35)]
                         "
                     >
-                        {unreadCount > 99
-                            ? "99+"
-                            : unreadCount}
+                        {
+                            unreadCount >
+                            99
+
+                                ? "99+"
+
+                                : unreadCount
+                        }
                     </span>
+
                 )}
 
 
+                {/* WEBSOCKET STATUS */}
+
                 {wsConnected && (
+
                     <span
                         className="
                             absolute
@@ -873,19 +1834,31 @@ const NotificationDropdown = ({
                             shadow-[0_0_8px_rgba(52,211,153,0.8)]
                         "
                     />
+
                 )}
+
             </button>
 
 
-            {/* DROPDOWN */}
+            {/* =============================================
+                DROPDOWN
+            ============================================== */}
 
             <AnimatePresence>
+
                 {openNotifications && (
+
                     <motion.div
-                        variants={dropdownVariants}
+                        variants={
+                            dropdownVariants
+                        }
+
                         initial="hidden"
+
                         animate="visible"
+
                         exit="exit"
+
                         className="
                             absolute
                             right-0
@@ -903,7 +1876,10 @@ const NotificationDropdown = ({
                             backdrop-blur-2xl
                         "
                     >
-                        {/* HEADER */}
+
+                        {/* =================================
+                            HEADER
+                        ================================== */}
 
                         <div
                             className="
@@ -916,6 +1892,7 @@ const NotificationDropdown = ({
                                 py-4
                             "
                         >
+
                             <div
                                 className="
                                     pointer-events-none
@@ -941,7 +1918,15 @@ const NotificationDropdown = ({
                                     gap-3
                                 "
                             >
-                                <div className="min-w-0">
+
+                                <div
+                                    className="
+                                        min-w-0
+                                    "
+                                >
+
+                                    {/* TITLE */}
+
                                     <div
                                         className="
                                             flex
@@ -949,6 +1934,7 @@ const NotificationDropdown = ({
                                             gap-2
                                         "
                                     >
+
                                         <Bell
                                             size={17}
                                             className="text-indigo-400"
@@ -967,6 +1953,7 @@ const NotificationDropdown = ({
 
 
                                         {unreadCount > 0 && (
+
                                             <span
                                                 className="
                                                     rounded-full
@@ -981,9 +1968,13 @@ const NotificationDropdown = ({
                                                     text-indigo-300
                                                 "
                                             >
-                                                {unreadCount}
+                                                {
+                                                    unreadCount
+                                                }
                                             </span>
+
                                         )}
+
                                     </div>
 
 
@@ -997,16 +1988,21 @@ const NotificationDropdown = ({
                                             gap-1.5
                                         "
                                     >
+
                                         {wsConnected ? (
+
                                             <Wifi
                                                 size={12}
                                                 className="text-emerald-400"
                                             />
+
                                         ) : (
+
                                             <WifiOff
                                                 size={12}
                                                 className="text-gray-600"
                                             />
+
                                         )}
 
 
@@ -1025,14 +2021,22 @@ const NotificationDropdown = ({
                                                 }
                                             `}
                                         >
-                                            {wsConnected
-                                                ? "Real-time online"
-                                                : "Connecting..."}
+                                            {
+                                                wsConnected
+
+                                                    ? "Real-time online"
+
+                                                    : "Connecting..."
+                                            }
                                         </p>
+
                                     </div>
 
 
+                                    {/* WS ERROR */}
+
                                     {wsError && (
+
                                         <p
                                             className="
                                                 mt-1.5
@@ -1042,24 +2046,35 @@ const NotificationDropdown = ({
                                                 font-medium
                                                 text-red-300
                                             "
-                                            title={String(
-                                                wsError
-                                            )}
+                                            title={
+                                                String(
+                                                    wsError
+                                                )
+                                            }
                                         >
-                                            {String(
-                                                wsError
-                                            )}
+                                            {
+                                                String(
+                                                    wsError
+                                                )
+                                            }
                                         </p>
+
                                     )}
+
                                 </div>
 
 
                                 {/* MARK ALL */}
 
                                 {unreadCount > 0 && (
+
                                     <button
                                         type="button"
-                                        onClick={handleMarkAllAsRead}
+
+                                        onClick={
+                                            handleMarkAllAsRead
+                                        }
+
                                         className="
                                             flex
                                             flex-shrink-0
@@ -1080,6 +2095,7 @@ const NotificationDropdown = ({
                                             hover:text-indigo-200
                                         "
                                     >
+
                                         <CheckCheck
                                             size={14}
                                             strokeWidth={2}
@@ -1093,13 +2109,19 @@ const NotificationDropdown = ({
                                         >
                                             O‘qildi
                                         </span>
+
                                     </button>
+
                                 )}
+
                             </div>
+
                         </div>
 
 
-                        {/* BODY */}
+                        {/* =================================
+                            BODY
+                        ================================== */}
 
                         <div
                             className="
@@ -1107,32 +2129,63 @@ const NotificationDropdown = ({
                                 overflow-y-auto
                             "
                         >
+
                             {loading ? (
+
                                 <NotificationSkeleton />
-                            ) : safeNotifications.length === 0 ? (
+
+                            ) : safeNotifications.length ===
+                                0 ? (
+
                                 <EmptyState />
-                            ) : dropdownItems.length > 0 ? (
+
+                            ) : dropdownItems.length >
+                                0 ? (
+
                                 dropdownItems.map(
-                                    (notification) => (
+                                    (
+                                        notification
+                                    ) => (
+
                                         <NotificationItem
-                                            key={notification.id}
-                                            notification={notification}
-                                            onMarkRead={handleMarkOneAsRead}
-                                            onClose={closeDropdown}
+                                            key={
+                                                notification.id
+                                            }
+
+                                            notification={
+                                                notification
+                                            }
+
+                                            onMarkRead={
+                                                handleMarkOneAsRead
+                                            }
+
+                                            onClose={
+                                                closeDropdown
+                                            }
                                         />
+
                                     )
                                 )
+
                             ) : (
+
                                 <EmptyState
                                     type="read"
                                 />
+
                             )}
+
                         </div>
 
 
-                        {/* FOOTER */}
+                        {/* =================================
+                            FOOTER
+                        ================================== */}
 
-                        {safeNotifications.length > 0 && (
+                        {safeNotifications.length >
+                            0 && (
+
                             <div
                                 className="
                                     border-t
@@ -1141,9 +2194,14 @@ const NotificationDropdown = ({
                                     p-3
                                 "
                             >
+
                                 <Link
                                     to="/notifications"
-                                    onClick={closeDropdown}
+
+                                    onClick={
+                                        closeDropdown
+                                    }
+
                                     className="
                                         group
                                         flex
@@ -1165,23 +2223,32 @@ const NotificationDropdown = ({
                                         hover:text-indigo-300
                                     "
                                 >
+
                                     Barcha bildirishnomalar
 
 
                                     <ArrowRight
                                         size={14}
+
                                         className="
                                             transition-transform
                                             duration-200
                                             group-hover:translate-x-1
                                         "
                                     />
+
                                 </Link>
+
                             </div>
+
                         )}
+
                     </motion.div>
+
                 )}
+
             </AnimatePresence>
+
         </div>
     );
 };
