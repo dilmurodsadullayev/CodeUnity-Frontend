@@ -1,42 +1,200 @@
 // src/store/index.js
-import { configureStore } from '@reduxjs/toolkit'
-// Fayl yo'llarini tuzatish: `./features/...` o'rniga `../features/...`
-import AuthReducer from '../features/auth/Auth'
-import CommentReducer from '../features/comments/Comment'
-import ProblemReducer from '../features/problems/Problems'
-import problemResponseReducer from '../features/problemResponse/problemResponse'
-import UserReducer from '../features/users' // Agar bu katalog bo'lsa, indeks fayl borligini tekshiring
-import FeedbackReducer from '../features/feedback'
-import notificationReducer from '../features/notificationSlice'
-import notificationMiddleware from '../middleware/notificationMiddleware'
-import CoinReducer from '../features/coins'
-import ProfileReducer from '../features/profile'
-import ProjectReducer from '../features/projects'
-import PostReducer from '../features/posts'
-import RoadmapReducer from '../features/roadmap'
-import BadgeReducer from '../features/badge';
-import BotReducer from "../features/bot"; 
 
+import {
+    configureStore,
+} from "@reduxjs/toolkit";
+
+
+// =========================================================
+// REDUCERS
+// =========================================================
+
+import AuthReducer from "../features/auth/Auth";
+
+import CommentReducer from "../features/comments/Comment";
+
+import ProblemReducer from "../features/problems/Problems";
+
+import problemResponseReducer from "../features/problemResponse/problemResponse";
+
+import UserReducer from "../features/users";
+
+import FeedbackReducer from "../features/feedback";
+
+import notificationReducer from "../features/notificationSlice";
+
+import CoinReducer from "../features/coins";
+
+import ProfileReducer from "../features/profile";
+
+import ProjectReducer from "../features/projects";
+
+import PostReducer from "../features/posts";
+
+import RoadmapReducer from "../features/roadmap";
+
+import BadgeReducer from "../features/badge";
+
+import BotReducer from "../features/bot";
+
+
+// =========================================================
+// SITE UPDATES / CHANGELOG
+// =========================================================
+
+import updatesReducer from "../features/updates/Updates";
+
+
+// =========================================================
+// MIDDLEWARE
+// =========================================================
+
+import notificationMiddleware from "../middleware/notificationMiddleware";
+
+
+// =========================================================
+// STORE
+// =========================================================
 
 export const store = configureStore({
-  reducer: {
-    auth: AuthReducer,
-    comment: CommentReducer,
-    problem: ProblemReducer,
-    problemResponse: problemResponseReducer,
-    user: UserReducer,
-    feedback: FeedbackReducer,
-    notifications: notificationReducer,
-    coin: CoinReducer,
-    profile: ProfileReducer,
-    project: ProjectReducer,
-    post: PostReducer,
-    roadmap: RoadmapReducer,
-    badge: BadgeReducer,
-    bot: BotReducer,
-    
-  },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(notificationMiddleware),
-  devTools: process.env.NODE_ENV !== 'production',
+
+    reducer: {
+
+        // =================================================
+        // AUTH
+        // =================================================
+
+        auth:
+            AuthReducer,
+
+
+        // =================================================
+        // COMMENTS
+        // =================================================
+
+        comment:
+            CommentReducer,
+
+
+        // =================================================
+        // PROBLEMS
+        // =================================================
+
+        problem:
+            ProblemReducer,
+
+
+        problemResponse:
+            problemResponseReducer,
+
+
+        // =================================================
+        // USERS
+        // =================================================
+
+        user:
+            UserReducer,
+
+
+        // =================================================
+        // FEEDBACK
+        // =================================================
+
+        feedback:
+            FeedbackReducer,
+
+
+        // =================================================
+        // NOTIFICATIONS
+        // =================================================
+
+        notifications:
+            notificationReducer,
+
+
+        // =================================================
+        // COINS
+        // =================================================
+
+        coin:
+            CoinReducer,
+
+
+        // =================================================
+        // PROFILE
+        // =================================================
+
+        profile:
+            ProfileReducer,
+
+
+        // =================================================
+        // PROJECTS
+        // =================================================
+
+        project:
+            ProjectReducer,
+
+
+        // =================================================
+        // POSTS
+        // =================================================
+
+        post:
+            PostReducer,
+
+
+        // =================================================
+        // ROADMAP
+        // =================================================
+
+        roadmap:
+            RoadmapReducer,
+
+
+        // =================================================
+        // BADGES
+        // =================================================
+
+        badge:
+            BadgeReducer,
+
+
+        // =================================================
+        // TELEGRAM BOT
+        // =================================================
+
+        bot:
+            BotReducer,
+
+
+        // =================================================
+        // SITE UPDATES / CHANGELOG
+        // =================================================
+
+        updates:
+            updatesReducer,
+    },
+
+
+    // =====================================================
+    // MIDDLEWARE
+    // =====================================================
+
+    middleware: (
+        getDefaultMiddleware
+    ) =>
+        getDefaultMiddleware()
+            .concat(
+                notificationMiddleware
+            ),
+
+
+    // =====================================================
+    // REDUX DEVTOOLS
+    // =====================================================
+
+    devTools:
+        process.env.NODE_ENV !==
+        "production",
 });
