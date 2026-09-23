@@ -16,7 +16,7 @@ import ProjectDiscussion from "./ProjectDiscussion";
 import ProjectCollaboration from "./ProjectCollaboration";
 import ProjectLoadingSkeleton from "./ProjectLoadingSkeleton";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
-import ProjectFormModal from "./profile/CreateProjectModal";
+import ProjectFormModal from "./projects/CreateProjectModal";
 import ProjectBoost from "./ProjectBoost";
 
 import {

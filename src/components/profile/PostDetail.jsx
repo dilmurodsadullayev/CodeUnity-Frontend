@@ -25,7 +25,7 @@ import {
 import timeAgo from "../../utils/timeAgo";
 
 import DeleteConfirmationModal from "../DeleteConfirmationModal";
-import CreatePostModal from "./CreatePostModal";
+import CreatePostModal from "../posts/CreatePostModal";
 import PostCommentItem from "../PostCommentItem";
 
 import UserImage from "../../assests/userImage.jpeg";

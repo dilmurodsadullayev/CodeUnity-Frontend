@@ -11,7 +11,7 @@ import {
 import ProjectService from "../../services/project";
 import { getTechnologyColor } from "../../utils/colorUtils";
 
-import CreateProjectModal from "./CreateProjectModal";
+import CreateProjectModal from "../projects/CreateProjectModal";
 
 import {
     AlertTriangle,

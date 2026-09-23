@@ -1,3 +1,5 @@
+// src/components/ui/AuthToast.jsx
+
 import React from "react";
 
 import toast, {
@@ -9,91 +11,283 @@ import {
     CheckCircle2,
     CircleAlert,
     Info,
+    LoaderCircle,
     X,
 } from "lucide-react";
 
 import "./AuthToast.css";
 
 
+// =========================================================
+// DEFAULT DURATIONS
+// =========================================================
+
+const DEFAULT_DURATION = {
+    success: 3600,
+    error: 5000,
+    warning: 4400,
+    info: 4000,
+    loading: Infinity,
+};
+
+
+// =========================================================
+// TOAST CONFIG
+// =========================================================
+
 const TOAST_CONFIG = {
     success: {
         title: "Muvaffaqiyat",
+        code: "SUCCESS",
         Icon: CheckCircle2,
     },
 
     error: {
         title: "Xatolik",
+        code: "ERROR",
         Icon: AlertCircle,
     },
 
     warning: {
         title: "Diqqat",
+        code: "WARNING",
         Icon: CircleAlert,
     },
 
     info: {
         title: "Ma’lumot",
+        code: "INFO",
         Icon: Info,
+    },
+
+    loading: {
+        title: "Jarayon",
+        code: "PROCESS",
+        Icon: LoaderCircle,
     },
 };
 
 
-const AuthToastContent = ({
+// =========================================================
+// NORMALIZE MESSAGE
+// =========================================================
+
+const normalizeMessage = (
+    message
+) => {
+
+    if (
+        message === null
+        ||
+        message === undefined
+    ) {
+        return "";
+    }
+
+
+    if (
+        typeof message === "string"
+    ) {
+        return message;
+    }
+
+
+    if (
+        typeof message === "number"
+        ||
+        typeof message === "boolean"
+    ) {
+        return String(
+            message
+        );
+    }
+
+
+    try {
+
+        return JSON.stringify(
+            message
+        );
+
+    } catch {
+
+        return (
+            "Xabarni ko‘rsatib bo‘lmadi."
+        );
+    }
+};
+
+
+// =========================================================
+// TOAST CONTENT
+// =========================================================
+
+const SiteToastContent = ({
     t,
-    type,
+    type = "info",
     title,
     message,
     duration,
 }) => {
+
     const config =
-        TOAST_CONFIG[type] ||
+        TOAST_CONFIG[type]
+        ||
         TOAST_CONFIG.info;
+
 
     const Icon =
         config.Icon;
 
 
+    const isLoading =
+        type === "loading";
+
+
+    const hasProgress =
+        !isLoading
+        &&
+        Number.isFinite(
+            duration
+        );
+
+
+    const role =
+        (
+            type === "error"
+            ||
+            type === "warning"
+        )
+            ? "alert"
+            : "status";
+
+
     return (
+
         <div
+            role={role}
+            aria-live={
+                role === "alert"
+                    ? "assertive"
+                    : "polite"
+            }
             className={`
-                auth-toast
-                auth-toast--${type}
+                site-toast
+                site-toast--${type}
+
                 ${
                     t.visible
-                        ? "auth-toast--show"
-                        : "auth-toast--hide"
+                        ? "site-toast--show"
+                        : "site-toast--hide"
                 }
             `}
-            style={{
-                "--toast-duration":
-                    `${duration}ms`,
-            }}
+            style={
+                hasProgress
+                    ? {
+                        "--toast-duration":
+                            `${duration}ms`,
+                    }
+                    : undefined
+            }
         >
 
-            <div className="auth-toast__icon-wrap">
+            {/* =============================================
+                AMBIENT GLOW
+            ============================================== */}
 
-                <div className="auth-toast__icon">
+            <div
+                className="
+                    site-toast__glow
+                "
+            />
+
+
+            {/* =============================================
+                ICON
+            ============================================== */}
+
+            <div
+                className="
+                    site-toast__icon-wrap
+                "
+            >
+
+                <div
+                    className="
+                        site-toast__icon
+                    "
+                >
 
                     <Icon
                         size={21}
-                        strokeWidth={2.2}
+                        strokeWidth={2.15}
+                        className={
+                            isLoading
+                                ? "site-toast__spinner"
+                                : ""
+                        }
                     />
 
                 </div>
 
 
-                <span className="auth-toast__pulse" />
+                {!isLoading && (
+
+                    <span
+                        className="
+                            site-toast__pulse
+                        "
+                    />
+
+                )}
 
             </div>
 
 
-            <div className="auth-toast__content">
+            {/* =============================================
+                CONTENT
+            ============================================== */}
 
-                <div className="auth-toast__header">
+            <div
+                className="
+                    site-toast__content
+                "
+            >
+
+                <div
+                    className="
+                        site-toast__meta
+                    "
+                >
+
+                    <span>
+                        fsociety::
+                        {
+                            config.code
+                        }
+                    </span>
+
+
+                    <i />
+
+
+                    <small>
+                        now
+                    </small>
+
+                </div>
+
+
+                <div
+                    className="
+                        site-toast__header
+                    "
+                >
 
                     <strong>
                         {
-                            title ||
+                            title
+                            ||
                             config.title
                         }
                     </strong>
@@ -101,73 +295,146 @@ const AuthToastContent = ({
 
                     <button
                         type="button"
-                        className="auth-toast__close"
+                        className="
+                            site-toast__close
+                        "
                         onClick={() =>
                             toast.dismiss(
                                 t.id
                             )
                         }
-                        aria-label="Xabarni yopish"
+                        aria-label="
+                            Xabarni yopish
+                        "
                     >
+
                         <X
                             size={16}
                             strokeWidth={2.2}
                         />
+
                     </button>
 
                 </div>
 
 
-                <p>
-                    {message}
-                </p>
+                {message && (
+
+                    <p>
+                        {
+                            normalizeMessage(
+                                message
+                            )
+                        }
+                    </p>
+
+                )}
 
             </div>
 
 
-            <span className="auth-toast__progress">
-                <span />
-            </span>
+            {/* =============================================
+                PROGRESS
+            ============================================== */}
+
+            {hasProgress && (
+
+                <span
+                    className="
+                        site-toast__progress
+                    "
+                >
+
+                    <span />
+
+                </span>
+
+            )}
 
         </div>
     );
 };
 
 
+// =========================================================
+// SHOW TOAST
+// =========================================================
+
 const showToast = (
     type,
     message,
     options = {}
 ) => {
+
+    const normalizedType =
+        TOAST_CONFIG[type]
+            ? type
+            : "info";
+
+
     const duration =
-        options.duration ||
-        4200;
+        options.duration
+        ??
+        DEFAULT_DURATION[
+            normalizedType
+        ];
 
 
     return toast.custom(
-        (t) => (
-            <AuthToastContent
+        (
+            t
+        ) => (
+
+            <SiteToastContent
                 t={t}
-                type={type}
-                title={options.title}
-                message={message}
-                duration={duration}
+                type={
+                    normalizedType
+                }
+                title={
+                    options.title
+                }
+                message={
+                    message
+                }
+                duration={
+                    duration
+                }
             />
+
         ),
         {
+            id:
+                options.id,
+
             duration,
-            id: options.id,
         }
     );
 };
 
 
-export const authToast = {
+// =========================================================
+// GLOBAL SITE TOAST API
+//
+// Butun project shu objectdan foydalanadi.
+//
+// siteToast.success()
+// siteToast.error()
+// siteToast.warning()
+// siteToast.info()
+// siteToast.loading()
+// =========================================================
+
+export const siteToast = {
+
+    // =====================================================
+    // SUCCESS
+    // =====================================================
 
     success(
         message,
         options = {}
     ) {
+
         return showToast(
             "success",
             message,
@@ -176,10 +443,15 @@ export const authToast = {
     },
 
 
+    // =====================================================
+    // ERROR
+    // =====================================================
+
     error(
         message,
         options = {}
     ) {
+
         return showToast(
             "error",
             message,
@@ -188,10 +460,15 @@ export const authToast = {
     },
 
 
+    // =====================================================
+    // WARNING
+    // =====================================================
+
     warning(
         message,
         options = {}
     ) {
+
         return showToast(
             "warning",
             message,
@@ -200,10 +477,15 @@ export const authToast = {
     },
 
 
+    // =====================================================
+    // INFO
+    // =====================================================
+
     info(
         message,
         options = {}
     ) {
+
         return showToast(
             "info",
             message,
@@ -212,41 +494,169 @@ export const authToast = {
     },
 
 
-    dismiss(id) {
-        toast.dismiss(id);
+    // =====================================================
+    // LOADING
+    // =====================================================
+
+    loading(
+        message = "Jarayon bajarilmoqda...",
+        options = {}
+    ) {
+
+        return showToast(
+            "loading",
+            message,
+            {
+                ...options,
+
+                duration:
+                    options.duration
+                    ??
+                    Infinity,
+            }
+        );
     },
 
 
+    // =====================================================
+    // UPDATE EXISTING TOAST
+    //
+    // Loading -> success/error qilish uchun.
+    //
+    // siteToast.update(
+    //     toastId,
+    //     "success",
+    //     "Tayyor!"
+    // )
+    // =====================================================
+
+    update(
+        id,
+        type,
+        message,
+        options = {}
+    ) {
+
+        if (
+            !id
+        ) {
+
+            return showToast(
+                type,
+                message,
+                options
+            );
+        }
+
+
+        return showToast(
+            type,
+            message,
+            {
+                ...options,
+                id,
+            }
+        );
+    },
+
+
+    // =====================================================
+    // DISMISS ONE
+    // =====================================================
+
+    dismiss(
+        id
+    ) {
+
+        if (
+            !id
+        ) {
+            return;
+        }
+
+
+        toast.dismiss(
+            id
+        );
+    },
+
+
+    // =====================================================
+    // DISMISS ALL
+    // =====================================================
+
     dismissAll() {
+
         toast.dismiss();
     },
 };
 
 
+// =========================================================
+// BACKWARD COMPATIBILITY
+//
+// Login.jsx hozir:
+//
+// import { authToast } from "./ui/AuthToast";
+//
+// deb ishlatyapti.
+//
+// Shu sabab eski code buzilmaydi.
+// Keyinchalik hammasini siteToastga o'tkazamiz.
+// =========================================================
+
+export const authToast =
+    siteToast;
+
+
+// =========================================================
+// GLOBAL TOASTER
+//
+// App.js ichida FAQAT BIR MARTA render qilinadi.
+// =========================================================
+
 const AuthToast = () => {
+
     return (
+
         <Toaster
-            position="top-right"
-
+            position="
+                top-right
+            "
+            reverseOrder={
+                false
+            }
             gutter={12}
-
             containerStyle={{
                 top: 22,
                 right: 22,
-                zIndex: 2147483647,
-                pointerEvents: "none",
-            }}
 
+                zIndex:
+                    2147483647,
+
+                pointerEvents:
+                    "none",
+            }}
             toastOptions={{
                 style: {
-                    background: "transparent",
-                    boxShadow: "none",
-                    padding: 0,
-                    margin: 0,
-                    maxWidth: "none",
+                    background:
+                        "transparent",
+
+                    boxShadow:
+                        "none",
+
+                    padding:
+                        0,
+
+                    margin:
+                        0,
+
+                    maxWidth:
+                        "none",
                 },
             }}
         />
+
     );
 };
 

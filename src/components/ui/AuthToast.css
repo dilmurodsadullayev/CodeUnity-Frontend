@@ -1,78 +1,48 @@
 /* =========================================================
-   AUTH TOAST VARIABLES
+   GLOBAL SITE TOAST
    ========================================================= */
 
 :root {
-    --toast-bg:
-        rgba(
-            15,
-            20,
-            27,
-            0.96
-        );
+    --site-toast-text: #f0f6fc;
+    --site-toast-muted: #8b949e;
 
-    --toast-border:
-        rgba(
-            255,
-            255,
-            255,
-            0.08
-        );
-
-    --toast-text:
-        #f0f6fc;
-
-    --toast-muted:
-        #9ba4b0;
-
-    --toast-error:
-        #ef4444;
-
-    --toast-success:
-        #22c55e;
-
-    --toast-warning:
-        #f59e0b;
-
-    --toast-info:
-        #6366f1;
+    --site-toast-success: #22c55e;
+    --site-toast-error: #ef4444;
+    --site-toast-warning: #f59e0b;
+    --site-toast-info: #6366f1;
+    --site-toast-loading: #8b5cf6;
 }
 
 
 /* =========================================================
-   TOAST
+   BASE
    ========================================================= */
 
-.auth-toast {
+.site-toast {
     position: relative;
 
-    width:
-        min(
-            calc(
-                100vw - 32px
-            ),
-            410px
-        );
+    width: min(
+        calc(100vw - 32px),
+        420px
+    );
 
-    min-height: 86px;
-
-    box-sizing: border-box;
+    min-height: 92px;
 
     display: grid;
 
     grid-template-columns:
-        48px
-        minmax(
-            0,
-            1fr
-        );
+        50px minmax(0, 1fr);
+
+    align-items: center;
 
     gap: 13px;
+
+    box-sizing: border-box;
 
     padding:
         15px
         15px
-        16px;
+        17px;
 
     overflow: hidden;
 
@@ -80,68 +50,58 @@
 
     border:
         1px solid
-        var(
-            --toast-border
+        rgba(
+            255,
+            255,
+            255,
+            0.08
         );
 
-    border-radius: 18px;
+    border-radius: 19px;
 
     background:
         linear-gradient(
             145deg,
-
-            rgba(
-                22,
-                27,
-                34,
-                0.98
-            ),
-
-            rgba(
-                13,
-                17,
-                23,
-                0.98
-            )
+            rgba(20, 25, 34, 0.98),
+            rgba(8, 12, 18, 0.98)
         );
 
     box-shadow:
-        0
-        25px
-        70px
+        0 30px 80px
         rgba(
             0,
             0,
             0,
-            0.55
+            0.6
         ),
 
         inset
-        0
-        1px
-        0
+        0 1px 0
         rgba(
             255,
             255,
             255,
-            0.025
+            0.035
         );
 
     backdrop-filter:
-        blur(22px);
+        blur(24px);
 
     -webkit-backdrop-filter:
-        blur(22px);
+        blur(24px);
 
     transform-origin:
         top right;
 
     transition:
-        opacity
-            0.28s ease,
-
-        transform
-            0.28s ease;
+        opacity 0.26s ease,
+        transform 0.3s
+        cubic-bezier(
+            0.16,
+            1,
+            0.3,
+            1
+        );
 }
 
 
@@ -149,7 +109,7 @@
    SHOW / HIDE
    ========================================================= */
 
-.auth-toast--show {
+.site-toast--show {
     opacity: 1;
 
     transform:
@@ -159,12 +119,12 @@
 }
 
 
-.auth-toast--hide {
+.site-toast--hide {
     opacity: 0;
 
     transform:
-        translateX(30px)
-        translateY(-5px)
+        translateX(32px)
+        translateY(-7px)
         scale(0.96);
 }
 
@@ -173,7 +133,7 @@
    LEFT ACCENT
    ========================================================= */
 
-.auth-toast::before {
+.site-toast::before {
     content: "";
 
     position: absolute;
@@ -185,104 +145,133 @@
     width: 3px;
 
     border-radius:
-        0
-        4px
-        4px
-        0;
+        0 5px 5px 0;
 
     background:
         var(
-            --toast-accent
+            --site-toast-accent
         );
 
     box-shadow:
-        0
-        0
-        15px
+        0 0 16px
         var(
-            --toast-accent
+            --site-toast-accent
         );
 }
 
 
 /* =========================================================
-   TYPE COLORS
+   TYPE
    ========================================================= */
 
-.auth-toast--error {
-    --toast-accent:
+.site-toast--success {
+    --site-toast-accent:
         var(
-            --toast-error
+            --site-toast-success
         );
 }
 
 
-.auth-toast--success {
-    --toast-accent:
+.site-toast--error {
+    --site-toast-accent:
         var(
-            --toast-success
+            --site-toast-error
         );
 }
 
 
-.auth-toast--warning {
-    --toast-accent:
+.site-toast--warning {
+    --site-toast-accent:
         var(
-            --toast-warning
+            --site-toast-warning
         );
 }
 
 
-.auth-toast--info {
-    --toast-accent:
+.site-toast--info {
+    --site-toast-accent:
         var(
-            --toast-info
+            --site-toast-info
+        );
+}
+
+
+.site-toast--loading {
+    --site-toast-accent:
+        var(
+            --site-toast-loading
         );
 }
 
 
 /* =========================================================
-   ICON WRAPPER
+   AMBIENT GLOW
    ========================================================= */
 
-.auth-toast__icon-wrap {
+.site-toast__glow {
+    position: absolute;
+
+    pointer-events: none;
+
+    width: 130px;
+    height: 130px;
+
+    right: -65px;
+    top: -65px;
+
+    border-radius: 999px;
+
+    background:
+        var(
+            --site-toast-accent
+        );
+
+    opacity: 0.07;
+
+    filter: blur(30px);
+}
+
+
+/* =========================================================
+   ICON
+   ========================================================= */
+
+.site-toast__icon-wrap {
     position: relative;
 
-    width: 48px;
-    height: 48px;
+    width: 50px;
+    height: 50px;
 
     display: grid;
 
     place-items: center;
-
-    align-self: center;
 }
 
 
-.auth-toast__icon {
+.site-toast__icon {
     position: relative;
 
     z-index: 2;
 
-    width: 42px;
-    height: 42px;
+    width: 43px;
+    height: 43px;
 
     display: grid;
 
     place-items: center;
 
-    border-radius: 13px;
+    border-radius: 14px;
 
     color:
         var(
-            --toast-accent
+            --site-toast-accent
         );
 
     background:
         color-mix(
             in srgb,
             var(
-                --toast-accent
+                --site-toast-accent
             )
             11%,
             transparent
@@ -293,13 +282,11 @@
         color-mix(
             in srgb,
             var(
-                --toast-accent
+                --site-toast-accent
             )
-            24%,
+            25%,
             transparent
         );
-
-    font-size: 19px;
 
     box-shadow:
         inset
@@ -316,53 +303,73 @@
 
 
 /* =========================================================
-   ICON PULSE
+   PULSE
    ========================================================= */
 
-@keyframes authToastPulse {
-
+@keyframes siteToastPulse {
     0% {
-        opacity: 0.3;
+        opacity: 0.35;
 
         transform:
             scale(0.82);
     }
 
-    65% {
+    70% {
         opacity: 0;
 
         transform:
-            scale(1.35);
+            scale(1.38);
     }
 
     100% {
         opacity: 0;
 
         transform:
-            scale(1.35);
+            scale(1.38);
     }
 }
 
 
-.auth-toast__pulse {
+.site-toast__pulse {
     position: absolute;
 
-    inset: 4px;
+    inset: 3px;
 
     border:
         1px solid
         var(
-            --toast-accent
+            --site-toast-accent
         );
 
-    border-radius: 14px;
+    border-radius: 15px;
 
     opacity: 0;
 
     animation:
-        authToastPulse
-        2.2s
+        siteToastPulse
+        2.3s
         ease-out
+        infinite;
+}
+
+
+/* =========================================================
+   LOADER
+   ========================================================= */
+
+@keyframes siteToastSpin {
+    to {
+        transform:
+            rotate(360deg);
+    }
+}
+
+
+.site-toast__spinner {
+    animation:
+        siteToastSpin
+        0.85s
+        linear
         infinite;
 }
 
@@ -371,7 +378,11 @@
    CONTENT
    ========================================================= */
 
-.auth-toast__content {
+.site-toast__content {
+    position: relative;
+
+    z-index: 2;
+
     min-width: 0;
 
     display: flex;
@@ -380,11 +391,79 @@
 
     justify-content: center;
 
-    gap: 5px;
+    gap: 4px;
 }
 
 
-.auth-toast__header {
+/* =========================================================
+   META
+   ========================================================= */
+
+.site-toast__meta {
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    margin-bottom: 1px;
+
+    font-family:
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        Monaco,
+        Consolas,
+        monospace;
+
+    font-size: 8px;
+
+    font-weight: 900;
+
+    letter-spacing: 0.16em;
+
+    text-transform: uppercase;
+
+    color:
+        color-mix(
+            in srgb,
+            var(
+                --site-toast-accent
+            )
+            80%,
+            white
+        );
+}
+
+
+.site-toast__meta i {
+    width: 3px;
+    height: 3px;
+
+    border-radius: 50%;
+
+    background:
+        #4b5563;
+}
+
+
+.site-toast__meta small {
+    font-size: 8px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.08em;
+
+    color:
+        #525c68;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.site-toast__header {
     display: flex;
 
     align-items: center;
@@ -396,10 +475,18 @@
 }
 
 
-.auth-toast__header strong {
+.site-toast__header strong {
+    min-width: 0;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
     color:
         var(
-            --toast-text
+            --site-toast-text
         );
 
     font-size: 13px;
@@ -411,14 +498,18 @@
 }
 
 
-.auth-toast__content p {
+/* =========================================================
+   MESSAGE
+   ========================================================= */
+
+.site-toast__content p {
     margin: 0;
 
-    padding-right: 5px;
+    padding-right: 3px;
 
     color:
         var(
-            --toast-muted
+            --site-toast-muted
         );
 
     font-size: 12px;
@@ -428,18 +519,20 @@
     line-height: 1.55;
 
     overflow-wrap: anywhere;
+
+    white-space: pre-wrap;
 }
 
 
 /* =========================================================
-   CLOSE BUTTON
+   CLOSE
    ========================================================= */
 
-.auth-toast__close {
+.site-toast__close {
     flex-shrink: 0;
 
-    width: 30px;
-    height: 30px;
+    width: 29px;
+    height: 29px;
 
     display: grid;
 
@@ -454,25 +547,19 @@
     background:
         transparent;
 
-    color: #626c79;
-
-    font-size: 12px;
+    color:
+        #596270;
 
     cursor: pointer;
 
     transition:
-        color
-            0.2s ease,
-
-        background-color
-            0.2s ease,
-
-        transform
-            0.2s ease;
+        color 0.2s ease,
+        background-color 0.2s ease,
+        transform 0.2s ease;
 }
 
 
-.auth-toast__close:hover {
+.site-toast__close:hover {
     color: #ffffff;
 
     background:
@@ -492,8 +579,7 @@
    PROGRESS
    ========================================================= */
 
-@keyframes authToastProgress {
-
+@keyframes siteToastProgress {
     from {
         transform:
             scaleX(1);
@@ -506,7 +592,7 @@
 }
 
 
-.auth-toast__progress {
+.site-toast__progress {
     position: absolute;
 
     left: 0;
@@ -527,7 +613,7 @@
 }
 
 
-.auth-toast__progress span {
+.site-toast__progress span {
     display: block;
 
     width: 100%;
@@ -538,38 +624,54 @@
     background:
         linear-gradient(
             90deg,
-
             var(
-                --toast-accent
+                --site-toast-accent
             ),
-
             color-mix(
                 in srgb,
-
                 var(
-                    --toast-accent
+                    --site-toast-accent
                 )
-                55%,
-
+                50%,
                 white
             )
         );
 
     box-shadow:
-        0
-        0
-        10px
+        0 0 12px
         var(
-            --toast-accent
+            --site-toast-accent
         );
 
     animation:
-        authToastProgress
+        siteToastProgress
         var(
             --toast-duration
         )
         linear
         forwards;
+}
+
+
+/* =========================================================
+   HOVER
+   ========================================================= */
+
+.site-toast:hover {
+    border-color:
+        color-mix(
+            in srgb,
+            var(
+                --site-toast-accent
+            )
+            18%,
+            rgba(
+                255,
+                255,
+                255,
+                0.08
+            )
+        );
 }
 
 
@@ -581,14 +683,14 @@
     max-width: 520px
 ) {
 
-    .auth-toast {
+    .site-toast {
         width:
             calc(
-                100vw - 28px
+                100vw - 24px
             );
 
         min-height:
-            80px;
+            82px;
 
         grid-template-columns:
             43px
@@ -602,37 +704,46 @@
         padding:
             13px
             12px
-            14px;
+            15px;
+
+        border-radius:
+            17px;
     }
 
 
-    .auth-toast__icon-wrap {
+    .site-toast__icon-wrap {
         width: 43px;
         height: 43px;
     }
 
 
-    .auth-toast__icon {
+    .site-toast__icon {
         width: 39px;
         height: 39px;
 
         border-radius:
             12px;
-
-        font-size:
-            17px;
     }
 
 
-    .auth-toast__header strong {
+    .site-toast__header strong {
         font-size:
             12px;
     }
 
 
-    .auth-toast__content p {
+    .site-toast__content p {
         font-size:
             11px;
+
+        line-height:
+            1.5;
+    }
+
+
+    .site-toast__meta {
+        font-size:
+            7px;
     }
 }
 
@@ -646,13 +757,19 @@
     reduce
 ) {
 
-    .auth-toast,
-    .auth-toast__close {
+    .site-toast {
         transition: none;
     }
 
 
-    .auth-toast__pulse {
+    .site-toast__pulse,
+    .site-toast__spinner,
+    .site-toast__progress span {
         animation: none;
+    }
+
+
+    .site-toast__close {
+        transition: none;
     }
 }
