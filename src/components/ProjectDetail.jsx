@@ -1,23 +1,22 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate, useParams } from "react-router-dom";
+// src/components/ProjectDetail.jsx
+
+import React, {
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
+} from "react";
 
 import {
-    getProjectDetailFailure,
-    getProjectDetailStart,
-    getProjectDetailSuccess,
-} from "../features/projects";
+    useDispatch,
+    useSelector,
+} from "react-redux";
 
-import ProjectService from "../services/project";
-
-import UserImage from "../assests/userImage.jpeg";
-
-import ProjectDiscussion from "./ProjectDiscussion";
-import ProjectCollaboration from "./ProjectCollaboration";
-import ProjectLoadingSkeleton from "./ProjectLoadingSkeleton";
-import DeleteConfirmationModal from "./DeleteConfirmationModal";
-import ProjectFormModal from "./projects/CreateProjectModal";
-import ProjectBoost from "./ProjectBoost";
+import {
+    Link,
+    useNavigate,
+    useParams,
+} from "react-router-dom";
 
 import {
     AlertTriangle,
@@ -30,6 +29,7 @@ import {
     MessageCircle,
     Pencil,
     Rocket,
+    Settings2,
     ShieldCheck,
     Sparkles,
     Star,
@@ -37,631 +37,3194 @@ import {
     UserRound,
 } from "lucide-react";
 
-const selectProjectState = (state) => state.project;
+import {
+    getProjectDetailFailure,
+    getProjectDetailStart,
+    getProjectDetailSuccess,
+} from "../features/projects";
 
-const formatFeatureList = (featuresString) => {
-    if (!featuresString) return [];
+import ProjectService from "../services/project";
 
-    return String(featuresString)
-        .split(/,\s*|\n/)
-        .map((item) => item.trim())
-        .filter(Boolean);
+import {
+    BACKEND_URL,
+} from "../services/config";
+
+import UserImage from "../assests/userImage.jpeg";
+
+import ProjectDiscussion from "./ProjectDiscussion";
+
+import ProjectCollaboration from "./ProjectCollaboration";
+
+import ProjectLoadingSkeleton from "./ProjectLoadingSkeleton";
+
+import DeleteConfirmationModal from "./DeleteConfirmationModal";
+
+import ProjectBoost from "./ProjectBoost";
+
+
+// =========================================================
+// CLEAN ARCHITECTURE
+//
+// Modal endi:
+// src/components/projects/CreateProjectModal.jsx
+// =========================================================
+
+import ProjectFormModal from "./projects/CreateProjectModal";
+
+
+// =========================================================
+// GLOBAL TOAST
+// =========================================================
+
+import {
+    siteToast,
+} from "./ui/AuthToast";
+
+
+// =========================================================
+// SELECTOR
+// =========================================================
+
+const selectProjectState =
+    (state) => state.project;
+
+
+// =========================================================
+// SAFE NUMBER
+// =========================================================
+
+const safeNumber = (
+    value
+) => {
+    const number =
+        Number(
+            value
+        );
+
+    if (
+        !Number.isFinite(
+            number
+        )
+    ) {
+        return 0;
+    }
+
+    return Math.max(
+        0,
+        number
+    );
 };
 
-const getImageUrl = (image) => {
-    if (!image) return UserImage;
-    if (typeof image === "string" && image.startsWith("http")) return image;
-    return `${window.location.origin}${image}`;
+
+// =========================================================
+// ERROR MESSAGE
+// =========================================================
+
+const getErrorMessage = (
+    error,
+    fallback = "Xatolik yuz berdi."
+) => {
+    const data =
+        error?.serverData
+        ||
+        error?.response?.data;
+
+
+    if (
+        typeof data === "string"
+        &&
+        data.trim()
+    ) {
+        return data;
+    }
+
+
+    if (
+        data?.detail
+    ) {
+        return String(
+            data.detail
+        );
+    }
+
+
+    if (
+        data?.message
+    ) {
+        return String(
+            data.message
+        );
+    }
+
+
+    if (
+        data?.error
+    ) {
+        return String(
+            data.error
+        );
+    }
+
+
+    if (
+        data
+        &&
+        typeof data === "object"
+    ) {
+        const firstValue =
+            Object.values(
+                data
+            )[0];
+
+
+        if (
+            Array.isArray(
+                firstValue
+            )
+            &&
+            firstValue.length > 0
+        ) {
+            return String(
+                firstValue[0]
+            );
+        }
+
+
+        if (
+            typeof firstValue ===
+            "string"
+        ) {
+            return firstValue;
+        }
+    }
+
+
+    if (
+        error?.message
+    ) {
+        try {
+            const parsed =
+                JSON.parse(
+                    error.message
+                );
+
+
+            if (
+                parsed?.detail
+            ) {
+                return String(
+                    parsed.detail
+                );
+            }
+
+
+            if (
+                parsed?.message
+            ) {
+                return String(
+                    parsed.message
+                );
+            }
+
+
+            if (
+                parsed?.error
+            ) {
+                return String(
+                    parsed.error
+                );
+            }
+
+
+            if (
+                parsed
+                &&
+                typeof parsed ===
+                "object"
+            ) {
+                const firstValue =
+                    Object.values(
+                        parsed
+                    )[0];
+
+
+                if (
+                    Array.isArray(
+                        firstValue
+                    )
+                    &&
+                    firstValue.length > 0
+                ) {
+                    return String(
+                        firstValue[0]
+                    );
+                }
+
+
+                if (
+                    typeof firstValue ===
+                    "string"
+                ) {
+                    return firstValue;
+                }
+            }
+
+        } catch {
+            return String(
+                error.message
+            );
+        }
+    }
+
+
+    return fallback;
 };
 
-const getProjectTitle = (project) => {
-    return project?.name || project?.title || "Noma’lum loyiha";
+
+// =========================================================
+// FEATURES
+// =========================================================
+
+const formatFeatureList = (
+    featuresString
+) => {
+    if (
+        !featuresString
+    ) {
+        return [];
+    }
+
+
+    return String(
+        featuresString
+    )
+        .split(
+            /,\s*|\n/
+        )
+        .map(
+            (item) =>
+                item.trim()
+        )
+        .filter(
+            Boolean
+        );
 };
 
-const getAuthorName = (author) => {
-    const fullName = `${author?.first_name || ""} ${author?.last_name || ""}`.trim();
-    return fullName || author?.username || "Noma’lum user";
+
+// =========================================================
+// IMAGE URL
+// =========================================================
+
+const getImageUrl = (
+    image
+) => {
+    if (
+        !image
+    ) {
+        return UserImage;
+    }
+
+
+    const value =
+        String(
+            image
+        )
+            .trim();
+
+
+    if (
+        !value
+    ) {
+        return UserImage;
+    }
+
+
+    // =============================================
+    // ABSOLUTE URL
+    // =============================================
+
+    if (
+        /^https?:\/\//i.test(
+            value
+        )
+    ) {
+        return value;
+    }
+
+
+    // =============================================
+    // LOCAL BROWSER URL
+    // =============================================
+
+    if (
+        value.startsWith(
+            "blob:"
+        )
+        ||
+        value.startsWith(
+            "data:"
+        )
+    ) {
+        return value;
+    }
+
+
+    // =============================================
+    // BACKEND MEDIA
+    // =============================================
+
+    const baseUrl =
+        String(
+            BACKEND_URL || ""
+        )
+            .replace(
+                /\/+$/,
+                ""
+            );
+
+
+    const path =
+        value.startsWith(
+            "/"
+        )
+            ? value
+            : `/${value}`;
+
+
+    return (
+        `${baseUrl}${path}`
+    );
 };
 
-const StatPill = ({ icon: Icon, label, value, className = "" }) => {
+
+// =========================================================
+// PROJECT TITLE
+// =========================================================
+
+const getProjectTitle = (
+    project
+) => {
+    return (
+        project?.name
+        ||
+        project?.title
+        ||
+        "Noma’lum loyiha"
+    );
+};
+
+
+// =========================================================
+// AUTHOR NAME
+// =========================================================
+
+const getAuthorName = (
+    author
+) => {
+    const fullName =
+        `${
+            author?.first_name
+            ||
+            ""
+        } ${
+            author?.last_name
+            ||
+            ""
+        }`
+            .trim();
+
+
+    return (
+        fullName
+        ||
+        author?.username
+        ||
+        "Noma’lum user"
+    );
+};
+
+
+// =========================================================
+// STAT PILL
+// =========================================================
+
+const StatPill = ({
+    icon: Icon,
+    label,
+    value,
+    tone = "default",
+}) => {
+    const tones = {
+        default:
+            "text-gray-300",
+
+        yellow:
+            "text-yellow-300",
+
+        cyan:
+            "text-cyan-300",
+
+        indigo:
+            "text-indigo-300",
+    };
+
+
     return (
         <div
-            className={`inline-flex items-center gap-2 rounded-2xl border border-gray-700/70 bg-gray-900/70 px-4 py-2.5 text-sm font-bold text-gray-300 shadow-lg shadow-black/20 ${className}`}
+            className="
+                inline-flex
+                items-center
+                gap-2
+                rounded-xl
+                border
+                border-white/[0.07]
+                bg-white/[0.025]
+                px-3.5
+                py-2.5
+                text-xs
+                font-bold
+                shadow-lg
+                shadow-black/10
+            "
         >
-            <Icon size={17} />
-            <span className="text-white">{value}</span>
-            <span className="text-gray-500">{label}</span>
+
+            <Icon
+                size={15}
+                className={
+                    tones[tone]
+                    ||
+                    tones.default
+                }
+            />
+
+
+            <span
+                className="
+                    font-black
+                    text-white
+                "
+            >
+                {value}
+            </span>
+
+
+            <span
+                className="
+                    text-gray-600
+                "
+            >
+                {label}
+            </span>
+
         </div>
     );
 };
 
-const TechBadge = ({ children, type = "indigo" }) => {
+
+// =========================================================
+// TECH BADGE
+// =========================================================
+
+const TechBadge = ({
+    children,
+    type = "indigo",
+}) => {
     const classes = {
-        blue: "border-blue-400/30 bg-blue-500/10 text-blue-300",
-        purple: "border-purple-400/30 bg-purple-500/10 text-purple-300",
-        indigo: "border-indigo-400/30 bg-indigo-500/10 text-indigo-300",
+        blue:
+            "border-blue-400/25 bg-blue-500/[0.08] text-blue-300",
+
+        purple:
+            "border-purple-400/25 bg-purple-500/[0.08] text-purple-300",
+
+        indigo:
+            "border-indigo-400/25 bg-indigo-500/[0.08] text-indigo-300",
     };
+
 
     return (
         <span
-            className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-black ${classes[type]}`}
+            className={`
+                inline-flex
+                items-center
+                rounded-full
+                border
+                px-3
+                py-1.5
+                text-[10px]
+                font-black
+                uppercase
+                tracking-wider
+
+                ${
+                    classes[type]
+                    ||
+                    classes.indigo
+                }
+            `}
         >
             {children}
         </span>
     );
 };
 
-const ProjectDetail = () => {
-    const { projectId } = useParams();
-    const navigate = useNavigate();
-    const dispatch = useDispatch();
 
-    const { isLoggedIn, user } = useSelector((state) => state.auth);
+// =========================================================
+// OWNER CONTROLS
+//
+// Eski katta Tahrirlash/O‘chirish tugmalari o‘rniga
+// compact toolbar.
+// =========================================================
+
+const OwnerControls = ({
+    onEdit,
+    onDelete,
+    isUpdating,
+    isDeleting,
+}) => {
+    return (
+        <div
+            className="
+                inline-flex
+                max-w-full
+                items-center
+                gap-1.5
+                rounded-2xl
+                border
+                border-white/[0.07]
+                bg-black/20
+                p-1.5
+                shadow-lg
+                shadow-black/20
+                backdrop-blur-xl
+            "
+        >
+
+            {/* OWNER LABEL */}
+
+            <div
+                className="
+                    hidden
+                    items-center
+                    gap-2
+                    px-3
+                    text-[9px]
+                    font-black
+                    uppercase
+                    tracking-[0.15em]
+                    text-gray-600
+                    md:flex
+                "
+            >
+                <Settings2
+                    size={13}
+                    className="
+                        text-indigo-400
+                    "
+                />
+
+                Owner tools
+            </div>
+
+
+            <span
+                className="
+                    hidden
+                    h-6
+                    w-px
+                    bg-white/[0.07]
+                    md:block
+                "
+            />
+
+
+            {/* EDIT */}
+
+            <button
+                type="button"
+                onClick={
+                    onEdit
+                }
+                disabled={
+                    isUpdating
+                    ||
+                    isDeleting
+                }
+                className="
+                    group
+                    inline-flex
+                    min-h-[38px]
+                    items-center
+                    justify-center
+                    gap-2
+                    rounded-xl
+                    border
+                    border-transparent
+                    px-3.5
+                    py-2
+                    text-xs
+                    font-black
+                    text-indigo-300
+                    transition-all
+                    duration-200
+
+                    hover:border-indigo-400/20
+                    hover:bg-indigo-500/[0.08]
+                    hover:text-indigo-200
+
+                    active:scale-[0.96]
+
+                    disabled:cursor-not-allowed
+                    disabled:opacity-40
+                "
+            >
+
+                {isUpdating ? (
+                    <Loader2
+                        size={15}
+                        className="
+                            animate-spin
+                        "
+                    />
+                ) : (
+                    <Pencil
+                        size={15}
+                        className="
+                            transition-transform
+                            group-hover:-rotate-6
+                        "
+                    />
+                )}
+
+
+                <span>
+                    {
+                        isUpdating
+                            ? "Saqlanmoqda"
+                            : "Tahrirlash"
+                    }
+                </span>
+
+            </button>
+
+
+            {/* DELETE */}
+
+            <button
+                type="button"
+                onClick={
+                    onDelete
+                }
+                disabled={
+                    isDeleting
+                    ||
+                    isUpdating
+                }
+                className="
+                    group
+                    inline-flex
+                    min-h-[38px]
+                    items-center
+                    justify-center
+                    gap-2
+                    rounded-xl
+                    border
+                    border-transparent
+                    px-3.5
+                    py-2
+                    text-xs
+                    font-black
+                    text-red-400
+                    transition-all
+                    duration-200
+
+                    hover:border-red-400/20
+                    hover:bg-red-500/[0.08]
+                    hover:text-red-300
+
+                    active:scale-[0.96]
+
+                    disabled:cursor-not-allowed
+                    disabled:opacity-40
+                "
+            >
+
+                {isDeleting ? (
+                    <Loader2
+                        size={15}
+                        className="
+                            animate-spin
+                        "
+                    />
+                ) : (
+                    <Trash2
+                        size={15}
+                        className="
+                            transition-transform
+                            group-hover:rotate-6
+                        "
+                    />
+                )}
+
+
+                <span>
+                    {
+                        isDeleting
+                            ? "O‘chirilmoqda"
+                            : "O‘chirish"
+                    }
+                </span>
+
+            </button>
+
+        </div>
+    );
+};
+
+
+// =========================================================
+// PROJECT DETAIL
+// =========================================================
+
+const ProjectDetail = () => {
+    // =====================================================
+    // ROUTER
+    // =====================================================
+
+    const {
+        projectId,
+    } = useParams();
+
+
+    const navigate =
+        useNavigate();
+
+
+    const dispatch =
+        useDispatch();
+
+
+    // =====================================================
+    // AUTH
+    // =====================================================
+
+    const {
+        isLoggedIn,
+        user,
+    } = useSelector(
+        (state) =>
+            state.auth
+    );
+
+
+    // =====================================================
+    // PROJECT STATE
+    // =====================================================
 
     const {
         projectDetail,
         projectDetailIsLoading,
         projectDetailError,
-    } = useSelector(selectProjectState);
-
-    const [activeIndex, setActiveIndex] = useState(0);
-    const [isStarred, setIsStarred] = useState(false);
-    const [isStarLoading, setIsStarLoading] = useState(false);
-
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
-
-    const projectData = projectDetail || {};
-    const projectImages = Array.isArray(projectData?.images) ? projectData.images : [];
-    const author = projectData?.user || {};
-    const featuresList = useMemo(
-        () => formatFeatureList(projectData?.main_features),
-        [projectData?.main_features]
+    } = useSelector(
+        selectProjectState
     );
 
-    const projectTitle = getProjectTitle(projectData);
-    const mainImage = getImageUrl(projectImages?.[activeIndex]?.image);
-    const authorImage = getImageUrl(author?.image);
+
+    // =====================================================
+    // LOCAL STATE
+    // =====================================================
+
+    const [
+        activeIndex,
+        setActiveIndex,
+    ] = useState(
+        0
+    );
+
+
+    const [
+        isStarred,
+        setIsStarred,
+    ] = useState(
+        false
+    );
+
+
+    const [
+        isStarLoading,
+        setIsStarLoading,
+    ] = useState(
+        false
+    );
+
+
+    const [
+        isEditModalOpen,
+        setIsEditModalOpen,
+    ] = useState(
+        false
+    );
+
+
+    const [
+        isDeleteModalOpen,
+        setIsDeleteModalOpen,
+    ] = useState(
+        false
+    );
+
+
+    const [
+        isDeleting,
+        setIsDeleting,
+    ] = useState(
+        false
+    );
+
+
+    const [
+        isUpdating,
+        setIsUpdating,
+    ] = useState(
+        false
+    );
+
+
+    // =====================================================
+    // PROJECT DATA
+    // =====================================================
+
+    const projectData =
+        projectDetail
+        ||
+        {};
+
+
+    const projectImages =
+        Array.isArray(
+            projectData?.images
+        )
+            ? projectData.images
+            : [];
+
+
+    const author =
+        projectData?.user
+        ||
+        {};
+
+
+    const featuresList =
+        useMemo(
+            () => {
+                return formatFeatureList(
+                    projectData
+                        ?.main_features
+                );
+            },
+            [
+                projectData
+                    ?.main_features,
+            ]
+        );
+
+
+    const projectTitle =
+        getProjectTitle(
+            projectData
+        );
+
+
+    const authorImage =
+        getImageUrl(
+            author?.image
+        );
+
+
+    // =====================================================
+    // OWNER
+    // =====================================================
 
     const isOwner =
-        Boolean(user?.id && author?.id) && Number(user.id) === Number(author.id);
+        Boolean(
+            user?.id
+            &&
+            author?.id
+        )
+        &&
+        Number(
+            user.id
+        )
+        ===
+        Number(
+            author.id
+        );
 
-    const starsCount = projectData?.stars_count || 0;
-    const viewsCount = projectData?.views_count || 0;
-    const commentsCount = projectData?.comments_count || 0;
 
-    const getProjectDetail = useCallback(async () => {
-        dispatch(getProjectDetailStart());
+    // =====================================================
+    // STATS
+    // =====================================================
 
-        try {
-            const response = await ProjectService.projectDetail(projectId);
+    const starsCount =
+        safeNumber(
+            projectData
+                ?.stars_count
+        );
 
-            dispatch(getProjectDetailSuccess(response));
 
-            const responseImages = Array.isArray(response?.images)
-                ? response.images
-                : [];
+    const viewsCount =
+        safeNumber(
+            projectData
+                ?.views_count
+        );
 
-            setActiveIndex((prev) =>
-                responseImages.length > 0
-                    ? Math.min(prev, responseImages.length - 1)
-                    : 0
-            );
 
-            setIsStarred(Boolean(response?.is_starred_by_user));
-        } catch (err) {
-            console.error("ProjectDetail olishda xato:", err);
-            dispatch(
-                getProjectDetailFailure(
-                    err?.message || "Loyihani yuklashda xato yuz berdi"
+    const commentsCount =
+        safeNumber(
+            projectData
+                ?.comments_count
+        );
+
+
+    // =====================================================
+    // GET PROJECT DETAIL
+    // =====================================================
+
+    const getProjectDetail =
+        useCallback(
+            async () => {
+                dispatch(
+                    getProjectDetailStart()
+                );
+
+
+                try {
+                    const response =
+                        await ProjectService
+                            .projectDetail(
+                                projectId
+                            );
+
+
+                    dispatch(
+                        getProjectDetailSuccess(
+                            response
+                        )
+                    );
+
+
+                    const responseImages =
+                        Array.isArray(
+                            response?.images
+                        )
+                            ? response.images
+                            : [];
+
+
+                    setActiveIndex(
+                        (previous) => {
+                            if (
+                                responseImages.length ===
+                                0
+                            ) {
+                                return 0;
+                            }
+
+
+                            return Math.min(
+                                previous,
+                                responseImages.length -
+                                    1
+                            );
+                        }
+                    );
+
+
+                    setIsStarred(
+                        Boolean(
+                            response
+                                ?.is_starred_by_user
+                        )
+                    );
+
+                } catch (
+                    requestError
+                ) {
+                    console.error(
+                        "ProjectDetail olishda xato:",
+                        requestError
+                    );
+
+
+                    dispatch(
+                        getProjectDetailFailure(
+                            getErrorMessage(
+                                requestError,
+                                "Loyihani yuklashda xato yuz berdi."
+                            )
+                        )
+                    );
+                }
+            },
+            [
+                projectId,
+                dispatch,
+            ]
+        );
+
+
+    // =====================================================
+    // INITIAL LOAD
+    // =====================================================
+
+    useEffect(
+        () => {
+            getProjectDetail();
+        },
+        [
+            getProjectDetail,
+        ]
+    );
+
+
+    // =====================================================
+    // SYNC STAR
+    // =====================================================
+
+    useEffect(
+        () => {
+            setIsStarred(
+                Boolean(
+                    projectDetail
+                        ?.is_starred_by_user
                 )
             );
-        }
-    }, [projectId, dispatch]);
+        },
+        [
+            projectDetail
+                ?.is_starred_by_user,
+        ]
+    );
 
-    useEffect(() => {
-        getProjectDetail();
-    }, [getProjectDetail]);
 
-    useEffect(() => {
-        setIsStarred(Boolean(projectDetail?.is_starred_by_user));
-    }, [projectDetail?.is_starred_by_user]);
+    // =====================================================
+    // UPDATE PROJECT
+    // =====================================================
 
-    const handleUpdateProject = async (formData, projectIdToUpdate) => {
-        try {
-            await ProjectService.updateProject(projectIdToUpdate, formData);
-            setIsEditModalOpen(false);
-            await getProjectDetail();
-        } catch (error) {
-            console.error("Loyihani tahrirlashda xato:", error);
-            throw error;
-        }
-    };
+    const handleUpdateProject =
+        async (
+            formData,
+            projectIdToUpdate
+        ) => {
+            if (
+                isUpdating
+            ) {
+                return false;
+            }
 
-    const handleConfirmDelete = async () => {
-        if (!projectData?.id) return;
 
-        setIsDeleting(true);
-
-        try {
-            await ProjectService.deleteProject(projectData.id);
-            navigate(`/${user?.username}/profile/`);
-        } catch (err) {
-            console.error("Loyihani o'chirishda xato:", err);
-            alert(
-                "Loyihani o‘chirishda xato yuz berdi: " +
-                    (err?.message || "Noma’lum xato")
+            setIsUpdating(
+                true
             );
-            setIsDeleteModalOpen(false);
-        } finally {
-            setIsDeleting(false);
-        }
-    };
 
-    const handleStarToggle = useCallback(async () => {
-        if (!isLoggedIn) {
-            alert("Loyihani yoqtirish uchun avval tizimga kiring!");
-            return;
-        }
 
-        if (isStarLoading || !projectDetail?.id) return;
+            const toastId =
+                siteToast.loading(
+                    "Loyihadagi o‘zgarishlar saqlanmoqda...",
+                    {
+                        title:
+                            "Loyiha yangilanmoqda",
+                    }
+                );
 
-        setIsStarLoading(true);
 
-        const oldIsStarred = Boolean(isStarred);
-        const oldStarsCount = projectDetail?.stars_count || 0;
+            try {
+                await ProjectService
+                    .updateProject(
+                        projectIdToUpdate
+                        ||
+                        projectData.id,
 
-        const nextIsStarred = !oldIsStarred;
-        const optimisticStarsCount = Math.max(
-            0,
-            nextIsStarred ? oldStarsCount + 1 : oldStarsCount - 1
+                        formData
+                    );
+
+
+                await getProjectDetail();
+
+
+                setIsEditModalOpen(
+                    false
+                );
+
+
+                siteToast.success(
+                    "Loyiha ma’lumotlari muvaffaqiyatli yangilandi.",
+                    {
+                        id:
+                            toastId,
+
+                        title:
+                            "Loyiha yangilandi",
+
+                        duration:
+                            3800,
+                    }
+                );
+
+
+                return true;
+
+            } catch (
+                requestError
+            ) {
+                const message =
+                    getErrorMessage(
+                        requestError,
+                        "Loyihani tahrirlashda xato yuz berdi."
+                    );
+
+
+                console.error(
+                    "Loyihani tahrirlashda xato:",
+                    requestError
+                );
+
+
+                siteToast.error(
+                    message,
+                    {
+                        id:
+                            toastId,
+
+                        title:
+                            "Loyiha yangilanmadi",
+
+                        duration:
+                            5000,
+                    }
+                );
+
+
+                throw requestError;
+
+            } finally {
+                setIsUpdating(
+                    false
+                );
+            }
+        };
+
+
+    // =====================================================
+    // DELETE PROJECT
+    // =====================================================
+
+    const handleConfirmDelete =
+        async () => {
+            if (
+                !projectData?.id
+                ||
+                isDeleting
+            ) {
+                return;
+            }
+
+
+            setIsDeleting(
+                true
+            );
+
+
+            const toastId =
+                siteToast.loading(
+                    "Loyiha o‘chirilmoqda...",
+                    {
+                        title:
+                            "Loyiha o‘chirilmoqda",
+                    }
+                );
+
+
+            try {
+                await ProjectService
+                    .deleteProject(
+                        projectData.id
+                    );
+
+
+                setIsDeleteModalOpen(
+                    false
+                );
+
+
+                siteToast.success(
+                    "Loyiha muvaffaqiyatli o‘chirildi.",
+                    {
+                        id:
+                            toastId,
+
+                        title:
+                            "Loyiha o‘chirildi",
+
+                        duration:
+                            3500,
+                    }
+                );
+
+
+                navigate(
+                    `/${
+                        user?.username
+                        ||
+                        author?.username
+                        ||
+                        ""
+                    }/profile/`,
+                    {
+                        replace:
+                            true,
+                    }
+                );
+
+            } catch (
+                requestError
+            ) {
+                const message =
+                    getErrorMessage(
+                        requestError,
+                        "Loyihani o‘chirishda xato yuz berdi."
+                    );
+
+
+                console.error(
+                    "Loyihani o‘chirishda xato:",
+                    requestError
+                );
+
+
+                siteToast.error(
+                    message,
+                    {
+                        id:
+                            toastId,
+
+                        title:
+                            "Loyiha o‘chirilmadi",
+
+                        duration:
+                            5000,
+                    }
+                );
+
+            } finally {
+                setIsDeleting(
+                    false
+                );
+            }
+        };
+
+
+    // =====================================================
+    // STAR TOGGLE
+    // =====================================================
+
+    const handleStarToggle =
+        useCallback(
+            async () => {
+                // =========================================
+                // AUTH
+                // =========================================
+
+                if (
+                    !isLoggedIn
+                ) {
+                    siteToast.warning(
+                        "Loyihaga star berish uchun avval tizimga kiring.",
+                        {
+                            title:
+                                "Kirish talab qilinadi",
+                        }
+                    );
+
+                    return;
+                }
+
+
+                if (
+                    isStarLoading
+                    ||
+                    !projectDetail?.id
+                ) {
+                    return;
+                }
+
+
+                setIsStarLoading(
+                    true
+                );
+
+
+                // =========================================
+                // OLD STATE
+                // =========================================
+
+                const oldIsStarred =
+                    Boolean(
+                        isStarred
+                    );
+
+
+                const oldStarsCount =
+                    safeNumber(
+                        projectDetail
+                            ?.stars_count
+                    );
+
+
+                // =========================================
+                // OPTIMISTIC
+                // =========================================
+
+                const nextIsStarred =
+                    !oldIsStarred;
+
+
+                const optimisticStarsCount =
+                    Math.max(
+                        0,
+
+                        oldStarsCount +
+                        (
+                            nextIsStarred
+                                ? 1
+                                : -1
+                        )
+                    );
+
+
+                setIsStarred(
+                    nextIsStarred
+                );
+
+
+                dispatch(
+                    getProjectDetailSuccess({
+                        ...projectDetail,
+
+                        stars_count:
+                            optimisticStarsCount,
+
+                        is_starred_by_user:
+                            nextIsStarred,
+                    })
+                );
+
+
+                try {
+                    const response =
+                        await ProjectService
+                            .toggleProjectStar(
+                                projectId
+                            );
+
+
+                    const backendIsStarred =
+                        typeof response
+                            ?.is_starred_by_user ===
+                        "boolean"
+
+                            ? response
+                                .is_starred_by_user
+
+                            : nextIsStarred;
+
+
+                    const backendStarsCount =
+                        typeof response
+                            ?.stars_count ===
+                        "number"
+
+                            ? response
+                                .stars_count
+
+                            : optimisticStarsCount;
+
+
+                    setIsStarred(
+                        backendIsStarred
+                    );
+
+
+                    dispatch(
+                        getProjectDetailSuccess({
+                            ...projectDetail,
+
+                            stars_count:
+                                backendStarsCount,
+
+                            is_starred_by_user:
+                                backendIsStarred,
+                        })
+                    );
+
+
+                    if (
+                        backendIsStarred
+                    ) {
+                        siteToast.success(
+                            "Loyiha sevimlilaringizga qo‘shildi.",
+                            {
+                                title:
+                                    "Star berildi",
+
+                                duration:
+                                    2600,
+                            }
+                        );
+
+                    } else {
+                        siteToast.info(
+                            "Loyihadan star olib tashlandi.",
+                            {
+                                title:
+                                    "Star bekor qilindi",
+
+                                duration:
+                                    2400,
+                            }
+                        );
+                    }
+
+                } catch (
+                    requestError
+                ) {
+                    console.error(
+                        "Star/Unstar qilishda xato:",
+                        requestError
+                    );
+
+
+                    // =====================================
+                    // ROLLBACK
+                    // =====================================
+
+                    setIsStarred(
+                        oldIsStarred
+                    );
+
+
+                    dispatch(
+                        getProjectDetailSuccess({
+                            ...projectDetail,
+
+                            stars_count:
+                                oldStarsCount,
+
+                            is_starred_by_user:
+                                oldIsStarred,
+                        })
+                    );
+
+
+                    siteToast.error(
+                        getErrorMessage(
+                            requestError,
+                            "Star amalini bajarib bo‘lmadi."
+                        ),
+                        {
+                            title:
+                                "Star saqlanmadi",
+
+                            duration:
+                                4500,
+                        }
+                    );
+
+                } finally {
+                    setIsStarLoading(
+                        false
+                    );
+                }
+            },
+            [
+                isLoggedIn,
+                isStarLoading,
+                isStarred,
+                projectDetail,
+                projectId,
+                dispatch,
+            ]
         );
 
-        setIsStarred(nextIsStarred);
 
-        dispatch(
-            getProjectDetailSuccess({
-                ...projectDetail,
-                stars_count: optimisticStarsCount,
-                is_starred_by_user: nextIsStarred,
-            })
+    // =====================================================
+    // LOADING
+    // =====================================================
+
+    if (
+        projectDetailIsLoading
+    ) {
+        return (
+            <ProjectLoadingSkeleton />
         );
-
-        try {
-            const response = await ProjectService.toggleProjectStar(projectId);
-
-            const backendIsStarred = Boolean(response?.is_starred_by_user);
-            const backendStarsCount =
-                typeof response?.stars_count === "number"
-                    ? response.stars_count
-                    : optimisticStarsCount;
-
-            setIsStarred(backendIsStarred);
-
-            dispatch(
-                getProjectDetailSuccess({
-                    ...projectDetail,
-                    stars_count: backendStarsCount,
-                    is_starred_by_user: backendIsStarred,
-                })
-            );
-        } catch (error) {
-            console.error("Star/Unstar qilishda xato:", error);
-
-            setIsStarred(oldIsStarred);
-
-            dispatch(
-                getProjectDetailSuccess({
-                    ...projectDetail,
-                    stars_count: oldStarsCount,
-                    is_starred_by_user: oldIsStarred,
-                })
-            );
-
-            alert("Star amalida xato yuz berdi. Qayta urinib ko‘ring.");
-        } finally {
-            setIsStarLoading(false);
-        }
-    }, [
-        isLoggedIn,
-        isStarLoading,
-        isStarred,
-        projectDetail,
-        projectId,
-        dispatch,
-    ]);
-
-    if (projectDetailIsLoading) {
-        return <ProjectLoadingSkeleton />;
     }
 
-    if (projectDetailError || !projectData?.id) {
-        return (
-            <div className="min-h-screen bg-[#05070a] px-4 pt-40 text-white">
-                <div className="mx-auto max-w-xl rounded-3xl border border-red-500/30 bg-red-500/10 p-8 text-center shadow-2xl shadow-black/30">
-                    <AlertTriangle className="mx-auto mb-4 text-red-300" size={52} />
 
-                    <h1 className="text-2xl font-black text-white">
+    // =====================================================
+    // ERROR
+    // =====================================================
+
+    if (
+        projectDetailError
+        ||
+        !projectData?.id
+    ) {
+        return (
+            <div
+                className="
+                    min-h-screen
+                    bg-[#05070a]
+                    px-4
+                    pt-40
+                    text-white
+                "
+            >
+
+                <div
+                    className="
+                        mx-auto
+                        max-w-xl
+                        rounded-3xl
+                        border
+                        border-red-500/30
+                        bg-red-500/10
+                        p-8
+                        text-center
+                        shadow-2xl
+                        shadow-black/30
+                    "
+                >
+
+                    <AlertTriangle
+                        className="
+                            mx-auto
+                            mb-4
+                            text-red-300
+                        "
+                        size={52}
+                    />
+
+
+                    <h1
+                        className="
+                            text-2xl
+                            font-black
+                            text-white
+                        "
+                    >
                         Loyiha topilmadi yoki xato yuz berdi
                     </h1>
 
-                    <p className="mt-3 text-sm font-semibold text-gray-400">
-                        Loyiha ID: {projectId}
+
+                    <p
+                        className="
+                            mt-3
+                            text-sm
+                            font-semibold
+                            text-gray-500
+                        "
+                    >
+                        Loyiha ID:
+                        {" "}
+                        {projectId}
                     </p>
 
+
                     {projectDetailError && (
-                        <p className="mt-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
-                            {projectDetailError}
+                        <p
+                            className="
+                                mt-4
+                                rounded-2xl
+                                border
+                                border-red-500/20
+                                bg-red-500/[0.07]
+                                p-3
+                                text-sm
+                                font-semibold
+                                text-red-200
+                            "
+                        >
+                            {
+                                projectDetailError
+                            }
                         </p>
                     )}
 
+
                     <button
                         type="button"
-                        onClick={getProjectDetail}
-                        className="mt-6 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white transition hover:bg-red-500"
+                        onClick={
+                            getProjectDetail
+                        }
+                        className="
+                            mt-6
+                            rounded-2xl
+                            border
+                            border-red-400/30
+                            bg-red-600
+                            px-5
+                            py-3
+                            text-sm
+                            font-black
+                            text-white
+                            transition
+                            hover:bg-red-500
+                            active:scale-[0.98]
+                        "
                     >
                         Qayta urinish
                     </button>
+
                 </div>
+
             </div>
         );
     }
 
-    return (
-        <div className="relative min-h-screen overflow-hidden bg-[#05070a] text-white">
-            {/* Background */}
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.06)_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(circle_at_center,black_0%,transparent_74%)]" />
-            <div className="pointer-events-none absolute left-1/2 top-24 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-indigo-600/15 blur-[120px]" />
-            <div className="pointer-events-none absolute -right-32 top-1/3 h-[360px] w-[360px] rounded-full bg-purple-500/10 blur-[115px]" />
-            <div className="pointer-events-none absolute -left-32 bottom-32 h-[360px] w-[360px] rounded-full bg-pink-500/10 blur-[115px]" />
 
-            <main className="container relative z-10 mx-auto px-4 py-24">
-                <div className="overflow-hidden rounded-[34px] border border-gray-700/70 bg-gray-900/65 shadow-2xl shadow-black/40 backdrop-blur-xl">
-                    {/* Header */}
-                    <header className="border-b border-gray-700/70 p-5 sm:p-8 lg:p-10">
-                        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                            <div className="min-w-0 flex-1">
-                                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-indigo-300">
-                                    <Rocket size={16} />
+    // =====================================================
+    // JSX
+    // =====================================================
+
+    return (
+        <div
+            className="
+                relative
+                min-h-screen
+                overflow-hidden
+                bg-[#05070a]
+                text-white
+            "
+        >
+
+            {/* =================================================
+                BACKGROUND
+            ================================================== */}
+
+            <div
+                className="
+                    pointer-events-none
+                    absolute
+                    inset-0
+                    bg-[linear-gradient(rgba(99,102,241,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.04)_1px,transparent_1px)]
+                    bg-[size:58px_58px]
+                    [mask-image:radial-gradient(circle_at_center,black_0%,transparent_74%)]
+                "
+            />
+
+
+            <div
+                className="
+                    pointer-events-none
+                    absolute
+                    left-1/2
+                    top-24
+                    h-[460px]
+                    w-[460px]
+                    -translate-x-1/2
+                    rounded-full
+                    bg-indigo-600/10
+                    blur-[135px]
+                "
+            />
+
+
+            <div
+                className="
+                    pointer-events-none
+                    absolute
+                    -right-40
+                    top-1/3
+                    h-[380px]
+                    w-[380px]
+                    rounded-full
+                    bg-purple-500/[0.07]
+                    blur-[125px]
+                "
+            />
+
+
+            {/* =================================================
+                MAIN
+            ================================================== */}
+
+            <main
+                className="
+                    relative
+                    z-10
+                    mx-auto
+                    w-full
+                    max-w-[1520px]
+                    px-4
+                    py-24
+                    sm:px-6
+                    xl:px-8
+                "
+            >
+
+                <div
+                    className="
+                        overflow-hidden
+                        rounded-[32px]
+                        border
+                        border-white/[0.07]
+                        bg-[#0b1018]/90
+                        shadow-[0_40px_110px_rgba(0,0,0,0.45)]
+                        backdrop-blur-xl
+                    "
+                >
+
+                    {/* =================================================
+                        HEADER
+                    ================================================== */}
+
+                    <header
+                        className="
+                            border-b
+                            border-white/[0.07]
+                            p-5
+                            sm:p-8
+                            xl:p-10
+                        "
+                    >
+
+                        {/* =============================================
+                            TITLE / OWNER CONTROLS
+                        ============================================== */}
+
+                        <div
+                            className="
+                                flex
+                                flex-col
+                                gap-6
+                                xl:flex-row
+                                xl:items-start
+                                xl:justify-between
+                            "
+                        >
+
+                            <div
+                                className="
+                                    min-w-0
+                                    flex-1
+                                "
+                            >
+
+                                <div
+                                    className="
+                                        mb-4
+                                        inline-flex
+                                        items-center
+                                        gap-2
+                                        rounded-full
+                                        border
+                                        border-indigo-400/25
+                                        bg-indigo-500/[0.08]
+                                        px-3.5
+                                        py-1.5
+                                        text-[10px]
+                                        font-black
+                                        uppercase
+                                        tracking-[0.20em]
+                                        text-indigo-300
+                                    "
+                                >
+
+                                    <Rocket
+                                        size={14}
+                                    />
+
                                     Project showcase
+
                                 </div>
 
-                                <h1 className="max-w-5xl bg-gradient-to-r from-indigo-300 via-purple-400 to-pink-400 bg-clip-text text-4xl font-black tracking-tight text-transparent sm:text-5xl lg:text-6xl">
-                                    {projectTitle}
+
+                                <h1
+                                    className="
+                                        max-w-5xl
+                                        bg-gradient-to-r
+                                        from-white
+                                        via-indigo-100
+                                        to-purple-300
+                                        bg-clip-text
+                                        text-4xl
+                                        font-black
+                                        leading-[1.08]
+                                        tracking-tight
+                                        text-transparent
+                                        sm:text-5xl
+                                        xl:text-6xl
+                                    "
+                                >
+                                    {
+                                        projectTitle
+                                    }
                                 </h1>
 
-                                <p className="mt-4 max-w-3xl text-sm font-medium leading-7 text-gray-400 sm:text-base">
-                                    {projectData?.description ||
-                                        "Ushbu loyiha uchun hali to‘liq tavsif kiritilmagan."}
+
+                                <p
+                                    className="
+                                        mt-4
+                                        max-w-4xl
+                                        text-sm
+                                        font-medium
+                                        leading-7
+                                        text-gray-500
+                                        sm:text-base
+                                    "
+                                >
+                                    {
+                                        projectData
+                                            ?.description
+
+                                        ||
+                                        "Ushbu loyiha uchun hali to‘liq tavsif kiritilmagan."
+                                    }
                                 </p>
+
                             </div>
 
-                            {isOwner && (
-                                <div className="flex shrink-0 flex-wrap gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsEditModalOpen(true)}
-                                        className="inline-flex items-center gap-2 rounded-2xl border border-indigo-400/40 bg-indigo-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 active:scale-95"
-                                    >
-                                        <Pencil size={17} />
-                                        <span className="hidden sm:inline">Tahrirlash</span>
-                                    </button>
 
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsDeleteModalOpen(true)}
-                                        className="inline-flex items-center gap-2 rounded-2xl border border-red-400/40 bg-red-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-red-600/20 transition hover:bg-red-500 active:scale-95"
-                                    >
-                                        <Trash2 size={17} />
-                                        <span className="hidden sm:inline">O‘chirish</span>
-                                    </button>
+                            {/* =========================================
+                                OWNER TOOLS
+                            ========================================== */}
+
+                            {isOwner && (
+                                <div
+                                    className="
+                                        shrink-0
+                                    "
+                                >
+
+                                    <OwnerControls
+                                        onEdit={() =>
+                                            setIsEditModalOpen(
+                                                true
+                                            )
+                                        }
+                                        onDelete={() =>
+                                            setIsDeleteModalOpen(
+                                                true
+                                            )
+                                        }
+                                        isUpdating={
+                                            isUpdating
+                                        }
+                                        isDeleting={
+                                            isDeleting
+                                        }
+                                    />
+
                                 </div>
                             )}
+
                         </div>
 
-                        {/* Stats and star */}
-                        <div className="mt-7 flex flex-wrap items-center gap-3">
+
+                        {/* =============================================
+                            STATS
+                        ============================================== */}
+
+                        <div
+                            className="
+                                mt-7
+                                flex
+                                flex-wrap
+                                items-center
+                                gap-2.5
+                            "
+                        >
+
+                            {/* STAR BUTTON */}
+
                             <button
                                 type="button"
-                                onClick={handleStarToggle}
-                                disabled={isStarLoading}
-                                className={`group relative inline-flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-black transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 ${
-                                    isStarred
-                                        ? "border-yellow-400/40 bg-yellow-500/15 text-yellow-200 shadow-lg shadow-yellow-500/20"
-                                        : "border-gray-700 bg-gray-900/70 text-gray-300 hover:border-yellow-400/30 hover:bg-yellow-500/10 hover:text-yellow-200"
-                                }`}
+                                onClick={
+                                    handleStarToggle
+                                }
+                                disabled={
+                                    isStarLoading
+                                }
                                 title={
                                     isStarred
-                                        ? "Star bosilgan. Bekor qilish uchun bosing"
+                                        ? "Starni olib tashlash"
                                         : "Loyihaga star berish"
                                 }
+                                className={`
+                                    group
+                                    relative
+                                    inline-flex
+                                    min-h-[42px]
+                                    items-center
+                                    gap-2
+                                    rounded-xl
+                                    border
+                                    px-3.5
+                                    py-2.5
+                                    text-xs
+                                    font-black
+                                    transition-all
+
+                                    active:scale-[0.97]
+
+                                    disabled:cursor-not-allowed
+                                    disabled:opacity-60
+
+                                    ${
+                                        isStarred
+
+                                            ? `
+                                                border-yellow-400/25
+                                                bg-yellow-500/[0.10]
+                                                text-yellow-200
+                                            `
+
+                                            : `
+                                                border-white/[0.07]
+                                                bg-white/[0.025]
+                                                text-gray-400
+
+                                                hover:border-yellow-400/20
+                                                hover:bg-yellow-500/[0.06]
+                                                hover:text-yellow-300
+                                            `
+                                    }
+                                `}
                             >
+
                                 {isStarLoading ? (
-                                    <Loader2 size={19} className="animate-spin" />
+                                    <Loader2
+                                        size={17}
+                                        className="
+                                            animate-spin
+                                        "
+                                    />
                                 ) : (
                                     <Star
-                                        size={20}
+                                        size={17}
                                         className={
                                             isStarred
                                                 ? "fill-yellow-300 text-yellow-300"
-                                                : "text-yellow-400"
+                                                : ""
                                         }
                                     />
                                 )}
 
+
                                 <span>
-                                    {isStarred ? "Star bosilgan" : "Star berish"}
+                                    {
+                                        isStarred
+                                            ? "Starred"
+                                            : "Star berish"
+                                    }
                                 </span>
 
+
                                 {isStarred && (
-                                    <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-yellow-300 shadow-[0_0_14px_rgba(250,204,21,0.9)]" />
-                                )}
-                            </button>
-
-                            <StatPill
-                                icon={Star}
-                                value={starsCount.toLocaleString()}
-                                label="star"
-                                className="text-yellow-300"
-                            />
-
-                            <StatPill
-                                icon={Eye}
-                                value={viewsCount.toLocaleString()}
-                                label="ko‘rish"
-                            />
-
-                            <StatPill
-                                icon={MessageCircle}
-                                value={commentsCount.toLocaleString()}
-                                label="sharh"
-                            />
-                        </div>
-
-                        {/* Gallery */}
-                        <div className="mt-8">
-                            <div className="relative overflow-hidden rounded-[28px] border border-gray-700/70 bg-black/30 shadow-2xl shadow-black/40">
-                                <div className="aspect-video">
-                                    {projectImages.length > 0 ? (
-                                        projectImages.map((img, index) => (
-                                            <img
-                                                key={img?.id || index}
-                                                src={getImageUrl(img?.image)}
-                                                className={`absolute inset-0 h-full w-full object-contain transition-all duration-500 ${
-                                                    activeIndex === index
-                                                        ? "scale-100 opacity-100"
-                                                        : "scale-95 opacity-0"
-                                                }`}
-                                                alt={
-                                                    img?.title ||
-                                                    `Project Screenshot ${index + 1}`
-                                                }
-                                            />
-                                        ))
-                                    ) : (
-                                        <div className="flex h-full w-full items-center justify-center bg-gray-950/70">
-                                            <div className="text-center">
-                                                <ImageIcon
-                                                    className="mx-auto mb-3 text-gray-700"
-                                                    size={72}
-                                                />
-                                                <p className="font-bold text-gray-600">
-                                                    Rasm mavjud emas
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {projectImages.length > 1 && (
-                                <div className="mt-4 flex flex-wrap justify-center gap-2">
-                                    {projectImages.map((img, index) => (
-                                        <button
-                                            key={img?.id || index}
-                                            type="button"
-                                            onClick={() => setActiveIndex(index)}
-                                            className={`h-16 w-24 overflow-hidden rounded-2xl border transition-all ${
-                                                activeIndex === index
-                                                    ? "border-indigo-400 ring-2 ring-indigo-500/30"
-                                                    : "border-gray-700 opacity-60 hover:opacity-100"
-                                            }`}
-                                        >
-                                            <img
-                                                src={getImageUrl(img?.image)}
-                                                alt=""
-                                                className="h-full w-full object-cover"
-                                            />
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </header>
-
-                    <div className="grid lg:grid-cols-[1fr_380px]">
-                        {/* Main content */}
-                        <section className="border-gray-700/70 lg:border-r">
-                            <article className="p-5 sm:p-8 lg:p-10">
-                                <div className="rounded-3xl border border-indigo-400/20 bg-indigo-500/10 p-5 text-sm font-medium leading-7 text-indigo-100 sm:text-base">
-                                    {projectData?.description ||
-                                        "Ushbu loyiha uchun hali to‘liq tavsif kiritilmagan."}
-                                </div>
-
-                                <div className="mt-8">
-                                    <h2 className="mb-4 flex items-center gap-3 text-2xl font-black text-white">
-                                        <Sparkles className="text-indigo-300" size={26} />
-                                        Loyiha haqida
-                                    </h2>
-
-                                    <p className="text-sm font-medium leading-8 text-gray-400 sm:text-base">
-                                        {projectData?.description ||
-                                            "Loyiha haqida to‘liqroq ma’lumotlar tez orada kiritiladi."}
-                                    </p>
-                                </div>
-
-                                {featuresList.length > 0 && (
-                                    <div className="mt-8">
-                                        <h3 className="mb-4 flex items-center gap-3 text-xl font-black text-white">
-                                            <ShieldCheck
-                                                className="text-emerald-300"
-                                                size={23}
-                                            />
-                                            Asosiy imkoniyatlar
-                                        </h3>
-
-                                        <div className="grid gap-3 sm:grid-cols-2">
-                                            {featuresList.map((feature, index) => (
-                                                <div
-                                                    key={index}
-                                                    className="rounded-2xl border border-gray-700/70 bg-gray-950/35 p-4 text-sm font-semibold leading-6 text-gray-300 transition hover:border-indigo-400/30 hover:bg-gray-900"
-                                                >
-                                                    <span className="mr-2 text-indigo-300">
-                                                        #{index + 1}
-                                                    </span>
-                                                    {feature}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </article>
-
-                            <ProjectCollaboration
-                                currentCollaborators={projectDetail.collaborations}
-                                pendingRequests={[]}
-                                projectOwner={author}
-                                isOwner={isOwner}
-                                isCollaborator={false}
-                                hasSentRequest={false}
-                                projectId={projectId}
-                            />
-                        </section>
-
-                        {/* Sidebar */}
-                        <aside className="p-5 sm:p-8 lg:p-8">
-                            <div className="space-y-6 lg:sticky lg:top-24">
-                                {isOwner && (
-                                    <ProjectBoost
-                                        projectId={projectData.id}
-                                        projectName={projectTitle}
-                                        userCoins={user?.coins || 0}
+                                    <span
+                                        className="
+                                            absolute
+                                            -right-1
+                                            -top-1
+                                            h-2.5
+                                            w-2.5
+                                            rounded-full
+                                            bg-yellow-300
+                                            shadow-[0_0_12px_rgba(250,204,21,0.8)]
+                                        "
                                     />
                                 )}
 
-                                <div className="rounded-3xl border border-gray-700/70 bg-gray-950/35 p-5 shadow-xl shadow-black/20">
-                                    <h3 className="mb-4 flex items-center gap-3 text-lg font-black text-white">
-                                        <UserRound className="text-indigo-300" size={21} />
-                                        Muallif
-                                    </h3>
+                            </button>
+
+
+                            <StatPill
+                                icon={
+                                    Star
+                                }
+                                value={
+                                    starsCount
+                                        .toLocaleString()
+                                }
+                                label="star"
+                                tone="yellow"
+                            />
+
+
+                            <StatPill
+                                icon={
+                                    Eye
+                                }
+                                value={
+                                    viewsCount
+                                        .toLocaleString()
+                                }
+                                label="ko‘rish"
+                                tone="cyan"
+                            />
+
+
+                            <StatPill
+                                icon={
+                                    MessageCircle
+                                }
+                                value={
+                                    commentsCount
+                                        .toLocaleString()
+                                }
+                                label="sharh"
+                                tone="indigo"
+                            />
+
+                        </div>
+
+
+                        {/* =============================================
+                            GALLERY
+                        ============================================== */}
+
+                        <div
+                            className="
+                                mt-8
+                            "
+                        >
+
+                            <div
+                                className="
+                                    relative
+                                    overflow-hidden
+                                    rounded-[26px]
+                                    border
+                                    border-white/[0.07]
+                                    bg-black/30
+                                    shadow-2xl
+                                    shadow-black/30
+                                "
+                            >
+
+                                <div
+                                    className="
+                                        relative
+                                        aspect-video
+                                    "
+                                >
+
+                                    {projectImages.length > 0 ? (
+                                        projectImages.map(
+                                            (
+                                                image,
+                                                index
+                                            ) => (
+                                                <img
+                                                    key={
+                                                        image
+                                                            ?.id
+                                                        ||
+                                                        index
+                                                    }
+                                                    src={
+                                                        getImageUrl(
+                                                            image
+                                                                ?.image
+                                                        )
+                                                    }
+                                                    alt={
+                                                        image
+                                                            ?.title
+
+                                                        ||
+                                                        `Project Screenshot ${index + 1}`
+                                                    }
+                                                    className={`
+                                                        absolute
+                                                        inset-0
+                                                        h-full
+                                                        w-full
+                                                        object-contain
+                                                        transition-all
+                                                        duration-500
+
+                                                        ${
+                                                            activeIndex ===
+                                                            index
+
+                                                                ? `
+                                                                    scale-100
+                                                                    opacity-100
+                                                                `
+
+                                                                : `
+                                                                    pointer-events-none
+                                                                    scale-[0.98]
+                                                                    opacity-0
+                                                                `
+                                                        }
+                                                    `}
+                                                />
+                                            )
+                                        )
+                                    ) : (
+                                        <div
+                                            className="
+                                                flex
+                                                h-full
+                                                w-full
+                                                items-center
+                                                justify-center
+                                                bg-gray-950/70
+                                            "
+                                        >
+
+                                            <div
+                                                className="
+                                                    text-center
+                                                "
+                                            >
+
+                                                <ImageIcon
+                                                    className="
+                                                        mx-auto
+                                                        mb-3
+                                                        text-gray-800
+                                                    "
+                                                    size={72}
+                                                />
+
+
+                                                <p
+                                                    className="
+                                                        text-sm
+                                                        font-bold
+                                                        text-gray-600
+                                                    "
+                                                >
+                                                    Rasm mavjud emas
+                                                </p>
+
+                                            </div>
+
+                                        </div>
+                                    )}
+
+                                </div>
+
+                            </div>
+
+
+                            {/* =========================================
+                                THUMBNAILS
+                            ========================================== */}
+
+                            {projectImages.length > 1 && (
+                                <div
+                                    className="
+                                        mt-4
+                                        flex
+                                        flex-wrap
+                                        justify-center
+                                        gap-2
+                                    "
+                                >
+
+                                    {projectImages.map(
+                                        (
+                                            image,
+                                            index
+                                        ) => (
+                                            <button
+                                                key={
+                                                    image
+                                                        ?.id
+                                                    ||
+                                                    index
+                                                }
+                                                type="button"
+                                                onClick={() =>
+                                                    setActiveIndex(
+                                                        index
+                                                    )
+                                                }
+                                                className={`
+                                                    h-16
+                                                    w-24
+                                                    overflow-hidden
+                                                    rounded-xl
+                                                    border
+                                                    transition-all
+
+                                                    ${
+                                                        activeIndex ===
+                                                        index
+
+                                                            ? `
+                                                                border-indigo-400/60
+                                                                opacity-100
+                                                                ring-2
+                                                                ring-indigo-500/20
+                                                            `
+
+                                                            : `
+                                                                border-white/[0.07]
+                                                                opacity-50
+                                                                hover:border-white/[0.15]
+                                                                hover:opacity-100
+                                                            `
+                                                    }
+                                                `}
+                                            >
+
+                                                <img
+                                                    src={
+                                                        getImageUrl(
+                                                            image
+                                                                ?.image
+                                                        )
+                                                    }
+                                                    alt={
+                                                        image
+                                                            ?.title
+                                                        ||
+                                                        ""
+                                                    }
+                                                    className="
+                                                        h-full
+                                                        w-full
+                                                        object-cover
+                                                    "
+                                                />
+
+                                            </button>
+                                        )
+                                    )}
+
+                                </div>
+                            )}
+
+                        </div>
+
+                    </header>
+
+
+                    {/* =================================================
+                        CONTENT + SIDEBAR
+
+                        XL:
+                        Main content + 520px sidebar.
+
+                        Bu ProjectBoost ichidagi 3 ta plan
+                        siqilib qolmasligi uchun.
+                    ================================================== */}
+
+                    <div
+                        className="
+                            grid
+                            xl:grid-cols-[minmax(0,1fr)_520px]
+                        "
+                    >
+
+                        {/* =============================================
+                            MAIN CONTENT
+                        ============================================== */}
+
+                        <section
+                            className="
+                                min-w-0
+                                border-white/[0.07]
+                                xl:border-r
+                            "
+                        >
+
+                            <article
+                                className="
+                                    p-5
+                                    sm:p-8
+                                    xl:p-10
+                                "
+                            >
+
+                                {/* =====================================
+                                    INTRO
+                                ====================================== */}
+
+                                <div
+                                    className="
+                                        rounded-2xl
+                                        border
+                                        border-indigo-400/15
+                                        bg-indigo-500/[0.055]
+                                        px-5
+                                        py-4
+                                        text-sm
+                                        font-medium
+                                        leading-7
+                                        text-indigo-100/90
+                                        sm:text-base
+                                    "
+                                >
+                                    {
+                                        projectData
+                                            ?.description
+
+                                        ||
+                                        "Ushbu loyiha uchun hali to‘liq tavsif kiritilmagan."
+                                    }
+                                </div>
+
+
+                                {/* =====================================
+                                    ABOUT
+                                ====================================== */}
+
+                                <div
+                                    className="
+                                        mt-9
+                                    "
+                                >
+
+                                    <h2
+                                        className="
+                                            flex
+                                            items-center
+                                            gap-3
+                                            text-2xl
+                                            font-black
+                                            text-white
+                                        "
+                                    >
+
+                                        <Sparkles
+                                            className="
+                                                text-indigo-300
+                                            "
+                                            size={24}
+                                        />
+
+                                        Loyiha haqida
+
+                                    </h2>
+
+
+                                    <p
+                                        className="
+                                            mt-4
+                                            text-sm
+                                            font-medium
+                                            leading-8
+                                            text-gray-500
+                                            sm:text-base
+                                        "
+                                    >
+                                        {
+                                            projectData
+                                                ?.description
+
+                                            ||
+                                            "Loyiha haqida to‘liqroq ma’lumotlar tez orada kiritiladi."
+                                        }
+                                    </p>
+
+                                </div>
+
+
+                                {/* =====================================
+                                    FEATURES
+                                ====================================== */}
+
+                                {featuresList.length > 0 && (
+                                    <div
+                                        className="
+                                            mt-9
+                                        "
+                                    >
+
+                                        <h3
+                                            className="
+                                                flex
+                                                items-center
+                                                gap-3
+                                                text-lg
+                                                font-black
+                                                text-white
+                                                sm:text-xl
+                                            "
+                                        >
+
+                                            <ShieldCheck
+                                                className="
+                                                    text-emerald-300
+                                                "
+                                                size={21}
+                                            />
+
+                                            Asosiy imkoniyatlar
+
+                                        </h3>
+
+
+                                        <div
+                                            className="
+                                                mt-4
+                                                grid
+                                                gap-3
+                                                md:grid-cols-2
+                                            "
+                                        >
+
+                                            {featuresList.map(
+                                                (
+                                                    feature,
+                                                    index
+                                                ) => (
+                                                    <div
+                                                        key={
+                                                            `${feature}-${index}`
+                                                        }
+                                                        className="
+                                                            group
+                                                            flex
+                                                            items-start
+                                                            gap-3
+                                                            rounded-2xl
+                                                            border
+                                                            border-white/[0.07]
+                                                            bg-white/[0.02]
+                                                            p-4
+                                                            text-sm
+                                                            font-semibold
+                                                            leading-6
+                                                            text-gray-400
+                                                            transition-all
+
+                                                            hover:border-indigo-400/20
+                                                            hover:bg-indigo-500/[0.035]
+                                                            hover:text-gray-300
+                                                        "
+                                                    >
+
+                                                        <span
+                                                            className="
+                                                                mt-0.5
+                                                                flex
+                                                                h-7
+                                                                w-7
+                                                                shrink-0
+                                                                items-center
+                                                                justify-center
+                                                                rounded-lg
+                                                                border
+                                                                border-indigo-400/15
+                                                                bg-indigo-500/[0.07]
+                                                                text-[9px]
+                                                                font-black
+                                                                text-indigo-300
+                                                            "
+                                                        >
+                                                            {
+                                                                String(
+                                                                    index +
+                                                                    1
+                                                                )
+                                                                    .padStart(
+                                                                        2,
+                                                                        "0"
+                                                                    )
+                                                            }
+                                                        </span>
+
+
+                                                        <span>
+                                                            {
+                                                                feature
+                                                            }
+                                                        </span>
+
+                                                    </div>
+                                                )
+                                            )}
+
+                                        </div>
+
+                                    </div>
+                                )}
+
+                            </article>
+
+
+                            {/* =========================================
+                                COLLABORATION
+                            ========================================== */}
+
+                            <ProjectCollaboration
+                                currentCollaborators={
+                                    Array.isArray(
+                                        projectData
+                                            ?.collaborations
+                                    )
+                                        ? projectData
+                                            .collaborations
+                                        : []
+                                }
+                                pendingRequests={[]}
+                                projectOwner={
+                                    author
+                                }
+                                isOwner={
+                                    isOwner
+                                }
+                                isCollaborator={
+                                    false
+                                }
+                                hasSentRequest={
+                                    false
+                                }
+                                projectId={
+                                    projectId
+                                }
+                            />
+
+                        </section>
+
+
+                        {/* =============================================
+                            RIGHT SIDEBAR
+                        ============================================== */}
+
+                        <aside
+                            className="
+                                min-w-0
+                                bg-black/[0.07]
+                                p-5
+                                sm:p-7
+                                xl:p-7
+                            "
+                        >
+
+                            <div
+                                className="
+                                    min-w-0
+                                    space-y-5
+                                    xl:sticky
+                                    xl:top-24
+                                "
+                            >
+
+                                {/* =====================================
+                                    BOOST
+
+                                    Sidebar 520px bo‘lgani sabab
+                                    bu component ichidagi planlar endi
+                                    siqilib qolmaydi.
+                                ====================================== */}
+
+                                {isOwner && (
+                                    <div
+                                        className="
+                                            min-w-0
+                                            overflow-hidden
+                                            rounded-3xl
+
+                                            [&>div]:mb-0
+                                            [&>div]:w-full
+                                        "
+                                    >
+
+                                        <ProjectBoost
+                                            projectId={
+                                                projectData
+                                                    .id
+                                            }
+                                            projectName={
+                                                projectTitle
+                                            }
+                                            userCoins={
+                                                safeNumber(
+                                                    user
+                                                        ?.coins
+                                                )
+                                            }
+                                        />
+
+                                    </div>
+                                )}
+
+
+                                {/* =====================================
+                                    AUTHOR
+                                ====================================== */}
+
+                                <section
+                                    className="
+                                        rounded-3xl
+                                        border
+                                        border-white/[0.07]
+                                        bg-white/[0.025]
+                                        p-5
+                                        shadow-xl
+                                        shadow-black/15
+                                    "
+                                >
+
+                                    <div
+                                        className="
+                                            mb-4
+                                            flex
+                                            items-center
+                                            gap-3
+                                        "
+                                    >
+
+                                        <div
+                                            className="
+                                                flex
+                                                h-9
+                                                w-9
+                                                items-center
+                                                justify-center
+                                                rounded-xl
+                                                border
+                                                border-indigo-400/15
+                                                bg-indigo-500/[0.07]
+                                                text-indigo-300
+                                            "
+                                        >
+
+                                            <UserRound
+                                                size={17}
+                                            />
+
+                                        </div>
+
+
+                                        <div>
+
+                                            <h3
+                                                className="
+                                                    text-sm
+                                                    font-black
+                                                    text-white
+                                                "
+                                            >
+                                                Muallif
+                                            </h3>
+
+
+                                            <p
+                                                className="
+                                                    mt-0.5
+                                                    text-[9px]
+                                                    font-semibold
+                                                    uppercase
+                                                    tracking-wider
+                                                    text-gray-700
+                                                "
+                                            >
+                                                Project owner
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+
 
                                     <Link
                                         to={`/${author?.username}/profile/`}
-                                        className="flex items-center gap-4 rounded-2xl border border-gray-700/70 bg-gray-900/60 p-4 transition hover:border-indigo-400/40 hover:bg-gray-800/70"
+                                        className="
+                                            group
+                                            flex
+                                            items-center
+                                            gap-4
+                                            rounded-2xl
+                                            border
+                                            border-white/[0.07]
+                                            bg-black/20
+                                            p-4
+                                            transition-all
+
+                                            hover:border-indigo-400/20
+                                            hover:bg-indigo-500/[0.04]
+                                        "
                                     >
+
                                         <img
-                                            src={authorImage}
-                                            className="h-14 w-14 rounded-full border-2 border-gray-700 object-cover"
-                                            alt={author?.username}
+                                            src={
+                                                authorImage
+                                            }
+                                            alt={
+                                                author
+                                                    ?.username
+                                                ||
+                                                "Project owner"
+                                            }
+                                            className="
+                                                h-14
+                                                w-14
+                                                shrink-0
+                                                rounded-2xl
+                                                border
+                                                border-white/[0.08]
+                                                bg-gray-900
+                                                object-cover
+                                            "
+                                            onError={
+                                                (
+                                                    event
+                                                ) => {
+                                                    event
+                                                        .currentTarget
+                                                        .onerror =
+                                                        null;
+
+                                                    event
+                                                        .currentTarget
+                                                        .src =
+                                                        UserImage;
+                                                }
+                                            }
                                         />
 
-                                        <div className="min-w-0">
-                                            <p className="truncate font-black text-white">
-                                                {getAuthorName(author)}
+
+                                        <div
+                                            className="
+                                                min-w-0
+                                            "
+                                        >
+
+                                            <p
+                                                className="
+                                                    truncate
+                                                    text-sm
+                                                    font-black
+                                                    text-white
+                                                    transition
+                                                    group-hover:text-indigo-300
+                                                "
+                                            >
+                                                {
+                                                    getAuthorName(
+                                                        author
+                                                    )
+                                                }
                                             </p>
-                                            <p className="mt-1 text-xs font-bold text-gray-500">
-                                                @{author?.username || "unknown"}
+
+
+                                            <p
+                                                className="
+                                                    mt-1
+                                                    truncate
+                                                    text-[10px]
+                                                    font-semibold
+                                                    text-gray-600
+                                                "
+                                            >
+                                                @{
+                                                    author
+                                                        ?.username
+                                                    ||
+                                                    "unknown"
+                                                }
                                             </p>
-                                            <p className="mt-1 text-xs font-bold text-indigo-300">
-                                                Daraja:{" "}
-                                                {author?.skill_level || "Aniqlanmagan"}
+
+
+                                            <p
+                                                className="
+                                                    mt-1.5
+                                                    text-[10px]
+                                                    font-black
+                                                    uppercase
+                                                    tracking-wider
+                                                    text-indigo-300
+                                                "
+                                            >
+                                                {
+                                                    author
+                                                        ?.skill_level
+
+                                                    ||
+                                                    "Aniqlanmagan"
+                                                }
                                             </p>
+
                                         </div>
+
                                     </Link>
-                                </div>
 
-                                <div className="rounded-3xl border border-gray-700/70 bg-gray-950/35 p-5 shadow-xl shadow-black/20">
-                                    <h3 className="mb-4 flex items-center gap-3 text-lg font-black text-white">
-                                        <Code2 className="text-purple-300" size={21} />
-                                        Texnologiyalar
-                                    </h3>
+                                </section>
 
-                                    <div className="flex flex-wrap gap-2">
-                                        {projectData?.language_data && (
-                                            <TechBadge type="blue">
-                                                {projectData.language_data.name}
+
+                                {/* =====================================
+                                    TECHNOLOGIES
+                                ====================================== */}
+
+                                <section
+                                    className="
+                                        rounded-3xl
+                                        border
+                                        border-white/[0.07]
+                                        bg-white/[0.025]
+                                        p-5
+                                        shadow-xl
+                                        shadow-black/15
+                                    "
+                                >
+
+                                    <div
+                                        className="
+                                            mb-4
+                                            flex
+                                            items-center
+                                            gap-3
+                                        "
+                                    >
+
+                                        <div
+                                            className="
+                                                flex
+                                                h-9
+                                                w-9
+                                                items-center
+                                                justify-center
+                                                rounded-xl
+                                                border
+                                                border-purple-400/15
+                                                bg-purple-500/[0.07]
+                                                text-purple-300
+                                            "
+                                        >
+
+                                            <Code2
+                                                size={17}
+                                            />
+
+                                        </div>
+
+
+                                        <div>
+
+                                            <h3
+                                                className="
+                                                    text-sm
+                                                    font-black
+                                                    text-white
+                                                "
+                                            >
+                                                Texnologiyalar
+                                            </h3>
+
+
+                                            <p
+                                                className="
+                                                    mt-0.5
+                                                    text-[9px]
+                                                    font-semibold
+                                                    uppercase
+                                                    tracking-wider
+                                                    text-gray-700
+                                                "
+                                            >
+                                                Project stack
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div
+                                        className="
+                                            flex
+                                            flex-wrap
+                                            gap-2
+                                        "
+                                    >
+
+                                        {projectData
+                                            ?.language_data && (
+                                            <TechBadge
+                                                type="blue"
+                                            >
+                                                {
+                                                    projectData
+                                                        .language_data
+                                                        .name
+                                                }
                                             </TechBadge>
                                         )}
 
-                                        {projectData?.technology_data && (
-                                            <TechBadge type="purple">
-                                                {projectData.technology_data.name}
+
+                                        {projectData
+                                            ?.technology_data && (
+                                            <TechBadge
+                                                type="purple"
+                                            >
+                                                {
+                                                    projectData
+                                                        .technology_data
+                                                        .name
+                                                }
                                             </TechBadge>
                                         )}
 
-                                        {!projectData?.language_data &&
-                                            !projectData?.technology_data && (
-                                                <p className="text-sm font-semibold text-gray-500">
+
+                                        {!projectData
+                                            ?.language_data
+                                            &&
+                                            !projectData
+                                                ?.technology_data
+                                            && (
+                                                <p
+                                                    className="
+                                                        text-sm
+                                                        font-semibold
+                                                        text-gray-600
+                                                    "
+                                                >
                                                     Texnologiyalar hali kiritilmagan.
                                                 </p>
                                             )}
+
                                     </div>
-                                </div>
 
-                                <div className="space-y-3">
-                                    {projectData?.github_url && (
-                                        <a
-                                            href={projectData.github_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-700 bg-gray-900/80 px-5 py-3 text-sm font-black text-white transition hover:border-gray-500 hover:bg-gray-800"
-                                        >
-                                            <Github size={18} />
-                                            GitHub
-                                        </a>
-                                    )}
+                                </section>
 
-                                    {projectData?.website_url && (
-                                        <a
-                                            href={projectData.website_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-indigo-400/40 bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500"
-                                        >
-                                            <ExternalLink size={18} />
-                                            Live Demo
-                                        </a>
-                                    )}
-                                </div>
+
+                                {/* =====================================
+                                    LINKS
+                                ====================================== */}
+
+                                {(
+                                    projectData
+                                        ?.github_url
+                                    ||
+                                    projectData
+                                        ?.website_url
+                                ) && (
+                                    <section
+                                        className="
+                                            space-y-2.5
+                                        "
+                                    >
+
+                                        {projectData
+                                            ?.github_url && (
+                                            <a
+                                                href={
+                                                    projectData
+                                                        .github_url
+                                                }
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="
+                                                    group
+                                                    flex
+                                                    w-full
+                                                    items-center
+                                                    justify-between
+                                                    gap-3
+                                                    rounded-2xl
+                                                    border
+                                                    border-white/[0.07]
+                                                    bg-white/[0.025]
+                                                    px-4
+                                                    py-3.5
+                                                    text-sm
+                                                    font-black
+                                                    text-gray-300
+                                                    transition-all
+
+                                                    hover:border-white/[0.14]
+                                                    hover:bg-white/[0.05]
+                                                    hover:text-white
+
+                                                    active:scale-[0.98]
+                                                "
+                                            >
+
+                                                <span
+                                                    className="
+                                                        flex
+                                                        items-center
+                                                        gap-2
+                                                    "
+                                                >
+                                                    <Github
+                                                        size={18}
+                                                    />
+
+                                                    GitHub
+                                                </span>
+
+
+                                                <ExternalLink
+                                                    size={14}
+                                                    className="
+                                                        text-gray-700
+                                                        transition
+                                                        group-hover:text-gray-400
+                                                    "
+                                                />
+
+                                            </a>
+                                        )}
+
+
+                                        {projectData
+                                            ?.website_url && (
+                                            <a
+                                                href={
+                                                    projectData
+                                                        .website_url
+                                                }
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="
+                                                    group
+                                                    flex
+                                                    w-full
+                                                    items-center
+                                                    justify-between
+                                                    gap-3
+                                                    rounded-2xl
+                                                    border
+                                                    border-indigo-400/20
+                                                    bg-indigo-500/[0.08]
+                                                    px-4
+                                                    py-3.5
+                                                    text-sm
+                                                    font-black
+                                                    text-indigo-200
+                                                    transition-all
+
+                                                    hover:border-indigo-400/35
+                                                    hover:bg-indigo-500/[0.13]
+                                                    hover:text-white
+
+                                                    active:scale-[0.98]
+                                                "
+                                            >
+
+                                                <span
+                                                    className="
+                                                        flex
+                                                        items-center
+                                                        gap-2
+                                                    "
+                                                >
+                                                    <ExternalLink
+                                                        size={18}
+                                                    />
+
+                                                    Live Demo
+                                                </span>
+
+
+                                                <ExternalLink
+                                                    size={14}
+                                                    className="
+                                                        text-indigo-500
+                                                        transition-transform
+                                                        group-hover:translate-x-0.5
+                                                        group-hover:-translate-y-0.5
+                                                    "
+                                                />
+
+                                            </a>
+                                        )}
+
+                                    </section>
+                                )}
+
                             </div>
+
                         </aside>
+
                     </div>
 
-                    <ProjectDiscussion projectId={projectId} />
+
+                    {/* =================================================
+                        DISCUSSION
+                    ================================================== */}
+
+                    <ProjectDiscussion
+                        projectId={
+                            projectId
+                        }
+                    />
+
                 </div>
+
             </main>
+
+
+            {/* =================================================
+                EDIT MODAL
+            ================================================== */}
 
             {isOwner && (
                 <ProjectFormModal
-                    isOpen={isEditModalOpen}
-                    onClose={() => setIsEditModalOpen(false)}
-                    onSubmit={handleUpdateProject}
-                    initialData={projectData}
+                    isOpen={
+                        isEditModalOpen
+                    }
+                    onClose={() => {
+                        if (
+                            !isUpdating
+                        ) {
+                            setIsEditModalOpen(
+                                false
+                            );
+                        }
+                    }}
+                    onSubmit={
+                        handleUpdateProject
+                    }
+                    initialData={
+                        projectData
+                    }
                 />
             )}
 
+
+            {/* =================================================
+                DELETE MODAL
+            ================================================== */}
+
             {isOwner && (
                 <DeleteConfirmationModal
-                    isOpen={isDeleteModalOpen}
-                    onClose={() => setIsDeleteModalOpen(false)}
-                    onConfirm={handleConfirmDelete}
-                    itemTitle={projectTitle}
-                    isProcessing={isDeleting}
+                    isOpen={
+                        isDeleteModalOpen
+                    }
+                    onClose={() => {
+                        if (
+                            !isDeleting
+                        ) {
+                            setIsDeleteModalOpen(
+                                false
+                            );
+                        }
+                    }}
+                    onConfirm={
+                        handleConfirmDelete
+                    }
+                    itemTitle={
+                        projectTitle
+                    }
+                    isProcessing={
+                        isDeleting
+                    }
                 />
             )}
+
         </div>
     );
 };
+
 
 export default ProjectDetail;
