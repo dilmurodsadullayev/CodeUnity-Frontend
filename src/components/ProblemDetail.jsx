@@ -26,6 +26,7 @@ import {
     CheckCircle2,
     Clipboard,
     Clock3,
+    Code2,
     Coins,
     Eye,
     Hammer,
@@ -34,6 +35,7 @@ import {
     ShieldCheck,
     Sparkles,
     Star,
+    Tags,
     Trash2,
     X,
 } from "lucide-react";
@@ -266,6 +268,187 @@ const getImageUrl = (
 
 
     return `${base}${path}`;
+};
+
+
+// =========================================================
+// STACK COLOR HELPERS
+// =========================================================
+
+const DEFAULT_STACK_COLOR =
+    "#64748B";
+
+
+const getStackColor = (
+    item
+) => {
+    const color =
+        item?.color;
+
+
+    if (
+        typeof color === "string"
+        &&
+        /^#[0-9A-Fa-f]{6}$/.test(
+            color
+        )
+    ) {
+        return color;
+    }
+
+
+    return DEFAULT_STACK_COLOR;
+};
+
+
+const withAlpha = (
+    color,
+    alpha
+) => {
+    const safeColor =
+        (
+            typeof color === "string"
+            &&
+            /^#[0-9A-Fa-f]{6}$/.test(
+                color
+            )
+        )
+            ? color
+            : DEFAULT_STACK_COLOR;
+
+
+    return `${safeColor}${alpha}`;
+};
+
+
+// =========================================================
+// STACK TAG
+// =========================================================
+
+const StackTag = ({
+    item,
+    type = "language",
+}) => {
+    if (!item) {
+        return null;
+    }
+
+
+    const color =
+        getStackColor(
+            item
+        );
+
+
+    return (
+        <span
+            title={
+                item?.name
+            }
+            className="
+                group/tag
+                inline-flex
+                max-w-full
+                items-center
+                gap-2
+                rounded-full
+                border
+                px-3
+                py-1.5
+                text-xs
+                font-black
+                transition-all
+                duration-300
+
+                hover:-translate-y-0.5
+            "
+            style={{
+                color,
+
+                borderColor:
+                    withAlpha(
+                        color,
+                        "45"
+                    ),
+
+                backgroundColor:
+                    withAlpha(
+                        color,
+                        "14"
+                    ),
+
+                boxShadow:
+                    `0 8px 22px ${withAlpha(
+                        color,
+                        "0D"
+                    )}`,
+            }}
+        >
+
+            <span
+                className="
+                    h-2
+                    w-2
+                    shrink-0
+                    rounded-full
+                "
+                style={{
+                    backgroundColor:
+                        color,
+
+                    boxShadow:
+                        `0 0 9px ${withAlpha(
+                            color,
+                            "AA"
+                        )}`,
+                }}
+            />
+
+
+            <span
+                className="
+                    truncate
+                "
+            >
+                {
+                    item?.name
+                    ||
+                    "Noma’lum"
+                }
+            </span>
+
+
+            {type === "technology"
+                &&
+                item?.category && (
+                <span
+                    className="
+                        hidden
+                        rounded-full
+                        border
+                        border-white/[0.07]
+                        bg-black/10
+                        px-1.5
+                        py-0.5
+                        font-mono
+                        text-[8px]
+                        uppercase
+                        tracking-wider
+                        opacity-60
+
+                        sm:inline
+                    "
+                >
+                    {
+                        item.category_display
+                        ||
+                        item.category
+                    }
+                </span>
+            )}
+
+        </span>
+    );
 };
 
 
@@ -2349,6 +2532,32 @@ const ProblemDetail = () => {
         );
 
 
+    const problemLanguages =
+        Array.isArray(
+            problemDetail
+                ?.language_data
+        )
+            ? problemDetail
+                .language_data
+                .filter(
+                    Boolean
+                )
+            : [];
+
+
+    const problemTechnologies =
+        Array.isArray(
+            problemDetail
+                ?.technology_data
+        )
+            ? problemDetail
+                .technology_data
+                .filter(
+                    Boolean
+                )
+            : [];
+
+
     // =====================================================
     // JSX
     // =====================================================
@@ -2678,62 +2887,81 @@ const ProblemDetail = () => {
 
                                     {/* =========================================
                                         LANGUAGES
+
+                                        Tillar title oldida ixcham ko‘rinadi.
+                                        Rang backenddagi Language.color dan olinadi.
                                     ========================================== */}
 
                                     <div
                                         className="
-                                            mb-5
+                                            mb-4
                                             flex
                                             flex-wrap
+                                            items-center
                                             gap-2
                                         "
                                     >
 
-                                        {problemDetail
-                                            ?.language_data
-                                            ?.length > 0 ? (
-                                            problemDetail
-                                                .language_data
-                                                .map(
-                                                    (
-                                                        language
-                                                    ) => (
-                                                        <span
-                                                            key={
-                                                                language.id
-                                                                ||
-                                                                language.name
-                                                            }
-                                                            className="
-                                                                rounded-full
-                                                                border
-                                                                border-cyan-400/20
-                                                                bg-cyan-400/10
-                                                                px-3
-                                                                py-1
-                                                                text-xs
-                                                                font-black
-                                                                text-cyan-300
-                                                            "
-                                                        >
-                                                            {
-                                                                language.name
-                                                            }
-                                                        </span>
-                                                    )
+                                        <span
+                                            className="
+                                                inline-flex
+                                                items-center
+                                                gap-1.5
+                                                rounded-full
+                                                border
+                                                border-white/[0.06]
+                                                bg-white/[0.025]
+                                                px-2.5
+                                                py-1.5
+                                                font-mono
+                                                text-[9px]
+                                                font-black
+                                                uppercase
+                                                tracking-[0.16em]
+                                                text-gray-600
+                                            "
+                                        >
+                                            <Code2
+                                                size={12}
+                                            />
+
+                                            Til
+                                        </span>
+
+
+                                        {problemLanguages.length > 0 ? (
+                                            problemLanguages.map(
+                                                (
+                                                    language,
+                                                    index
+                                                ) => (
+                                                    <StackTag
+                                                        key={
+                                                            language?.id
+                                                            ||
+                                                            language?.name
+                                                            ||
+                                                            `language-${index}`
+                                                        }
+                                                        item={
+                                                            language
+                                                        }
+                                                        type="language"
+                                                    />
                                                 )
+                                            )
                                         ) : (
                                             <span
                                                 className="
                                                     rounded-full
                                                     border
-                                                    border-white/10
-                                                    bg-white/[0.035]
+                                                    border-white/[0.06]
+                                                    bg-white/[0.025]
                                                     px-3
-                                                    py-1
+                                                    py-1.5
                                                     text-xs
                                                     font-bold
-                                                    text-gray-500
+                                                    text-gray-600
                                                 "
                                             >
                                                 Til belgilanmagan
@@ -3550,6 +3778,118 @@ const ProblemDetail = () => {
                                                     }
                                                 </p>
 
+
+                                                {/* =================================
+                                                    TECHNOLOGY TAGS
+
+                                                    Taglar tavsifning pastida metadata
+                                                    sifatida chiqadi. Shu sabab title
+                                                    tepasini band qilmaydi.
+                                                ================================== */}
+
+                                                {problemTechnologies.length > 0 && (
+                                                    <div
+                                                        className="
+                                                            mt-5
+                                                            border-t
+                                                            border-white/[0.07]
+                                                            pt-4
+                                                        "
+                                                    >
+
+                                                        <div
+                                                            className="
+                                                                mb-3
+                                                                flex
+                                                                flex-wrap
+                                                                items-center
+                                                                justify-between
+                                                                gap-2
+                                                            "
+                                                        >
+
+                                                            <div
+                                                                className="
+                                                                    flex
+                                                                    items-center
+                                                                    gap-2
+                                                                "
+                                                            >
+                                                                <Tags
+                                                                    size={13}
+                                                                    className="
+                                                                        text-indigo-400
+                                                                    "
+                                                                />
+
+                                                                <span
+                                                                    className="
+                                                                        font-mono
+                                                                        text-[9px]
+                                                                        font-black
+                                                                        uppercase
+                                                                        tracking-[0.18em]
+                                                                        text-gray-600
+                                                                    "
+                                                                >
+                                                                    Teglar / Texnologiyalar
+                                                                </span>
+                                                            </div>
+
+
+                                                            <span
+                                                                className="
+                                                                    rounded-full
+                                                                    border
+                                                                    border-white/[0.06]
+                                                                    bg-white/[0.025]
+                                                                    px-2
+                                                                    py-0.5
+                                                                    text-[8px]
+                                                                    font-black
+                                                                    text-gray-600
+                                                                "
+                                                            >
+                                                                {problemTechnologies.length}
+                                                            </span>
+
+                                                        </div>
+
+
+                                                        <div
+                                                            className="
+                                                                flex
+                                                                flex-wrap
+                                                                gap-2
+                                                            "
+                                                        >
+
+                                                            {problemTechnologies.map(
+                                                                (
+                                                                    technology,
+                                                                    index
+                                                                ) => (
+                                                                    <StackTag
+                                                                        key={
+                                                                            technology?.id
+                                                                            ||
+                                                                            technology?.name
+                                                                            ||
+                                                                            `technology-${index}`
+                                                                        }
+                                                                        item={
+                                                                            technology
+                                                                        }
+                                                                        type="technology"
+                                                                    />
+                                                                )
+                                                            )}
+
+                                                        </div>
+
+                                                    </div>
+                                                )}
+
                                             </div>
 
 
@@ -3585,7 +3925,11 @@ const ProblemDetail = () => {
                                                     "
                                                 >
 
-                                                    <div>
+                                                    <div
+                                                        className="
+                                                            min-w-0
+                                                        "
+                                                    >
 
                                                         <p
                                                             className="
@@ -4046,10 +4390,7 @@ const ProblemDetail = () => {
                                             id
                                         }
                                         problemLanguages={
-                                            problemDetail
-                                                ?.language_data
-                                            ||
-                                            []
+                                            problemLanguages
                                         }
                                         onSuccess={
                                             handleSolutionCreated

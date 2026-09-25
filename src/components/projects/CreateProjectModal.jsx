@@ -13,7 +13,6 @@ import {
     Code2,
     ExternalLink,
     FileImage,
-    ImagePlus,
     Images,
     Layers3,
     Loader2,
@@ -28,6 +27,8 @@ import {
     X,
 } from "lucide-react";
 
+import ProjectService from "../../services/project";
+
 import {
     BACKEND_URL,
 } from "../../services/config";
@@ -38,106 +39,13 @@ import {
 
 
 // =========================================================
-// DATA
-//
-// Hozircha loyihangizdagi mavjud static ro‘yxat.
-// Keyinchalik API orqali Language / Technology list olamiz.
+// CONFIG
 // =========================================================
 
-const LANGUAGES = [
-    {
-        id: 1,
-        name: "Python",
-    },
-    {
-        id: 2,
-        name: "JS",
-    },
-    {
-        id: 3,
-        name: "TypeScript",
-    },
-    {
-        id: 4,
-        name: "Java",
-    },
-    {
-        id: 5,
-        name: "C++",
-    },
-    {
-        id: 6,
-        name: "C#",
-    },
-    {
-        id: 7,
-        name: "PHP",
-    },
-    {
-        id: 8,
-        name: "GO",
-    },
-    {
-        id: 9,
-        name: "Swift",
-    },
-    {
-        id: 10,
-        name: "Ruby",
-    },
-    {
-        id: 11,
-        name: "Dart",
-    },
-];
+const MAX_PROJECT_IMAGES = 4;
 
-
-const TECHNOLOGIES = [
-    {
-        id: 1,
-        name: "Django",
-    },
-    {
-        id: 2,
-        name: "React",
-    },
-    {
-        id: 3,
-        name: "Vue.js",
-    },
-    {
-        id: 4,
-        name: "Angular",
-    },
-    {
-        id: 5,
-        name: "Next.js",
-    },
-    {
-        id: 6,
-        name: "Node.js",
-    },
-    {
-        id: 7,
-        name: "Laravel",
-    },
-    {
-        id: 8,
-        name: "Spring Boot",
-    },
-    {
-        id: 9,
-        name: "Flutter",
-    },
-    {
-        id: 10,
-        name: "FastAPI",
-    },
-    {
-        id: 11,
-        name: "DRF",
-    },
-];
+const DEFAULT_STACK_COLOR =
+    "#64748B";
 
 
 // =========================================================
@@ -149,21 +57,18 @@ const EMPTY_FORM = {
     main_features: "",
     description: "",
     website_url: "",
-    language: "",
-    technology: "",
 };
 
 
 // =========================================================
-// ABSOLUTE MEDIA URL
+// MEDIA URL
 // =========================================================
 
 const getMediaUrl = (
     value
 ) => {
-    if (
-        !value
-    ) {
+
+    if (!value) {
         return "";
     }
 
@@ -213,64 +118,597 @@ const getMediaUrl = (
 
 
 // =========================================================
+// STACK COLOR
+// =========================================================
+
+const getStackColor = (
+    item
+) => {
+
+    const color =
+        item?.color;
+
+
+    if (
+        typeof color ===
+            "string"
+        &&
+        /^#[0-9A-Fa-f]{6}$/.test(
+            color
+        )
+    ) {
+        return color;
+    }
+
+
+    return DEFAULT_STACK_COLOR;
+};
+
+
+// =========================================================
+// COLOR + ALPHA
+// =========================================================
+
+const withAlpha = (
+    color,
+    alpha
+) => {
+
+    const safeColor =
+        (
+            typeof color ===
+                "string"
+            &&
+            /^#[0-9A-Fa-f]{6}$/.test(
+                color
+            )
+        )
+            ? color
+            : DEFAULT_STACK_COLOR;
+
+
+    return (
+        `${safeColor}${alpha}`
+    );
+};
+
+
+// =========================================================
+// NORMALIZE CATALOG
+// =========================================================
+
+const normalizeCatalog = (
+    items
+) => {
+
+    if (
+        !Array.isArray(
+            items
+        )
+    ) {
+        return [];
+    }
+
+
+    return items
+        .filter(
+            Boolean
+        )
+        .map(
+            (
+                item,
+                index
+            ) => {
+
+                if (
+                    typeof item ===
+                        "string"
+                ) {
+
+                    return {
+                        id:
+                            item,
+
+                        name:
+                            item,
+
+                        color:
+                            DEFAULT_STACK_COLOR,
+
+                        _key:
+                            `${item}-${index}`,
+                    };
+                }
+
+
+                return {
+
+                    ...item,
+
+                    id:
+                        item.id
+                        ??
+                        `${item.name || "stack"}-${index}`,
+
+                    name:
+                        item.name
+                        ||
+                        item.title
+                        ||
+                        "Noma’lum",
+
+                    color:
+                        getStackColor(
+                            item
+                        ),
+                };
+            }
+        );
+};
+
+
+// =========================================================
+// NORMALIZE IDS
+// =========================================================
+
+const normalizeIds = (
+    items
+) => {
+
+    if (
+        !Array.isArray(
+            items
+        )
+    ) {
+        return [];
+    }
+
+
+    const ids =
+        items
+            .map(
+                (
+                    item
+                ) => {
+
+                    if (
+                        item
+                        &&
+                        typeof item ===
+                            "object"
+                    ) {
+                        return item.id;
+                    }
+
+
+                    return item;
+                }
+            )
+            .filter(
+                (
+                    value
+                ) =>
+                    value !==
+                        null
+                    &&
+                    value !==
+                        undefined
+                    &&
+                    value !==
+                        ""
+            )
+            .map(
+                (
+                    value
+                ) =>
+                    String(
+                        value
+                    )
+            );
+
+
+    return [
+        ...new Set(
+            ids
+        ),
+    ];
+};
+
+
+// =========================================================
+// GET INITIAL LANGUAGE IDS
+// =========================================================
+
+const getInitialLanguageIds = (
+    data
+) => {
+
+    if (!data) {
+        return [];
+    }
+
+
+    if (
+        Array.isArray(
+            data.languages_data
+        )
+        &&
+        data.languages_data.length >
+            0
+    ) {
+
+        return normalizeIds(
+            data.languages_data
+        );
+    }
+
+
+    if (
+        Array.isArray(
+            data.languages
+        )
+        &&
+        data.languages.length >
+            0
+    ) {
+
+        return normalizeIds(
+            data.languages
+        );
+    }
+
+
+    if (
+        data.language_data
+            ?.id
+    ) {
+
+        return [
+            String(
+                data.language_data.id
+            ),
+        ];
+    }
+
+
+    if (
+        data.language
+        &&
+        typeof data.language ===
+            "object"
+        &&
+        data.language.id
+    ) {
+
+        return [
+            String(
+                data.language.id
+            ),
+        ];
+    }
+
+
+    if (
+        data.language !==
+            null
+        &&
+        data.language !==
+            undefined
+        &&
+        data.language !==
+            ""
+    ) {
+
+        return [
+            String(
+                data.language
+            ),
+        ];
+    }
+
+
+    return [];
+};
+
+
+// =========================================================
+// GET INITIAL TECHNOLOGY IDS
+// =========================================================
+
+const getInitialTechnologyIds = (
+    data
+) => {
+
+    if (!data) {
+        return [];
+    }
+
+
+    if (
+        Array.isArray(
+            data.technologies_data
+        )
+        &&
+        data.technologies_data.length >
+            0
+    ) {
+
+        return normalizeIds(
+            data.technologies_data
+        );
+    }
+
+
+    if (
+        Array.isArray(
+            data.technologies
+        )
+        &&
+        data.technologies.length >
+            0
+    ) {
+
+        return normalizeIds(
+            data.technologies
+        );
+    }
+
+
+    if (
+        data.technology_data
+            ?.id
+    ) {
+
+        return [
+            String(
+                data.technology_data.id
+            ),
+        ];
+    }
+
+
+    if (
+        data.technology
+        &&
+        typeof data.technology ===
+            "object"
+        &&
+        data.technology.id
+    ) {
+
+        return [
+            String(
+                data.technology.id
+            ),
+        ];
+    }
+
+
+    if (
+        data.technology !==
+            null
+        &&
+        data.technology !==
+            undefined
+        &&
+        data.technology !==
+            ""
+    ) {
+
+        return [
+            String(
+                data.technology
+            ),
+        ];
+    }
+
+
+    return [];
+};
+
+
+// =========================================================
+// TECHNOLOGY LANGUAGE IDS
+// =========================================================
+
+const getTechnologyLanguageIds = (
+    technology
+) => {
+
+    if (
+        Array.isArray(
+            technology?.languages
+        )
+    ) {
+
+        return normalizeIds(
+            technology.languages
+        );
+    }
+
+
+    if (
+        Array.isArray(
+            technology?.language_data
+        )
+    ) {
+
+        return normalizeIds(
+            technology.language_data
+        );
+    }
+
+
+    return [];
+};
+
+
+// =========================================================
+// TECHNOLOGY MATCH
+//
+// Technology.languages = []
+// bo‘lsa universal technology.
+// =========================================================
+
+const technologyMatchesLanguages = (
+    technology,
+    selectedLanguageIds
+) => {
+
+    const allowedLanguageIds =
+        getTechnologyLanguageIds(
+            technology
+        );
+
+
+    if (
+        allowedLanguageIds.length ===
+        0
+    ) {
+        return true;
+    }
+
+
+    if (
+        selectedLanguageIds.length ===
+        0
+    ) {
+        return true;
+    }
+
+
+    return allowedLanguageIds.some(
+        (
+            languageId
+        ) =>
+            selectedLanguageIds.includes(
+                String(
+                    languageId
+                )
+            )
+    );
+};
+
+
+// =========================================================
 // EDIT IMAGES
 // =========================================================
 
 const formatImagesForEdit = (
     projectImages
 ) => {
+
     if (
         !Array.isArray(
             projectImages
         )
-        ||
-        projectImages.length ===
-        0
     ) {
-        return [
-            {
+        return [];
+    }
+
+
+    return projectImages
+        .slice(
+            0,
+            MAX_PROJECT_IMAGES
+        )
+        .map(
+            (
+                image
+            ) => ({
+
                 id:
-                    `new-${Date.now()}`,
+                    image.id,
 
                 title:
+                    image.title
+                    ||
                     "",
 
                 file:
                     null,
 
                 isNew:
-                    true,
+                    false,
 
                 url:
-                    "",
-            },
-        ];
+                    getMediaUrl(
+                        image.image
+                    ),
+            })
+        );
+};
+
+
+// =========================================================
+// CREATE LOCAL IMAGE
+// =========================================================
+
+const createLocalImage = (
+    file,
+    index = 0
+) => {
+
+    return {
+
+        id:
+            `new-${Date.now()}-${index}-${Math.random()
+                .toString(36)
+                .slice(2, 8)}`,
+
+        title:
+            file?.name
+                ?.replace(
+                    /\.[^.]+$/,
+                    ""
+                )
+                ?.slice(
+                    0,
+                    100
+                )
+            ||
+            "",
+
+        file,
+
+        isNew:
+            true,
+
+        url:
+            file
+                ? URL.createObjectURL(
+                    file
+                )
+                : "",
+    };
+};
+
+
+// =========================================================
+// ALLOWED IMAGE
+// =========================================================
+
+const isAllowedImage = (
+    file
+) => {
+
+    if (!file) {
+        return false;
     }
 
 
-    return projectImages.map(
-        (
-            image
-        ) => ({
-            id:
-                image.id,
+    const fileName =
+        String(
+            file.name
+            ||
+            ""
+        );
 
-            title:
-                image.title
-                ||
-                "",
 
-            file:
-                null,
-
-            isNew:
-                false,
-
-            url:
-                getMediaUrl(
-                    image.image
-                ),
-        })
+    return (
+        /\.(jpg|jpeg|png|webp)$/i.test(
+            fileName
+        )
     );
 };
 
@@ -283,6 +721,7 @@ const getErrorMessage = (
     error,
     fallback = "Loyihani saqlashda xatolik yuz berdi."
 ) => {
+
     const data =
         error?.serverData
         ||
@@ -291,7 +730,9 @@ const getErrorMessage = (
 
     if (
         typeof data ===
-        "string"
+            "string"
+        &&
+        data.trim()
     ) {
         return data;
     }
@@ -307,13 +748,52 @@ const getErrorMessage = (
 
 
     if (
+        data?.languages
+    ) {
+
+        return (
+            Array.isArray(
+                data.languages
+            )
+                ? data.languages.join(
+                    ", "
+                )
+                : String(
+                    data.languages
+                )
+        );
+    }
+
+
+    if (
+        data?.technologies
+    ) {
+
+        return (
+            Array.isArray(
+                data.technologies
+            )
+                ? data.technologies.join(
+                    ", "
+                )
+                : String(
+                    data.technologies
+                )
+        );
+    }
+
+
+    if (
         data?.name
     ) {
+
         return (
             Array.isArray(
                 data.name
             )
-                ? data.name.join(", ")
+                ? data.name.join(
+                    ", "
+                )
                 : String(
                     data.name
                 )
@@ -324,12 +804,13 @@ const getErrorMessage = (
     if (
         data?.images
     ) {
+
         return (
             "Rasmlar: "
             +
             (
                 typeof data.images ===
-                "string"
+                    "string"
 
                     ? data.images
 
@@ -345,8 +826,9 @@ const getErrorMessage = (
         data
         &&
         typeof data ===
-        "object"
+            "object"
     ) {
+
         const firstValue =
             Object.values(
                 data
@@ -358,8 +840,10 @@ const getErrorMessage = (
                 firstValue
             )
             &&
-            firstValue.length > 0
+            firstValue.length >
+                0
         ) {
+
             return String(
                 firstValue[0]
             );
@@ -368,7 +852,7 @@ const getErrorMessage = (
 
         if (
             typeof firstValue ===
-            "string"
+                "string"
         ) {
             return firstValue;
         }
@@ -378,7 +862,9 @@ const getErrorMessage = (
     if (
         error?.message
     ) {
+
         try {
+
             const parsed =
                 JSON.parse(
                     error.message
@@ -405,6 +891,7 @@ const getErrorMessage = (
                     firstValue
                 )
             ) {
+
                 return String(
                     firstValue[0]
                     ||
@@ -415,12 +902,13 @@ const getErrorMessage = (
 
             if (
                 typeof firstValue ===
-                "string"
+                    "string"
             ) {
                 return firstValue;
             }
 
         } catch {
+
             return String(
                 error.message
             );
@@ -433,7 +921,7 @@ const getErrorMessage = (
 
 
 // =========================================================
-// FIELD WRAPPER
+// FIELD
 // =========================================================
 
 const Field = ({
@@ -442,7 +930,9 @@ const Field = ({
     required = false,
     children,
 }) => {
+
     return (
+
         <div>
 
             <div
@@ -465,6 +955,7 @@ const Field = ({
                     {label}
 
                     {required && (
+
                         <span
                             className="
                                 ml-1
@@ -474,6 +965,7 @@ const Field = ({
                             *
                         </span>
                     )}
+
                 </label>
 
             </div>
@@ -483,6 +975,7 @@ const Field = ({
 
 
             {description && (
+
                 <p
                     className="
                         mt-2
@@ -502,6 +995,232 @@ const Field = ({
 
 
 // =========================================================
+// STACK TAG
+// =========================================================
+
+const StackTag = ({
+    item,
+    active,
+    onClick,
+    disabled,
+    showCategory = false,
+}) => {
+
+    const color =
+        getStackColor(
+            item
+        );
+
+
+    return (
+
+        <button
+            type="button"
+
+            onClick={
+                onClick
+            }
+
+            disabled={
+                disabled
+            }
+
+            title={
+                item?.name
+            }
+
+            className="
+                inline-flex
+                max-w-full
+                items-center
+                gap-2
+                rounded-full
+                border
+                px-3
+                py-2
+                text-[10px]
+                font-black
+                transition-all
+                duration-200
+
+                hover:-translate-y-[1px]
+
+                disabled:cursor-not-allowed
+                disabled:opacity-40
+            "
+
+            style={{
+
+                color:
+                    active
+                        ? color
+                        : "#7C8493",
+
+                borderColor:
+                    active
+                        ? withAlpha(
+                            color,
+                            "55"
+                        )
+                        : "rgba(255,255,255,0.07)",
+
+                backgroundColor:
+                    active
+                        ? withAlpha(
+                            color,
+                            "15"
+                        )
+                        : "rgba(255,255,255,0.018)",
+
+                boxShadow:
+                    active
+                        ? `0 0 14px ${withAlpha(
+                            color,
+                            "10"
+                        )}`
+                        : "none",
+            }}
+        >
+
+            {active ? (
+
+                <Check
+                    size={12}
+                    className="
+                        shrink-0
+                    "
+                />
+
+            ) : (
+
+                <span
+                    className="
+                        h-2
+                        w-2
+                        shrink-0
+                        rounded-full
+                    "
+                    style={{
+                        backgroundColor:
+                            color,
+                    }}
+                />
+            )}
+
+
+            <span
+                className="
+                    truncate
+                "
+            >
+                {item.name}
+            </span>
+
+
+            {showCategory
+                &&
+                (
+                    item?.category_display
+                    ||
+                    item?.category
+                ) && (
+
+                <span
+                    className="
+                        hidden
+                        rounded-full
+                        border
+                        border-white/[0.06]
+                        bg-black/10
+                        px-1.5
+                        py-0.5
+                        font-mono
+                        text-[8px]
+                        text-white/40
+
+                        sm:inline
+                    "
+                >
+                    {item?.category_display
+                    ||
+                    item?.category}
+                </span>
+            )}
+
+        </button>
+    );
+};
+
+
+// =========================================================
+// STACK PREVIEW TAG
+// =========================================================
+
+const StackPreviewTag = ({
+    item,
+}) => {
+
+    const color =
+        getStackColor(
+            item
+        );
+
+
+    return (
+
+        <span
+            className="
+                inline-flex
+                items-center
+                gap-1.5
+                rounded-full
+                border
+                px-2.5
+                py-1
+                text-[10px]
+                font-black
+            "
+
+            style={{
+
+                color,
+
+                borderColor:
+                    withAlpha(
+                        color,
+                        "45"
+                    ),
+
+                backgroundColor:
+                    withAlpha(
+                        color,
+                        "12"
+                    ),
+            }}
+        >
+
+            <span
+                className="
+                    h-1.5
+                    w-1.5
+                    rounded-full
+                "
+
+                style={{
+                    backgroundColor:
+                        color,
+                }}
+            />
+
+
+            {item.name}
+
+        </span>
+    );
+};
+
+
+// =========================================================
 // PROJECT FORM MODAL
 // =========================================================
 
@@ -510,7 +1229,9 @@ const ProjectFormModal = ({
     onClose,
     onSubmit,
     initialData = null,
+    isSubmitting: parentSubmitting = false,
 }) => {
+
     // =====================================================
     // MODE
     // =====================================================
@@ -522,7 +1243,7 @@ const ProjectFormModal = ({
 
 
     // =====================================================
-    // STATE
+    // FORM
     // =====================================================
 
     const [
@@ -533,26 +1254,76 @@ const ProjectFormModal = ({
     });
 
 
+    // =====================================================
+    // STACK CATALOG
+    // =====================================================
+
+    const [
+        languages,
+        setLanguages,
+    ] = useState([]);
+
+
+    const [
+        technologies,
+        setTechnologies,
+    ] = useState([]);
+
+
+    const [
+        selectedLanguageIds,
+        setSelectedLanguageIds,
+    ] = useState([]);
+
+
+    const [
+        selectedTechnologyIds,
+        setSelectedTechnologyIds,
+    ] = useState([]);
+
+
+    const [
+        stackLoading,
+        setStackLoading,
+    ] = useState(false);
+
+
+    const [
+        stackError,
+        setStackError,
+    ] = useState("");
+
+
+    // =====================================================
+    // IMAGES
+    // =====================================================
+
     const [
         images,
         setImages,
     ] = useState([]);
 
 
+    // =====================================================
+    // SUBMIT
+    // =====================================================
+
     const [
-        isSubmitting,
-        setIsSubmitting,
-    ] = useState(
-        false
-    );
+        localSubmitting,
+        setLocalSubmitting,
+    ] = useState(false);
 
 
     const [
         error,
         setError,
-    ] = useState(
-        ""
-    );
+    ] = useState("");
+
+
+    const isSubmitting =
+        localSubmitting
+        ||
+        parentSubmitting;
 
 
     // =====================================================
@@ -567,90 +1338,55 @@ const ProjectFormModal = ({
 
     const modalDescription =
         isEditMode
-            ? "Loyiha ma’lumotlari, texnologiyalari va rasmlarini yangilang."
+            ? "Loyiha ma’lumotlari, stack va rasmlarini yangilang."
             : "Yangi loyihangizni F.Society hamjamiyatiga taqdim eting.";
 
 
     // =====================================================
-    // INITIAL DATA
-    //
-    // MUHIM FIX:
-    // ProjectDetailSerializer GET'da language va technology
-    // write_only.
-    //
-    // Shuning uchun:
-    // language_data.id
-    // technology_data.id
-    // orqali ham tekshiramiz.
+    // INITIAL DATA + STACK
     // =====================================================
 
     useEffect(
         () => {
-            if (
-                !isOpen
-            ) {
+
+            if (!isOpen) {
                 return;
             }
+
+
+            let ignore =
+                false;
 
 
             setError(
                 ""
             );
 
+            setStackError(
+                ""
+            );
+
+
+            const initialLanguageIds =
+                getInitialLanguageIds(
+                    initialData
+                );
+
+
+            const initialTechnologyIds =
+                getInitialTechnologyIds(
+                    initialData
+                );
+
 
             if (
                 initialData
             ) {
-                const languageId =
-                    initialData
-                        ?.language_data
-                        ?.id
-                    ??
-                    initialData
-                        ?.language
-                        ?.id
-                    ??
-                    (
-                        typeof initialData
-                            ?.language ===
-                        "number"
-                            ||
-                        typeof initialData
-                            ?.language ===
-                        "string"
-
-                            ? initialData.language
-                            : ""
-                    );
-
-
-                const technologyId =
-                    initialData
-                        ?.technology_data
-                        ?.id
-                    ??
-                    initialData
-                        ?.technology
-                        ?.id
-                    ??
-                    (
-                        typeof initialData
-                            ?.technology ===
-                        "number"
-                            ||
-                        typeof initialData
-                            ?.technology ===
-                        "string"
-
-                            ? initialData.technology
-                            : ""
-                    );
-
 
                 setFormData({
+
                     name:
-                        initialData
-                            ?.name
+                        initialData?.name
                         ||
                         "",
 
@@ -671,20 +1407,6 @@ const ProjectFormModal = ({
                             ?.website_url
                         ||
                         "",
-
-                    language:
-                        languageId
-                            ? String(
-                                languageId
-                            )
-                            : "",
-
-                    technology:
-                        technologyId
-                            ? String(
-                                technologyId
-                            )
-                            : "",
                 });
 
 
@@ -695,31 +1417,189 @@ const ProjectFormModal = ({
                     )
                 );
 
+
+                setSelectedLanguageIds(
+                    initialLanguageIds
+                );
+
+
+                setSelectedTechnologyIds(
+                    initialTechnologyIds
+                );
+
             } else {
+
                 setFormData({
                     ...EMPTY_FORM,
                 });
 
 
-                setImages([
-                    {
-                        id:
-                            `new-${Date.now()}`,
+                setImages(
+                    []
+                );
 
-                        title:
-                            "",
 
-                        file:
-                            null,
+                setSelectedLanguageIds(
+                    []
+                );
 
-                        isNew:
-                            true,
 
-                        url:
-                            "",
-                    },
-                ]);
+                setSelectedTechnologyIds(
+                    []
+                );
             }
+
+
+            const loadStack =
+                async () => {
+
+                    setStackLoading(
+                        true
+                    );
+
+
+                    try {
+
+                        const response =
+                            await ProjectService
+                                .getStackCatalog();
+
+
+                        if (ignore) {
+                            return;
+                        }
+
+
+                        const loadedLanguages =
+                            normalizeCatalog(
+                                response
+                                    ?.languages
+                            );
+
+
+                        const loadedTechnologies =
+                            normalizeCatalog(
+                                response
+                                    ?.technologies
+                            );
+
+
+                        setLanguages(
+                            loadedLanguages
+                        );
+
+
+                        setTechnologies(
+                            loadedTechnologies
+                        );
+
+
+                        /*
+                            Editda oldingi technology tanlangan
+                            bo‘lsa va hozirgi language bilan mos
+                            bo‘lmasa submitda backend reject qiladi.
+
+                            Shuning uchun catalog kelgach moslarini
+                            saqlaymiz.
+                        */
+
+                        if (
+                            initialData
+                        ) {
+
+                            const validTechnologyIds =
+                                initialTechnologyIds
+                                    .filter(
+                                        (
+                                            id
+                                        ) => {
+
+                                            const technology =
+                                                loadedTechnologies
+                                                    .find(
+                                                        (
+                                                            item
+                                                        ) =>
+                                                            String(
+                                                                item.id
+                                                            )
+                                                            ===
+                                                            String(
+                                                                id
+                                                            )
+                                                    );
+
+
+                                            if (
+                                                !technology
+                                            ) {
+                                                return false;
+                                            }
+
+
+                                            return (
+                                                technologyMatchesLanguages(
+                                                    technology,
+                                                    initialLanguageIds
+                                                )
+                                            );
+                                        }
+                                    );
+
+
+                            setSelectedTechnologyIds(
+                                validTechnologyIds
+                            );
+                        }
+
+                    } catch (
+                        requestError
+                    ) {
+
+                        if (ignore) {
+                            return;
+                        }
+
+
+                        console.error(
+                            "Stack katalogini olishda xato:",
+                            requestError
+                        );
+
+
+                        const message =
+                            getErrorMessage(
+                                requestError,
+                                "Tillar va texnologiyalarni yuklab bo‘lmadi."
+                            );
+
+
+                        setStackError(
+                            message
+                        );
+
+                    } finally {
+
+                        if (
+                            !ignore
+                        ) {
+                            setStackLoading(
+                                false
+                            );
+                        }
+                    }
+                };
+
+
+            loadStack();
+
+
+            return () => {
+
+                ignore =
+                    true;
+            };
+
         },
         [
             isOpen,
@@ -734,9 +1614,8 @@ const ProjectFormModal = ({
 
     useEffect(
         () => {
-            if (
-                !isOpen
-            ) {
+
+            if (!isOpen) {
                 return undefined;
             }
 
@@ -759,12 +1638,14 @@ const ProjectFormModal = ({
                 (
                     event
                 ) => {
+
                     if (
                         event.key ===
-                        "Escape"
+                            "Escape"
                         &&
                         !isSubmitting
                     ) {
+
                         onClose?.();
                     }
                 };
@@ -777,6 +1658,7 @@ const ProjectFormModal = ({
 
 
             return () => {
+
                 document
                     .body
                     .style
@@ -789,6 +1671,7 @@ const ProjectFormModal = ({
                     handleKeyDown
                 );
             };
+
         },
         [
             isOpen,
@@ -815,63 +1698,99 @@ const ProjectFormModal = ({
 
 
     // =====================================================
-    // SELECTED LABELS
+    // SELECTED LANGUAGES
     // =====================================================
 
-    const selectedLanguage =
+    const selectedLanguages =
         useMemo(
             () => {
-                return LANGUAGES.find(
-                    (
-                        language
-                    ) =>
-                        String(
-                            language.id
-                        )
-                        ===
-                        String(
-                            formData
-                                .language
-                        )
-                );
+
+                return languages
+                    .filter(
+                        (
+                            language
+                        ) =>
+                            selectedLanguageIds
+                                .includes(
+                                    String(
+                                        language.id
+                                    )
+                                )
+                    );
+
             },
             [
-                formData.language,
-            ]
-        );
-
-
-    const selectedTechnology =
-        useMemo(
-            () => {
-                return TECHNOLOGIES.find(
-                    (
-                        technology
-                    ) =>
-                        String(
-                            technology.id
-                        )
-                        ===
-                        String(
-                            formData
-                                .technology
-                        )
-                );
-            },
-            [
-                formData.technology,
+                languages,
+                selectedLanguageIds,
             ]
         );
 
 
     // =====================================================
-    // CHANGE
+    // AVAILABLE TECHNOLOGIES
+    // =====================================================
+
+    const compatibleTechnologies =
+        useMemo(
+            () => {
+
+                return technologies
+                    .filter(
+                        (
+                            technology
+                        ) =>
+                            technologyMatchesLanguages(
+                                technology,
+                                selectedLanguageIds
+                            )
+                    );
+
+            },
+            [
+                technologies,
+                selectedLanguageIds,
+            ]
+        );
+
+
+    // =====================================================
+    // SELECTED TECHNOLOGIES
+    // =====================================================
+
+    const selectedTechnologies =
+        useMemo(
+            () => {
+
+                return technologies
+                    .filter(
+                        (
+                            technology
+                        ) =>
+                            selectedTechnologyIds
+                                .includes(
+                                    String(
+                                        technology.id
+                                    )
+                                )
+                    );
+
+            },
+            [
+                technologies,
+                selectedTechnologyIds,
+            ]
+        );
+
+
+    // =====================================================
+    // INPUT CHANGE
     // =====================================================
 
     const handleInputChange =
         (
             event
         ) => {
+
             const {
                 name,
                 value,
@@ -883,6 +1802,7 @@ const ProjectFormModal = ({
                 (
                     current
                 ) => ({
+
                     ...current,
 
                     [name]:
@@ -902,15 +1822,206 @@ const ProjectFormModal = ({
 
 
     // =====================================================
-    // IMAGE CHANGE
+    // LANGUAGE TOGGLE
     // =====================================================
 
-    const handleImageChange =
+    const handleLanguageToggle =
+        (
+            language
+        ) => {
+
+            if (
+                isSubmitting
+            ) {
+                return;
+            }
+
+
+            const languageId =
+                String(
+                    language.id
+                );
+
+
+            const exists =
+                selectedLanguageIds
+                    .includes(
+                        languageId
+                    );
+
+
+            const nextLanguageIds =
+                exists
+                    ? selectedLanguageIds
+                        .filter(
+                            (
+                                id
+                            ) =>
+                                id !==
+                                languageId
+                        )
+                    : [
+                        ...selectedLanguageIds,
+                        languageId,
+                    ];
+
+
+            setSelectedLanguageIds(
+                nextLanguageIds
+            );
+
+
+            /*
+                Til olib tashlanganda shu tillarga
+                mos kelmay qolgan technologylarni
+                ham avtomatik olib tashlaymiz.
+            */
+
+            setSelectedTechnologyIds(
+                (
+                    currentTechnologyIds
+                ) => {
+
+                    return currentTechnologyIds
+                        .filter(
+                            (
+                                technologyId
+                            ) => {
+
+                                const technology =
+                                    technologies.find(
+                                        (
+                                            item
+                                        ) =>
+                                            String(
+                                                item.id
+                                            )
+                                            ===
+                                            String(
+                                                technologyId
+                                            )
+                                    );
+
+
+                                if (
+                                    !technology
+                                ) {
+                                    return false;
+                                }
+
+
+                                return (
+                                    technologyMatchesLanguages(
+                                        technology,
+                                        nextLanguageIds
+                                    )
+                                );
+                            }
+                        );
+                }
+            );
+
+
+            if (
+                error
+            ) {
+                setError(
+                    ""
+                );
+            }
+        };
+
+
+    // =====================================================
+    // TECHNOLOGY TOGGLE
+    // =====================================================
+
+    const handleTechnologyToggle =
+        (
+            technology
+        ) => {
+
+            if (
+                isSubmitting
+            ) {
+                return;
+            }
+
+
+            if (
+                !technologyMatchesLanguages(
+                    technology,
+                    selectedLanguageIds
+                )
+            ) {
+
+                siteToast.warning(
+                    "Bu texnologiya tanlangan dasturlash tillariga mos kelmaydi.",
+                    {
+                        title:
+                            "Technology mos emas",
+                    }
+                );
+
+                return;
+            }
+
+
+            const technologyId =
+                String(
+                    technology.id
+                );
+
+
+            setSelectedTechnologyIds(
+                (
+                    current
+                ) => {
+
+                    if (
+                        current.includes(
+                            technologyId
+                        )
+                    ) {
+
+                        return current.filter(
+                            (
+                                id
+                            ) =>
+                                id !==
+                                technologyId
+                        );
+                    }
+
+
+                    return [
+                        ...current,
+                        technologyId,
+                    ];
+                }
+            );
+
+
+            if (
+                error
+            ) {
+                setError(
+                    ""
+                );
+            }
+        };
+
+
+    // =====================================================
+    // IMAGE TITLE
+    // =====================================================
+
+    const handleImageTitleChange =
         (
             id,
-            field,
             value
         ) => {
+
             setImages(
                 (
                     current
@@ -920,12 +2031,12 @@ const ProjectFormModal = ({
                             image
                         ) =>
                             image.id ===
-                            id
+                                id
 
                                 ? {
                                     ...image,
 
-                                    [field]:
+                                    title:
                                         value,
                                 }
 
@@ -936,34 +2047,235 @@ const ProjectFormModal = ({
 
 
     // =====================================================
-    // ADD IMAGE
+    // ADD MULTIPLE IMAGES
     // =====================================================
 
-    const handleAddImage =
-        () => {
+    const handleMultipleImageSelect =
+        (
+            event
+        ) => {
+
+            const files =
+                Array.from(
+                    event.target.files
+                    ||
+                    []
+                );
+
+
+            /*
+                Bir xil faylni qayta tanlashga
+                imkon berish uchun.
+            */
+
+            event.target.value =
+                "";
+
+
+            if (
+                files.length ===
+                0
+            ) {
+                return;
+            }
+
+
+            const invalidFiles =
+                files.filter(
+                    (
+                        file
+                    ) =>
+                        !isAllowedImage(
+                            file
+                        )
+                );
+
+
+            if (
+                invalidFiles.length >
+                0
+            ) {
+
+                siteToast.warning(
+                    "Faqat JPG, JPEG, PNG yoki WEBP rasmlarini yuklash mumkin.",
+                    {
+                        title:
+                            "Noto‘g‘ri fayl",
+                    }
+                );
+            }
+
+
+            const validFiles =
+                files.filter(
+                    isAllowedImage
+                );
+
+
+            if (
+                validFiles.length ===
+                0
+            ) {
+                return;
+            }
+
+
+            const remainingSlots =
+                MAX_PROJECT_IMAGES
+                -
+                images.length;
+
+
+            if (
+                remainingSlots <=
+                0
+            ) {
+
+                siteToast.warning(
+                    `Bitta loyihaga maksimum ${MAX_PROJECT_IMAGES} ta rasm qo‘shish mumkin.`,
+                    {
+                        title:
+                            "Rasm limiti",
+                    }
+                );
+
+                return;
+            }
+
+
+            const acceptedFiles =
+                validFiles.slice(
+                    0,
+                    remainingSlots
+                );
+
+
+            if (
+                validFiles.length >
+                remainingSlots
+            ) {
+
+                siteToast.info(
+                    `Faqat ${remainingSlots} ta rasm uchun joy qoldi. Birinchi ${acceptedFiles.length} ta rasm qo‘shildi.`,
+                    {
+                        title:
+                            `${MAX_PROJECT_IMAGES} ta rasm limiti`,
+                    }
+                );
+            }
+
+
+            const newImages =
+                acceptedFiles.map(
+                    (
+                        file,
+                        index
+                    ) =>
+                        createLocalImage(
+                            file,
+                            index
+                        )
+                );
+
+
             setImages(
                 (
                     current
                 ) => [
                     ...current,
-
-                    {
-                        id:
-                            `new-${Date.now()}-${current.length}`,
-
-                        title:
-                            "",
-
-                        file:
-                            null,
-
-                        isNew:
-                            true,
-
-                        url:
-                            "",
-                    },
+                    ...newImages,
                 ]
+            );
+
+
+            if (
+                error
+            ) {
+                setError(
+                    ""
+                );
+            }
+        };
+
+
+    // =====================================================
+    // REPLACE IMAGE
+    // =====================================================
+
+    const handleReplaceImage =
+        (
+            id,
+            file
+        ) => {
+
+            if (!file) {
+                return;
+            }
+
+
+            if (
+                !isAllowedImage(
+                    file
+                )
+            ) {
+
+                siteToast.warning(
+                    "Faqat JPG, JPEG, PNG yoki WEBP rasmlarini yuklash mumkin.",
+                    {
+                        title:
+                            "Noto‘g‘ri fayl",
+                    }
+                );
+
+                return;
+            }
+
+
+            setImages(
+                (
+                    current
+                ) =>
+                    current.map(
+                        (
+                            image
+                        ) => {
+
+                            if (
+                                image.id !==
+                                id
+                            ) {
+                                return image;
+                            }
+
+
+                            if (
+                                image.file
+                                &&
+                                image.url
+                                    ?.startsWith(
+                                        "blob:"
+                                    )
+                            ) {
+
+                                URL.revokeObjectURL(
+                                    image.url
+                                );
+                            }
+
+
+                            return {
+
+                                ...image,
+
+                                file,
+
+                                url:
+                                    URL.createObjectURL(
+                                        file
+                                    ),
+                            };
+                        }
+                    )
             );
         };
 
@@ -976,21 +2288,6 @@ const ProjectFormModal = ({
         (
             id
         ) => {
-            if (
-                images.length <=
-                1
-            ) {
-                siteToast.warning(
-                    "Loyihada kamida bitta rasm qolishi kerak.",
-                    {
-                        title:
-                            "Rasmni o‘chirib bo‘lmaydi",
-                    }
-                );
-
-                return;
-            }
-
 
             const image =
                 images.find(
@@ -1006,10 +2303,11 @@ const ProjectFormModal = ({
                 image?.file
                 &&
                 image?.url
-                ?.startsWith(
-                    "blob:"
-                )
+                    ?.startsWith(
+                        "blob:"
+                    )
             ) {
+
                 URL.revokeObjectURL(
                     image.url
                 );
@@ -1032,96 +2330,18 @@ const ProjectFormModal = ({
 
 
     // =====================================================
-    // FILE CHANGE
-    // =====================================================
-
-    const handleFileChange =
-        (
-            id,
-            file
-        ) => {
-            if (
-                !file
-            ) {
-                return;
-            }
-
-
-            if (
-                !file.type
-                    .startsWith(
-                        "image/"
-                    )
-            ) {
-                siteToast.warning(
-                    "Faqat rasm faylini tanlash mumkin.",
-                    {
-                        title:
-                            "Noto‘g‘ri fayl",
-                    }
-                );
-
-                return;
-            }
-
-
-            setImages(
-                (
-                    current
-                ) =>
-                    current.map(
-                        (
-                            image
-                        ) => {
-                            if (
-                                image.id !==
-                                id
-                            ) {
-                                return image;
-                            }
-
-
-                            if (
-                                image.file
-                                &&
-                                image.url
-                                    ?.startsWith(
-                                        "blob:"
-                                    )
-                            ) {
-                                URL.revokeObjectURL(
-                                    image.url
-                                );
-                            }
-
-
-                            return {
-                                ...image,
-
-                                file,
-
-                                url:
-                                    URL.createObjectURL(
-                                        file
-                                    ),
-                            };
-                        }
-                    )
-            );
-        };
-
-
-    // =====================================================
     // VALIDATE
     // =====================================================
 
     const validateForm =
         () => {
+
             if (
                 !formData
                     .name
                     .trim()
             ) {
+
                 return (
                     "Loyiha nomini kiriting."
                 );
@@ -1135,6 +2355,7 @@ const ProjectFormModal = ({
                     .length >
                 30
             ) {
+
                 return (
                     "Loyiha nomi 30 belgidan oshmasligi kerak."
                 );
@@ -1146,6 +2367,7 @@ const ProjectFormModal = ({
                     .main_features
                     .trim()
             ) {
+
                 return (
                     "Loyihaning asosiy imkoniyatlarini kiriting."
                 );
@@ -1159,6 +2381,7 @@ const ProjectFormModal = ({
                     .length >
                 150
             ) {
+
                 return (
                     "Asosiy imkoniyatlar 150 belgidan oshmasligi kerak."
                 );
@@ -1170,6 +2393,7 @@ const ProjectFormModal = ({
                     .description
                     .trim()
             ) {
+
                 return (
                     "Loyiha tavsifini kiriting."
                 );
@@ -1177,43 +2401,66 @@ const ProjectFormModal = ({
 
 
             if (
-                !formData
-                    .language
+                selectedLanguageIds.length ===
+                0
             ) {
+
                 return (
-                    "Dasturlash tilini tanlang."
+                    "Kamida bitta dasturlash tilini tanlang."
                 );
             }
 
 
             if (
-                !formData
-                    .technology
+                selectedTechnologyIds.length ===
+                0
             ) {
+
                 return (
-                    "Texnologiyani tanlang."
+                    "Kamida bitta texnologiyani tanlang."
                 );
             }
 
 
-            const hasImage =
+            if (
+                images.length ===
+                0
+            ) {
+
+                return (
+                    "Loyihaning kamida bitta rasmi bo‘lishi kerak."
+                );
+            }
+
+
+            if (
+                images.length >
+                MAX_PROJECT_IMAGES
+            ) {
+
+                return (
+                    `Bitta loyihaga maksimum ${MAX_PROJECT_IMAGES} ta rasm qo‘shish mumkin.`
+                );
+            }
+
+
+            const hasInvalidImage =
                 images.some(
                     (
                         image
                     ) =>
-                        Boolean(
-                            image.file
-                            ||
-                            image.url
-                        )
+                        !image.file
+                        &&
+                        !image.url
                 );
 
 
             if (
-                !hasImage
+                hasInvalidImage
             ) {
+
                 return (
-                    "Loyihaning kamida bitta rasmi bo‘lishi kerak."
+                    "Rasm bloklaridan birida fayl mavjud emas."
                 );
             }
 
@@ -1230,6 +2477,7 @@ const ProjectFormModal = ({
         async (
             event
         ) => {
+
             event.preventDefault();
 
 
@@ -1252,6 +2500,7 @@ const ProjectFormModal = ({
             if (
                 validationError
             ) {
+
                 setError(
                     validationError
                 );
@@ -1270,13 +2519,13 @@ const ProjectFormModal = ({
             }
 
 
-            setIsSubmitting(
+            setLocalSubmitting(
                 true
             );
 
 
             // =============================================
-            // FORM DATA
+            // FORMDATA
             // =============================================
 
             const projectData =
@@ -1307,36 +2556,78 @@ const ProjectFormModal = ({
             );
 
 
+            /*
+                website_url ni bo‘sh bo‘lsa ham
+                yuboramiz.
+
+                Edit paytida eski URLni o‘chirish
+                mumkin bo‘ladi.
+            */
+
+            projectData.append(
+                "website_url",
+                formData
+                    .website_url
+                    .trim()
+            );
+
+
+            // =============================================
+            // PRIMARY STACK
+            //
+            // Compatibility uchun.
+            // =================================================
+
             projectData.append(
                 "language",
-                formData.language
+                selectedLanguageIds[0]
             );
 
 
             projectData.append(
                 "technology",
-                formData.technology
+                selectedTechnologyIds[0]
             );
 
 
-            if (
-                formData
-                    .website_url
-                    .trim()
-            ) {
-                projectData.append(
-                    "website_url",
-                    formData
-                        .website_url
-                        .trim()
-                );
-            }
+            // =============================================
+            // FULL LANGUAGES
+            // =============================================
+
+            selectedLanguageIds.forEach(
+                (
+                    languageId
+                ) => {
+
+                    projectData.append(
+                        "languages",
+                        languageId
+                    );
+                }
+            );
+
+
+            // =============================================
+            // FULL TECHNOLOGIES
+            // =============================================
+
+            selectedTechnologyIds.forEach(
+                (
+                    technologyId
+                ) => {
+
+                    projectData.append(
+                        "technologies",
+                        technologyId
+                    );
+                }
+            );
 
 
             // =============================================
             // IMAGES
             //
-            // Backend kutayotgan format:
+            // Backend:
             //
             // images[0]image
             // images[0]title
@@ -1348,9 +2639,15 @@ const ProjectFormModal = ({
                     image,
                     index
                 ) => {
+
+                    /*
+                        Yangi yoki almashtirilgan rasm.
+                    */
+
                     if (
                         image.file
                     ) {
+
                         projectData.append(
                             `images[${index}]image`,
                             image.file,
@@ -1361,11 +2658,17 @@ const ProjectFormModal = ({
                         projectData.append(
                             `images[${index}]title`,
                             image.title
-                                .trim()
+                                ?.trim()
                             ||
                             `Image ${index + 1}`
                         );
 
+
+                        /*
+                            Editda eski rasmni replacement
+                            qilsak uning oldingi id sini ham
+                            yuboramiz.
+                        */
 
                         if (
                             isEditMode
@@ -1374,6 +2677,7 @@ const ProjectFormModal = ({
                             &&
                             image.id
                         ) {
+
                             projectData.append(
                                 `images[${index}]id`,
                                 image.id
@@ -1385,6 +2689,10 @@ const ProjectFormModal = ({
                     }
 
 
+                    /*
+                        Editdagi o‘zgarmagan eski rasm.
+                    */
+
                     if (
                         isEditMode
                         &&
@@ -1392,6 +2700,7 @@ const ProjectFormModal = ({
                         &&
                         image.id
                     ) {
+
                         projectData.append(
                             `images[${index}]id`,
                             image.id
@@ -1401,7 +2710,7 @@ const ProjectFormModal = ({
                         projectData.append(
                             `images[${index}]title`,
                             image.title
-                                .trim()
+                                ?.trim()
                             ||
                             `Image ${index + 1}`
                         );
@@ -1411,25 +2720,19 @@ const ProjectFormModal = ({
 
 
             try {
+
                 await onSubmit(
                     projectData,
                     initialData?.id
                 );
 
 
-                /*
-                    Success/error toast ProjectDetail yoki
-                    ProfileProjects parent componentida chiqadi.
-
-                    Shuning uchun bu yerda yana success toast
-                    chiqarib, ikki marta toast bermaymiz.
-                */
-
                 onClose?.();
 
             } catch (
                 requestError
             ) {
+
                 const message =
                     getErrorMessage(
                         requestError
@@ -1440,12 +2743,9 @@ const ProjectFormModal = ({
                     message
                 );
 
-
-                // Parent error toast ishlatsa duplicate bo‘lmasligi uchun
-                // bu yerda faqat inline error saqlaymiz.
-
             } finally {
-                setIsSubmitting(
+
+                setLocalSubmitting(
                     false
                 );
             }
@@ -1458,6 +2758,7 @@ const ProjectFormModal = ({
 
     const handleClose =
         () => {
+
             if (
                 isSubmitting
             ) {
@@ -1485,6 +2786,7 @@ const ProjectFormModal = ({
     // =====================================================
 
     return (
+
         <div
             className="
                 fixed
@@ -1500,15 +2802,18 @@ const ProjectFormModal = ({
 
                 sm:p-5
             "
+
             onMouseDown={(
                 event
             ) => {
+
                 if (
                     event.target ===
-                    event.currentTarget
+                        event.currentTarget
                     &&
                     !isSubmitting
                 ) {
+
                     handleClose();
                 }
             }}
@@ -1532,7 +2837,7 @@ const ProjectFormModal = ({
             >
 
                 {/* =================================================
-                    BACKGROUND GLOWS
+                    BACKGROUND GLOW
                 ================================================== */}
 
                 <div
@@ -1612,15 +2917,20 @@ const ProjectFormModal = ({
                                 text-indigo-300
                             "
                         >
+
                             {isEditMode ? (
+
                                 <Pencil
                                     size={21}
                                 />
+
                             ) : (
+
                                 <Rocket
                                     size={21}
                                 />
                             )}
+
                         </div>
 
 
@@ -1638,6 +2948,7 @@ const ProjectFormModal = ({
                                     gap-2
                                 "
                             >
+
                                 <span
                                     className="
                                         text-[9px]
@@ -1647,12 +2958,11 @@ const ProjectFormModal = ({
                                         text-indigo-400
                                     "
                                 >
-                                    {
-                                        isEditMode
-                                            ? "Edit Project"
-                                            : "New Project"
-                                    }
+                                    {isEditMode
+                                        ? "Edit Project"
+                                        : "New Project"}
                                 </span>
+
                             </div>
 
 
@@ -1666,9 +2976,7 @@ const ProjectFormModal = ({
                                     sm:text-2xl
                                 "
                             >
-                                {
-                                    modalTitle
-                                }
+                                {modalTitle}
                             </h2>
 
 
@@ -1683,9 +2991,7 @@ const ProjectFormModal = ({
                                     sm:block
                                 "
                             >
-                                {
-                                    modalDescription
-                                }
+                                {modalDescription}
                             </p>
 
                         </div>
@@ -1695,12 +3001,15 @@ const ProjectFormModal = ({
 
                     <button
                         type="button"
+
                         onClick={
                             handleClose
                         }
+
                         disabled={
                             isSubmitting
                         }
+
                         className="
                             grid
                             h-10
@@ -1723,9 +3032,11 @@ const ProjectFormModal = ({
                             disabled:opacity-40
                         "
                     >
+
                         <X
                             size={18}
                         />
+
                     </button>
 
                 </header>
@@ -1739,6 +3050,7 @@ const ProjectFormModal = ({
                     onSubmit={
                         handleSubmit
                     }
+
                     className="
                         relative
                         z-10
@@ -1761,7 +3073,7 @@ const ProjectFormModal = ({
                     >
 
                         {/* =============================================
-                            LEFT SIDE
+                            LEFT
                         ============================================== */}
 
                         <div
@@ -1774,6 +3086,7 @@ const ProjectFormModal = ({
                             {/* ERROR */}
 
                             {error && (
+
                                 <div
                                     className="
                                         flex
@@ -1790,6 +3103,7 @@ const ProjectFormModal = ({
                                         text-red-300
                                     "
                                 >
+
                                     <AlertTriangle
                                         size={17}
                                         className="
@@ -1801,6 +3115,7 @@ const ProjectFormModal = ({
                                     <span>
                                         {error}
                                     </span>
+
                                 </div>
                             )}
 
@@ -1827,6 +3142,7 @@ const ProjectFormModal = ({
                                         gap-3
                                     "
                                 >
+
                                     <div
                                         className="
                                             grid
@@ -1840,9 +3156,11 @@ const ProjectFormModal = ({
                                             text-indigo-300
                                         "
                                     >
+
                                         <Type
                                             size={17}
                                         />
+
                                     </div>
 
 
@@ -1886,6 +3204,7 @@ const ProjectFormModal = ({
                                         label="Loyiha nomi"
                                         required
                                     >
+
                                         <div
                                             className="
                                                 relative
@@ -1895,17 +3214,23 @@ const ProjectFormModal = ({
                                             <input
                                                 type="text"
                                                 name="name"
+
                                                 value={
                                                     formData.name
                                                 }
+
                                                 onChange={
                                                     handleInputChange
                                                 }
+
                                                 maxLength={30}
+
                                                 disabled={
                                                     isSubmitting
                                                 }
+
                                                 placeholder="Masalan: MathAI"
+
                                                 className="
                                                     w-full
                                                     rounded-xl
@@ -1942,13 +3267,11 @@ const ProjectFormModal = ({
                                                     text-gray-700
                                                 "
                                             >
-                                                {
-                                                    nameLength
-                                                }
-                                                /30
+                                                {nameLength}/30
                                             </span>
 
                                         </div>
+
                                     </Field>
 
 
@@ -1959,6 +3282,7 @@ const ProjectFormModal = ({
                                         required
                                         description="Vergul yoki yangi qator bilan bir nechta imkoniyat yozishingiz mumkin."
                                     >
+
                                         <div
                                             className="
                                                 relative
@@ -1967,19 +3291,26 @@ const ProjectFormModal = ({
 
                                             <textarea
                                                 name="main_features"
+
                                                 value={
                                                     formData
                                                         .main_features
                                                 }
+
                                                 onChange={
                                                     handleInputChange
                                                 }
+
                                                 maxLength={150}
+
                                                 rows={3}
+
                                                 disabled={
                                                     isSubmitting
                                                 }
+
                                                 placeholder="AI yordamchi, testlar, natijalar..."
+
                                                 className="
                                                     w-full
                                                     resize-none
@@ -2017,13 +3348,11 @@ const ProjectFormModal = ({
                                                     text-gray-700
                                                 "
                                             >
-                                                {
-                                                    featuresLength
-                                                }
-                                                /150
+                                                {featuresLength}/150
                                             </span>
 
                                         </div>
+
                                     </Field>
 
 
@@ -2033,20 +3362,27 @@ const ProjectFormModal = ({
                                         label="Tavsif"
                                         required
                                     >
+
                                         <textarea
                                             name="description"
+
                                             value={
                                                 formData
                                                     .description
                                             }
+
                                             onChange={
                                                 handleInputChange
                                             }
+
                                             rows={6}
+
                                             disabled={
                                                 isSubmitting
                                             }
+
                                             placeholder="Loyihangiz nima qiladi, kimlar uchun va qanday muammoni hal qiladi?"
+
                                             className="
                                                 w-full
                                                 resize-none
@@ -2071,6 +3407,7 @@ const ProjectFormModal = ({
                                                 focus:ring-indigo-500/[0.05]
                                             "
                                         />
+
                                     </Field>
 
 
@@ -2080,11 +3417,13 @@ const ProjectFormModal = ({
                                         label="Demo / Website URL"
                                         description="Majburiy emas. Agar loyiha online bo‘lsa, demo manzilini kiriting."
                                     >
+
                                         <div
                                             className="
                                                 relative
                                             "
                                         >
+
                                             <ExternalLink
                                                 size={16}
                                                 className="
@@ -2100,17 +3439,22 @@ const ProjectFormModal = ({
                                             <input
                                                 type="url"
                                                 name="website_url"
+
                                                 value={
                                                     formData
                                                         .website_url
                                                 }
+
                                                 onChange={
                                                     handleInputChange
                                                 }
+
                                                 disabled={
                                                     isSubmitting
                                                 }
+
                                                 placeholder="https://example.com"
+
                                                 className="
                                                     w-full
                                                     rounded-xl
@@ -2136,6 +3480,7 @@ const ProjectFormModal = ({
                                             />
 
                                         </div>
+
                                     </Field>
 
                                 </div>
@@ -2161,195 +3506,481 @@ const ProjectFormModal = ({
                                     className="
                                         mb-5
                                         flex
-                                        items-center
+                                        items-start
+                                        justify-between
                                         gap-3
                                     "
                                 >
+
                                     <div
                                         className="
-                                            grid
-                                            h-9
-                                            w-9
-                                            place-items-center
-                                            rounded-xl
-                                            border
-                                            border-purple-400/15
-                                            bg-purple-500/[0.06]
-                                            text-purple-300
+                                            flex
+                                            items-center
+                                            gap-3
                                         "
                                     >
-                                        <Braces
+
+                                        <div
+                                            className="
+                                                grid
+                                                h-9
+                                                w-9
+                                                place-items-center
+                                                rounded-xl
+                                                border
+                                                border-purple-400/15
+                                                bg-purple-500/[0.06]
+                                                text-purple-300
+                                            "
+                                        >
+
+                                            <Braces
+                                                size={17}
+                                            />
+
+                                        </div>
+
+
+                                        <div>
+
+                                            <h3
+                                                className="
+                                                    text-sm
+                                                    font-black
+                                                    text-white
+                                                "
+                                            >
+                                                Texnologik stack
+                                            </h3>
+
+
+                                            <p
+                                                className="
+                                                    mt-0.5
+                                                    text-[10px]
+                                                    text-gray-600
+                                                "
+                                            >
+                                                Bir nechta til va texnologiyani tanlashingiz mumkin
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    {stackLoading && (
+
+                                        <Loader2
                                             size={17}
+                                            className="
+                                                animate-spin
+                                                text-purple-300
+                                            "
                                         />
-                                    </div>
-
-
-                                    <div>
-
-                                        <h3
-                                            className="
-                                                text-sm
-                                                font-black
-                                                text-white
-                                            "
-                                        >
-                                            Texnologik stack
-                                        </h3>
-
-
-                                        <p
-                                            className="
-                                                mt-0.5
-                                                text-[10px]
-                                                text-gray-600
-                                            "
-                                        >
-                                            Asosiy til va framework
-                                        </p>
-
-                                    </div>
+                                    )}
 
                                 </div>
 
 
-                                <div
-                                    className="
-                                        grid
-                                        gap-4
-                                        sm:grid-cols-2
-                                    "
-                                >
+                                {stackError && (
 
-                                    {/* LANGUAGE */}
-
-                                    <Field
-                                        label="Dasturlash tili"
-                                        required
+                                    <div
+                                        className="
+                                            mb-5
+                                            rounded-xl
+                                            border
+                                            border-red-400/15
+                                            bg-red-500/[0.05]
+                                            p-3
+                                            text-xs
+                                            font-semibold
+                                            text-red-300
+                                        "
                                     >
-                                        <select
-                                            name="language"
-                                            value={
-                                                formData
-                                                    .language
-                                            }
-                                            onChange={
-                                                handleInputChange
-                                            }
-                                            disabled={
-                                                isSubmitting
-                                            }
-                                            className="
-                                                w-full
-                                                rounded-xl
-                                                border
-                                                border-white/[0.07]
-                                                bg-[#101620]
-                                                px-4
-                                                py-3.5
-                                                text-sm
-                                                font-semibold
-                                                text-white
-                                                outline-none
-                                                transition
+                                        {stackError}
+                                    </div>
+                                )}
 
-                                                focus:border-indigo-400/30
-                                                focus:ring-4
-                                                focus:ring-indigo-500/[0.05]
+
+                                {/* =====================================
+                                    LANGUAGES
+                                ====================================== */}
+
+                                <div>
+
+                                    <div
+                                        className="
+                                            mb-3
+                                            flex
+                                            items-center
+                                            justify-between
+                                            gap-3
+                                        "
+                                    >
+
+                                        <div
+                                            className="
+                                                flex
+                                                items-center
+                                                gap-2
                                             "
                                         >
-                                            <option
-                                                value=""
+
+                                            <Code2
+                                                size={15}
+                                                className="
+                                                    text-blue-300
+                                                "
+                                            />
+
+
+                                            <span
+                                                className="
+                                                    text-xs
+                                                    font-black
+                                                    text-gray-300
+                                                "
                                             >
-                                                Tilni tanlang
-                                            </option>
+                                                Dasturlash tillari
+                                            </span>
 
 
-                                            {LANGUAGES.map(
+                                            <span
+                                                className="
+                                                    text-red-400
+                                                "
+                                            >
+                                                *
+                                            </span>
+
+                                        </div>
+
+
+                                        {selectedLanguageIds.length >
+                                            0 && (
+
+                                            <span
+                                                className="
+                                                    rounded-full
+                                                    border
+                                                    border-blue-400/15
+                                                    bg-blue-500/[0.05]
+                                                    px-2
+                                                    py-0.5
+                                                    text-[9px]
+                                                    font-black
+                                                    text-blue-300
+                                                "
+                                            >
+                                                {selectedLanguageIds.length} ta
+                                            </span>
+                                        )}
+
+                                    </div>
+
+
+                                    <div
+                                        className="
+                                            flex
+                                            flex-wrap
+                                            gap-2
+                                        "
+                                    >
+
+                                        {stackLoading
+                                            ? [
+                                                1,
+                                                2,
+                                                3,
+                                                4,
+                                                5,
+                                            ].map(
+                                                (
+                                                    item
+                                                ) => (
+
+                                                    <div
+                                                        key={
+                                                            item
+                                                        }
+                                                        className="
+                                                            h-9
+                                                            w-24
+                                                            animate-pulse
+                                                            rounded-full
+                                                            bg-white/[0.04]
+                                                        "
+                                                    />
+                                                )
+                                            )
+                                            : languages.map(
                                                 (
                                                     language
-                                                ) => (
-                                                    <option
-                                                        key={
-                                                            language.id
-                                                        }
-                                                        value={
-                                                            language.id
-                                                        }
-                                                    >
-                                                        {
-                                                            language.name
-                                                        }
-                                                    </option>
-                                                )
+                                                ) => {
+
+                                                    const active =
+                                                        selectedLanguageIds
+                                                            .includes(
+                                                                String(
+                                                                    language.id
+                                                                )
+                                                            );
+
+
+                                                    return (
+
+                                                        <StackTag
+                                                            key={
+                                                                language.id
+                                                            }
+
+                                                            item={
+                                                                language
+                                                            }
+
+                                                            active={
+                                                                active
+                                                            }
+
+                                                            disabled={
+                                                                isSubmitting
+                                                            }
+
+                                                            onClick={() =>
+                                                                handleLanguageToggle(
+                                                                    language
+                                                                )
+                                                            }
+                                                        />
+                                                    );
+                                                }
                                             )}
-                                        </select>
-                                    </Field>
+
+                                    </div>
 
 
-                                    {/* TECHNOLOGY */}
+                                    {!stackLoading
+                                        &&
+                                        languages.length ===
+                                            0 && (
 
-                                    <Field
-                                        label="Texnologiya"
-                                        required
-                                    >
-                                        <select
-                                            name="technology"
-                                            value={
-                                                formData
-                                                    .technology
-                                            }
-                                            onChange={
-                                                handleInputChange
-                                            }
-                                            disabled={
-                                                isSubmitting
-                                            }
+                                        <p
                                             className="
-                                                w-full
-                                                rounded-xl
-                                                border
-                                                border-white/[0.07]
-                                                bg-[#101620]
-                                                px-4
-                                                py-3.5
-                                                text-sm
+                                                text-xs
                                                 font-semibold
-                                                text-white
-                                                outline-none
-                                                transition
-
-                                                focus:border-purple-400/30
-                                                focus:ring-4
-                                                focus:ring-purple-500/[0.05]
+                                                text-gray-600
                                             "
                                         >
-                                            <option
-                                                value=""
+                                            Dasturlash tillari topilmadi.
+                                        </p>
+                                    )}
+
+                                </div>
+
+
+                                {/* DIVIDER */}
+
+                                <div
+                                    className="
+                                        my-5
+                                        h-px
+                                        bg-white/[0.06]
+                                    "
+                                />
+
+
+                                {/* =====================================
+                                    TECHNOLOGIES
+                                ====================================== */}
+
+                                <div>
+
+                                    <div
+                                        className="
+                                            mb-3
+                                            flex
+                                            items-center
+                                            justify-between
+                                            gap-3
+                                        "
+                                    >
+
+                                        <div
+                                            className="
+                                                flex
+                                                items-center
+                                                gap-2
+                                            "
+                                        >
+
+                                            <Layers3
+                                                size={15}
+                                                className="
+                                                    text-purple-300
+                                                "
+                                            />
+
+
+                                            <span
+                                                className="
+                                                    text-xs
+                                                    font-black
+                                                    text-gray-300
+                                                "
                                             >
-                                                Texnologiyani tanlang
-                                            </option>
+                                                Texnologiyalar
+                                            </span>
 
 
-                                            {TECHNOLOGIES.map(
+                                            <span
+                                                className="
+                                                    text-red-400
+                                                "
+                                            >
+                                                *
+                                            </span>
+
+                                        </div>
+
+
+                                        {selectedTechnologyIds.length >
+                                            0 && (
+
+                                            <span
+                                                className="
+                                                    rounded-full
+                                                    border
+                                                    border-purple-400/15
+                                                    bg-purple-500/[0.05]
+                                                    px-2
+                                                    py-0.5
+                                                    text-[9px]
+                                                    font-black
+                                                    text-purple-300
+                                                "
+                                            >
+                                                {selectedTechnologyIds.length} ta
+                                            </span>
+                                        )}
+
+                                    </div>
+
+
+                                    {selectedLanguageIds.length ===
+                                        0 && (
+
+                                        <p
+                                            className="
+                                                mb-3
+                                                text-[10px]
+                                                font-semibold
+                                                leading-5
+                                                text-gray-600
+                                            "
+                                        >
+                                            Avval dasturlash tilini tanlang. Shundan so‘ng mos texnologiyalar ko‘rsatiladi.
+                                        </p>
+                                    )}
+
+
+                                    <div
+                                        className="
+                                            flex
+                                            flex-wrap
+                                            gap-2
+                                        "
+                                    >
+
+                                        {stackLoading
+                                            ? [
+                                                1,
+                                                2,
+                                                3,
+                                                4,
+                                                5,
+                                            ].map(
+                                                (
+                                                    item
+                                                ) => (
+
+                                                    <div
+                                                        key={
+                                                            item
+                                                        }
+                                                        className="
+                                                            h-9
+                                                            w-28
+                                                            animate-pulse
+                                                            rounded-full
+                                                            bg-white/[0.04]
+                                                        "
+                                                    />
+                                                )
+                                            )
+                                            : compatibleTechnologies.map(
                                                 (
                                                     technology
-                                                ) => (
-                                                    <option
-                                                        key={
-                                                            technology.id
-                                                        }
-                                                        value={
-                                                            technology.id
-                                                        }
-                                                    >
-                                                        {
-                                                            technology.name
-                                                        }
-                                                    </option>
-                                                )
+                                                ) => {
+
+                                                    const active =
+                                                        selectedTechnologyIds
+                                                            .includes(
+                                                                String(
+                                                                    technology.id
+                                                                )
+                                                            );
+
+
+                                                    return (
+
+                                                        <StackTag
+                                                            key={
+                                                                technology.id
+                                                            }
+
+                                                            item={
+                                                                technology
+                                                            }
+
+                                                            active={
+                                                                active
+                                                            }
+
+                                                            disabled={
+                                                                isSubmitting
+                                                            }
+
+                                                            showCategory
+
+                                                            onClick={() =>
+                                                                handleTechnologyToggle(
+                                                                    technology
+                                                                )
+                                                            }
+                                                        />
+                                                    );
+                                                }
                                             )}
-                                        </select>
-                                    </Field>
+
+                                    </div>
+
+
+                                    {!stackLoading
+                                        &&
+                                        compatibleTechnologies.length ===
+                                            0 && (
+
+                                        <p
+                                            className="
+                                                text-xs
+                                                font-semibold
+                                                text-gray-600
+                                            "
+                                        >
+                                            Tanlangan tillar uchun mos texnologiya topilmadi.
+                                        </p>
+                                    )}
 
                                 </div>
 
@@ -2359,7 +3990,7 @@ const ProjectFormModal = ({
 
 
                         {/* =============================================
-                            RIGHT SIDE — IMAGES / PREVIEW
+                            RIGHT SIDE
                         ============================================== */}
 
                         <aside
@@ -2381,6 +4012,10 @@ const ProjectFormModal = ({
                                 "
                             >
 
+                                {/* =====================================
+                                    IMAGE HEADER
+                                ====================================== */}
+
                                 <div
                                     className="
                                         flex
@@ -2397,6 +4032,7 @@ const ProjectFormModal = ({
                                             gap-3
                                         "
                                     >
+
                                         <div
                                             className="
                                                 grid
@@ -2410,9 +4046,11 @@ const ProjectFormModal = ({
                                                 text-cyan-300
                                             "
                                         >
+
                                             <Images
                                                 size={17}
                                             />
+
                                         </div>
 
 
@@ -2436,11 +4074,9 @@ const ProjectFormModal = ({
                                                     text-gray-600
                                                 "
                                             >
-                                                {
-                                                    images.length
-                                                }
-                                                {" "}
-                                                ta rasm
+                                                {images.length}
+                                                /
+                                                {MAX_PROJECT_IMAGES} ta rasm
                                             </p>
 
                                         </div>
@@ -2448,40 +4084,209 @@ const ProjectFormModal = ({
                                     </div>
 
 
-                                    <button
-                                        type="button"
-                                        onClick={
-                                            handleAddImage
+                                    {/* MULTI IMAGE BUTTON */}
+
+                                    <label
+                                        title={
+                                            images.length >=
+                                                MAX_PROJECT_IMAGES
+
+                                                ? "Rasm limiti tugagan"
+
+                                                : "Bir yoki bir nechta rasm qo‘shish"
                                         }
-                                        disabled={
-                                            isSubmitting
-                                        }
-                                        title="Rasm qo‘shish"
-                                        className="
+
+                                        className={`
                                             grid
                                             h-9
                                             w-9
                                             place-items-center
                                             rounded-xl
                                             border
-                                            border-indigo-400/15
-                                            bg-indigo-500/[0.06]
-                                            text-indigo-300
                                             transition
 
-                                            hover:border-indigo-400/30
-                                            hover:bg-indigo-500/[0.12]
+                                            ${
+                                                images.length >=
+                                                    MAX_PROJECT_IMAGES
+                                                ||
+                                                isSubmitting
 
-                                            disabled:opacity-40
-                                        "
+                                                    ? `
+                                                        cursor-not-allowed
+                                                        border-white/[0.05]
+                                                        bg-white/[0.02]
+                                                        text-gray-700
+                                                        opacity-50
+                                                    `
+
+                                                    : `
+                                                        cursor-pointer
+                                                        border-indigo-400/15
+                                                        bg-indigo-500/[0.06]
+                                                        text-indigo-300
+
+                                                        hover:border-indigo-400/30
+                                                        hover:bg-indigo-500/[0.12]
+                                                    `
+                                            }
+                                        `}
                                     >
+
                                         <Plus
                                             size={16}
                                         />
-                                    </button>
+
+
+                                        <input
+                                            type="file"
+
+                                            multiple
+
+                                            accept="
+                                                image/jpeg,
+                                                image/png,
+                                                image/webp,
+                                                .jpg,
+                                                .jpeg,
+                                                .png,
+                                                .webp
+                                            "
+
+                                            disabled={
+                                                images.length >=
+                                                    MAX_PROJECT_IMAGES
+                                                ||
+                                                isSubmitting
+                                            }
+
+                                            onChange={
+                                                handleMultipleImageSelect
+                                            }
+
+                                            className="
+                                                hidden
+                                            "
+                                        />
+
+                                    </label>
 
                                 </div>
 
+
+                                {/* =====================================
+                                    LARGE MULTI UPLOAD
+                                ====================================== */}
+
+                                {images.length <
+                                    MAX_PROJECT_IMAGES && (
+
+                                    <label
+                                        className="
+                                            mt-5
+                                            flex
+                                            cursor-pointer
+                                            flex-col
+                                            items-center
+                                            justify-center
+                                            gap-2
+                                            rounded-2xl
+                                            border
+                                            border-dashed
+                                            border-indigo-400/15
+                                            bg-indigo-500/[0.025]
+                                            px-4
+                                            py-5
+                                            text-center
+                                            transition
+
+                                            hover:border-indigo-400/30
+                                            hover:bg-indigo-500/[0.05]
+                                        "
+                                    >
+
+                                        <UploadCloud
+                                            size={24}
+                                            className="
+                                                text-indigo-300
+                                            "
+                                        />
+
+
+                                        <span
+                                            className="
+                                                text-xs
+                                                font-black
+                                                text-gray-300
+                                            "
+                                        >
+                                            Rasm tanlash
+                                        </span>
+
+
+                                        <span
+                                            className="
+                                                text-[9px]
+                                                font-semibold
+                                                leading-4
+                                                text-gray-600
+                                            "
+                                        >
+                                            Bir vaqtning o‘zida bir nechta JPG, PNG yoki WEBP tanlashingiz mumkin
+                                        </span>
+
+
+                                        <span
+                                            className="
+                                                rounded-full
+                                                border
+                                                border-white/[0.06]
+                                                bg-black/10
+                                                px-2.5
+                                                py-1
+                                                text-[9px]
+                                                font-black
+                                                text-gray-600
+                                            "
+                                        >
+                                            Maksimum {MAX_PROJECT_IMAGES} ta
+                                        </span>
+
+
+                                        <input
+                                            type="file"
+
+                                            multiple
+
+                                            accept="
+                                                image/jpeg,
+                                                image/png,
+                                                image/webp,
+                                                .jpg,
+                                                .jpeg,
+                                                .png,
+                                                .webp
+                                            "
+
+                                            disabled={
+                                                isSubmitting
+                                            }
+
+                                            onChange={
+                                                handleMultipleImageSelect
+                                            }
+
+                                            className="
+                                                hidden
+                                            "
+                                        />
+
+                                    </label>
+                                )}
+
+
+                                {/* =====================================
+                                    IMAGE CARDS
+                                ====================================== */}
 
                                 <div
                                     className="
@@ -2495,10 +4300,12 @@ const ProjectFormModal = ({
                                             image,
                                             index
                                         ) => (
+
                                             <div
                                                 key={
                                                     image.id
                                                 }
+
                                                 className="
                                                     relative
                                                     overflow-hidden
@@ -2521,22 +4328,27 @@ const ProjectFormModal = ({
                                                 >
 
                                                     {image.url ? (
+
                                                         <img
                                                             src={
                                                                 image.url
                                                             }
+
                                                             alt={
                                                                 image.title
                                                                 ||
                                                                 `Project ${index + 1}`
                                                             }
+
                                                             className="
                                                                 h-full
                                                                 w-full
                                                                 object-cover
                                                             "
                                                         />
+
                                                     ) : (
+
                                                         <div
                                                             className="
                                                                 flex
@@ -2548,6 +4360,7 @@ const ProjectFormModal = ({
                                                                 text-gray-700
                                                             "
                                                         >
+
                                                             <FileImage
                                                                 size={32}
                                                             />
@@ -2562,6 +4375,7 @@ const ProjectFormModal = ({
                                                             >
                                                                 Preview
                                                             </span>
+
                                                         </div>
                                                     )}
 
@@ -2583,53 +4397,54 @@ const ProjectFormModal = ({
                                                             backdrop-blur
                                                         "
                                                     >
-                                                        {
-                                                            index ===
-                                                            0
-                                                                ? "Asosiy"
-                                                                : `#${index + 1}`
-                                                        }
+                                                        {index === 0
+                                                            ? "Asosiy"
+                                                            : `#${index + 1}`}
                                                     </span>
 
 
-                                                    {images.length > 1 && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                handleRemoveImage(
-                                                                    image.id
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                isSubmitting
-                                                            }
-                                                            title="Rasmni o‘chirish"
-                                                            className="
-                                                                absolute
-                                                                right-3
-                                                                top-3
-                                                                grid
-                                                                h-8
-                                                                w-8
-                                                                place-items-center
-                                                                rounded-lg
-                                                                border
-                                                                border-red-400/20
-                                                                bg-black/70
-                                                                text-red-300
-                                                                backdrop-blur
-                                                                transition
+                                                    <button
+                                                        type="button"
 
-                                                                hover:bg-red-500/20
+                                                        onClick={() =>
+                                                            handleRemoveImage(
+                                                                image.id
+                                                            )
+                                                        }
 
-                                                                disabled:opacity-40
-                                                            "
-                                                        >
-                                                            <Trash2
-                                                                size={14}
-                                                            />
-                                                        </button>
-                                                    )}
+                                                        disabled={
+                                                            isSubmitting
+                                                        }
+
+                                                        title="Rasmni o‘chirish"
+
+                                                        className="
+                                                            absolute
+                                                            right-3
+                                                            top-3
+                                                            grid
+                                                            h-8
+                                                            w-8
+                                                            place-items-center
+                                                            rounded-lg
+                                                            border
+                                                            border-red-400/20
+                                                            bg-black/70
+                                                            text-red-300
+                                                            backdrop-blur
+                                                            transition
+
+                                                            hover:bg-red-500/20
+
+                                                            disabled:opacity-40
+                                                        "
+                                                    >
+
+                                                        <Trash2
+                                                            size={14}
+                                                        />
+
+                                                    </button>
 
                                                 </div>
 
@@ -2645,25 +4460,28 @@ const ProjectFormModal = ({
 
                                                     <input
                                                         type="text"
+
                                                         value={
                                                             image.title
                                                         }
+
                                                         onChange={(
                                                             event
                                                         ) =>
-                                                            handleImageChange(
+                                                            handleImageTitleChange(
                                                                 image.id,
-                                                                "title",
-                                                                event
-                                                                    .target
-                                                                    .value
+                                                                event.target.value
                                                             )
                                                         }
+
                                                         maxLength={100}
+
                                                         disabled={
                                                             isSubmitting
                                                         }
+
                                                         placeholder="Rasm sarlavhasi"
+
                                                         className="
                                                             w-full
                                                             rounded-xl
@@ -2720,34 +4538,38 @@ const ProjectFormModal = ({
                                                                 truncate
                                                             "
                                                         >
-                                                            {
-                                                                image.file
-                                                                    ? image
-                                                                        .file
-                                                                        .name
-                                                                    : image.url
-                                                                        ? "Rasmni almashtirish"
-                                                                        : "Rasm tanlash"
-                                                            }
+                                                            {image.file
+                                                                ? image.file.name
+                                                                : "Rasmni almashtirish"}
                                                         </span>
 
 
                                                         <input
                                                             type="file"
-                                                            accept="image/*"
+
+                                                            accept="
+                                                                image/jpeg,
+                                                                image/png,
+                                                                image/webp,
+                                                                .jpg,
+                                                                .jpeg,
+                                                                .png,
+                                                                .webp
+                                                            "
+
                                                             disabled={
                                                                 isSubmitting
                                                             }
+
                                                             onChange={(
                                                                 event
                                                             ) =>
-                                                                handleFileChange(
+                                                                handleReplaceImage(
                                                                     image.id,
-                                                                    event
-                                                                        .target
-                                                                        .files?.[0]
+                                                                    event.target.files?.[0]
                                                                 )
                                                             }
+
                                                             className="
                                                                 hidden
                                                             "
@@ -2761,16 +4583,60 @@ const ProjectFormModal = ({
                                         )
                                     )}
 
+
+                                    {images.length ===
+                                        0 && (
+
+                                        <div
+                                            className="
+                                                rounded-2xl
+                                                border
+                                                border-dashed
+                                                border-white/[0.06]
+                                                bg-black/10
+                                                p-6
+                                                text-center
+                                            "
+                                        >
+
+                                            <FileImage
+                                                size={30}
+                                                className="
+                                                    mx-auto
+                                                    text-gray-800
+                                                "
+                                            />
+
+
+                                            <p
+                                                className="
+                                                    mt-3
+                                                    text-xs
+                                                    font-bold
+                                                    text-gray-600
+                                                "
+                                            >
+                                                Hali rasm tanlanmagan
+                                            </p>
+
+                                        </div>
+                                    )}
+
                                 </div>
 
 
-                                {/* STACK PREVIEW */}
+                                {/* =====================================
+                                    STACK PREVIEW
+                                ====================================== */}
 
                                 {(
-                                    selectedLanguage
+                                    selectedLanguages.length >
+                                        0
                                     ||
-                                    selectedTechnology
+                                    selectedTechnologies.length >
+                                        0
                                 ) && (
+
                                     <div
                                         className="
                                             mt-5
@@ -2790,6 +4656,7 @@ const ProjectFormModal = ({
                                                 gap-2
                                             "
                                         >
+
                                             <Code2
                                                 size={14}
                                                 className="
@@ -2809,59 +4676,112 @@ const ProjectFormModal = ({
                                             >
                                                 Stack preview
                                             </span>
-                                        </div>
-
-
-                                        <div
-                                            className="
-                                                flex
-                                                flex-wrap
-                                                gap-2
-                                            "
-                                        >
-
-                                            {selectedLanguage && (
-                                                <span
-                                                    className="
-                                                        rounded-full
-                                                        border
-                                                        border-blue-400/20
-                                                        bg-blue-500/[0.07]
-                                                        px-2.5
-                                                        py-1
-                                                        text-[10px]
-                                                        font-black
-                                                        text-blue-300
-                                                    "
-                                                >
-                                                    {
-                                                        selectedLanguage.name
-                                                    }
-                                                </span>
-                                            )}
-
-
-                                            {selectedTechnology && (
-                                                <span
-                                                    className="
-                                                        rounded-full
-                                                        border
-                                                        border-purple-400/20
-                                                        bg-purple-500/[0.07]
-                                                        px-2.5
-                                                        py-1
-                                                        text-[10px]
-                                                        font-black
-                                                        text-purple-300
-                                                    "
-                                                >
-                                                    {
-                                                        selectedTechnology.name
-                                                    }
-                                                </span>
-                                            )}
 
                                         </div>
+
+
+                                        {selectedLanguages.length >
+                                            0 && (
+
+                                            <div
+                                                className="
+                                                    mb-3
+                                                "
+                                            >
+
+                                                <p
+                                                    className="
+                                                        mb-2
+                                                        text-[8px]
+                                                        font-black
+                                                        uppercase
+                                                        tracking-[0.15em]
+                                                        text-gray-700
+                                                    "
+                                                >
+                                                    Tillar
+                                                </p>
+
+
+                                                <div
+                                                    className="
+                                                        flex
+                                                        flex-wrap
+                                                        gap-2
+                                                    "
+                                                >
+
+                                                    {selectedLanguages.map(
+                                                        (
+                                                            language
+                                                        ) => (
+
+                                                            <StackPreviewTag
+                                                                key={
+                                                                    `preview-language-${language.id}`
+                                                                }
+
+                                                                item={
+                                                                    language
+                                                                }
+                                                            />
+                                                        )
+                                                    )}
+
+                                                </div>
+
+                                            </div>
+                                        )}
+
+
+                                        {selectedTechnologies.length >
+                                            0 && (
+
+                                            <div>
+
+                                                <p
+                                                    className="
+                                                        mb-2
+                                                        text-[8px]
+                                                        font-black
+                                                        uppercase
+                                                        tracking-[0.15em]
+                                                        text-gray-700
+                                                    "
+                                                >
+                                                    Texnologiyalar
+                                                </p>
+
+
+                                                <div
+                                                    className="
+                                                        flex
+                                                        flex-wrap
+                                                        gap-2
+                                                    "
+                                                >
+
+                                                    {selectedTechnologies.map(
+                                                        (
+                                                            technology
+                                                        ) => (
+
+                                                            <StackPreviewTag
+                                                                key={
+                                                                    `preview-technology-${technology.id}`
+                                                                }
+
+                                                                item={
+                                                                    technology
+                                                                }
+                                                            />
+                                                        )
+                                                    )}
+
+                                                </div>
+
+                                            </div>
+                                        )}
 
                                     </div>
                                 )}
@@ -2911,6 +4831,7 @@ const ProjectFormModal = ({
                                 md:flex
                             "
                         >
+
                             <Sparkles
                                 size={13}
                                 className="
@@ -2918,7 +4839,8 @@ const ProjectFormModal = ({
                                 "
                             />
 
-                            Barcha muhim maydonlarni tekshirib, keyin saqlang.
+                            Tillar, texnologiyalar va rasmlarni tekshirib, keyin saqlang.
+
                         </div>
 
 
@@ -2934,12 +4856,15 @@ const ProjectFormModal = ({
 
                             <button
                                 type="button"
+
                                 onClick={
                                     handleClose
                                 }
+
                                 disabled={
                                     isSubmitting
                                 }
+
                                 className="
                                     inline-flex
                                     min-h-[42px]
@@ -2969,9 +4894,13 @@ const ProjectFormModal = ({
 
                             <button
                                 type="submit"
+
                                 disabled={
                                     isSubmitting
+                                    ||
+                                    stackLoading
                                 }
+
                                 className="
                                     inline-flex
                                     min-h-[42px]
@@ -3003,6 +4932,7 @@ const ProjectFormModal = ({
                             >
 
                                 {isSubmitting ? (
+
                                     <>
                                         <Loader2
                                             size={16}
@@ -3013,7 +4943,9 @@ const ProjectFormModal = ({
 
                                         Saqlanmoqda...
                                     </>
+
                                 ) : isEditMode ? (
+
                                     <>
                                         <Save
                                             size={16}
@@ -3021,7 +4953,9 @@ const ProjectFormModal = ({
 
                                         O‘zgarishlarni saqlash
                                     </>
+
                                 ) : (
+
                                     <>
                                         <Rocket
                                             size={16}

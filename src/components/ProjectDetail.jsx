@@ -1,5 +1,3 @@
-// src/components/ProjectDetail.jsx
-
 import React, {
     useCallback,
     useEffect,
@@ -24,7 +22,6 @@ import {
     Eye,
     ExternalLink,
     Github,
-    ImageIcon,
     Loader2,
     MessageCircle,
     Pencil,
@@ -52,16 +49,13 @@ import {
 import UserImage from "../assests/userImage.jpeg";
 
 import ProjectDiscussion from "./ProjectDiscussion";
-
 import ProjectCollaboration from "./ProjectCollaboration";
-
 import ProjectLoadingSkeleton from "./ProjectLoadingSkeleton";
-
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
-
 import ProjectBoost from "./ProjectBoost";
 
 import ProjectFormModal from "./projects/CreateProjectModal";
+import ProjectGallery from "./projects/ProjectGallery";
 
 import {
     siteToast,
@@ -78,12 +72,13 @@ const selectProjectState = (
 
 
 // =========================================================
-// SAFE NUMBER
+// HELPERS
 // =========================================================
 
 const safeNumber = (
     value
 ) => {
+
     const number =
         Number(
             value
@@ -106,14 +101,11 @@ const safeNumber = (
 };
 
 
-// =========================================================
-// ERROR MESSAGE
-// =========================================================
-
 const getErrorMessage = (
     error,
     fallback = "Xatolik yuz berdi."
 ) => {
+
     const data =
         error?.serverData
         ||
@@ -121,7 +113,8 @@ const getErrorMessage = (
 
 
     if (
-        typeof data === "string"
+        typeof data ===
+            "string"
         &&
         data.trim()
     ) {
@@ -159,8 +152,10 @@ const getErrorMessage = (
     if (
         data
         &&
-        typeof data === "object"
+        typeof data ===
+            "object"
     ) {
+
         const firstValue =
             Object.values(
                 data
@@ -173,7 +168,7 @@ const getErrorMessage = (
             )
             &&
             firstValue.length >
-            0
+                0
         ) {
             return String(
                 firstValue[0]
@@ -183,7 +178,7 @@ const getErrorMessage = (
 
         if (
             typeof firstValue ===
-            "string"
+                "string"
         ) {
             return firstValue;
         }
@@ -193,7 +188,9 @@ const getErrorMessage = (
     if (
         error?.message
     ) {
+
         try {
+
             const parsed =
                 JSON.parse(
                     error.message
@@ -231,8 +228,9 @@ const getErrorMessage = (
                 parsed
                 &&
                 typeof parsed ===
-                "object"
+                    "object"
             ) {
+
                 const firstValue =
                     Object.values(
                         parsed
@@ -245,7 +243,7 @@ const getErrorMessage = (
                     )
                     &&
                     firstValue.length >
-                    0
+                        0
                 ) {
                     return String(
                         firstValue[0]
@@ -255,13 +253,14 @@ const getErrorMessage = (
 
                 if (
                     typeof firstValue ===
-                    "string"
+                        "string"
                 ) {
                     return firstValue;
                 }
             }
 
         } catch {
+
             return String(
                 error.message
             );
@@ -273,13 +272,10 @@ const getErrorMessage = (
 };
 
 
-// =========================================================
-// FEATURES
-// =========================================================
-
 const formatFeatureList = (
     featuresString
 ) => {
+
     if (
         !featuresString
     ) {
@@ -305,16 +301,11 @@ const formatFeatureList = (
 };
 
 
-// =========================================================
-// IMAGE URL
-// =========================================================
-
 const getImageUrl = (
     image
 ) => {
-    if (
-        !image
-    ) {
+
+    if (!image) {
         return UserImage;
     }
 
@@ -325,9 +316,7 @@ const getImageUrl = (
         ).trim();
 
 
-    if (
-        !value
-    ) {
+    if (!value) {
         return UserImage;
     }
 
@@ -336,12 +325,7 @@ const getImageUrl = (
         /^https?:\/\//i.test(
             value
         )
-    ) {
-        return value;
-    }
-
-
-    if (
+        ||
         value.startsWith(
             "blob:"
         )
@@ -356,32 +340,29 @@ const getImageUrl = (
 
     const baseUrl =
         String(
-            BACKEND_URL || ""
+            BACKEND_URL
+            ||
+            ""
         ).replace(
             /\/+$/,
             ""
         );
 
 
-    const path =
-        value.startsWith(
-            "/"
-        )
-            ? value
-            : `/${value}`;
-
-
-    return `${baseUrl}${path}`;
+    return (
+        `${baseUrl}${
+            value.startsWith("/")
+                ? value
+                : `/${value}`
+        }`
+    );
 };
 
-
-// =========================================================
-// PROJECT TITLE
-// =========================================================
 
 const getProjectTitle = (
     project
 ) => {
+
     return (
         project?.name
         ||
@@ -392,13 +373,10 @@ const getProjectTitle = (
 };
 
 
-// =========================================================
-// AUTHOR NAME
-// =========================================================
-
 const getAuthorName = (
     author
 ) => {
+
     const fullName =
         `${
             author?.first_name
@@ -423,7 +401,7 @@ const getAuthorName = (
 
 
 // =========================================================
-// STAT PILL
+// STAT
 // =========================================================
 
 const StatPill = ({
@@ -432,7 +410,9 @@ const StatPill = ({
     value,
     tone = "default",
 }) => {
+
     const tones = {
+
         default:
             "text-gray-300",
 
@@ -448,6 +428,7 @@ const StatPill = ({
 
 
     return (
+
         <div
             className="
                 inline-flex
@@ -465,10 +446,13 @@ const StatPill = ({
                 shadow-black/10
             "
         >
+
             <Icon
                 size={15}
                 className={
-                    tones[tone]
+                    tones[
+                        tone
+                    ]
                     ||
                     tones.default
                 }
@@ -492,36 +476,208 @@ const StatPill = ({
             >
                 {label}
             </span>
+
         </div>
     );
 };
 
 
 // =========================================================
-// TECH BADGE
+// STACK
+// =========================================================
+
+const DEFAULT_STACK_COLOR =
+    "#64748B";
+
+
+const getStackColor = (
+    item
+) => {
+
+    const color =
+        item?.color;
+
+
+    if (
+        typeof color ===
+            "string"
+        &&
+        /^#[0-9A-Fa-f]{6}$/.test(
+            color
+        )
+    ) {
+        return color;
+    }
+
+
+    return DEFAULT_STACK_COLOR;
+};
+
+
+const withAlpha = (
+    color,
+    alpha
+) => {
+
+    const safeColor =
+        (
+            typeof color ===
+                "string"
+            &&
+            /^#[0-9A-Fa-f]{6}$/.test(
+                color
+            )
+        )
+            ? color
+            : DEFAULT_STACK_COLOR;
+
+
+    return `${safeColor}${alpha}`;
+};
+
+
+const normalizeStackList = (
+    fullList,
+    primaryItem,
+    type
+) => {
+
+    const source =
+        Array.isArray(
+            fullList
+        )
+        &&
+        fullList.length >
+            0
+            ? fullList
+            : primaryItem
+                ? [
+                    primaryItem,
+                ]
+                : [];
+
+
+    const seen =
+        new Set();
+
+
+    return source
+        .filter(
+            Boolean
+        )
+        .map(
+            (
+                item,
+                index
+            ) => {
+
+                if (
+                    typeof item ===
+                        "string"
+                ) {
+
+                    return {
+
+                        id:
+                            `${type}-${item}-${index}`,
+
+                        name:
+                            item,
+
+                        color:
+                            DEFAULT_STACK_COLOR,
+
+                        type,
+                    };
+                }
+
+
+                return {
+
+                    ...item,
+
+                    id:
+                        item?.id
+                        ??
+                        `${type}-${item?.name || index}`,
+
+                    name:
+                        item?.name
+                        ||
+                        item?.title
+                        ||
+                        "Noma’lum",
+
+                    color:
+                        getStackColor(
+                            item
+                        ),
+
+                    type,
+                };
+            }
+        )
+        .filter(
+            (
+                item
+            ) => {
+
+                const key =
+                    `${item.type}-${item.id || item.name}`;
+
+
+                if (
+                    seen.has(
+                        key
+                    )
+                ) {
+                    return false;
+                }
+
+
+                seen.add(
+                    key
+                );
+
+
+                return true;
+            }
+        );
+};
+
+
+// =========================================================
+// STACK BADGE
 // =========================================================
 
 const TechBadge = ({
-    children,
-    type = "indigo",
+    item,
+    showCategory = false,
 }) => {
-    const classes = {
-        blue:
-            "border-blue-400/25 bg-blue-500/[0.08] text-blue-300",
 
-        purple:
-            "border-purple-400/25 bg-purple-500/[0.08] text-purple-300",
+    if (!item) {
+        return null;
+    }
 
-        indigo:
-            "border-indigo-400/25 bg-indigo-500/[0.08] text-indigo-300",
-    };
+
+    const color =
+        getStackColor(
+            item
+        );
 
 
     return (
+
         <span
-            className={`
+            title={
+                item?.name
+            }
+
+            className="
                 inline-flex
+                max-w-full
                 items-center
+                gap-2
                 rounded-full
                 border
                 px-3
@@ -530,15 +686,103 @@ const TechBadge = ({
                 font-black
                 uppercase
                 tracking-wider
+                transition-all
+                duration-200
 
-                ${
-                    classes[type]
-                    ||
-                    classes.indigo
-                }
-            `}
+                hover:-translate-y-[1px]
+            "
+
+            style={{
+
+                color,
+
+                borderColor:
+                    withAlpha(
+                        color,
+                        "45"
+                    ),
+
+                backgroundColor:
+                    withAlpha(
+                        color,
+                        "14"
+                    ),
+
+                boxShadow:
+                    `0 0 14px ${
+                        withAlpha(
+                            color,
+                            "0D"
+                        )
+                    }`,
+            }}
         >
-            {children}
+
+            <span
+                className="
+                    h-2
+                    w-2
+                    shrink-0
+                    rounded-full
+                "
+
+                style={{
+
+                    backgroundColor:
+                        color,
+
+                    boxShadow:
+                        `0 0 8px ${
+                            withAlpha(
+                                color,
+                                "AA"
+                            )
+                        }`,
+                }}
+            />
+
+
+            <span
+                className="
+                    truncate
+                "
+            >
+                {item.name}
+            </span>
+
+
+            {showCategory
+                &&
+                (
+                    item?.category_display
+                    ||
+                    item?.category
+                )
+                && (
+
+                <span
+                    className="
+                        hidden
+                        rounded-full
+                        border
+                        border-white/[0.07]
+                        bg-black/10
+                        px-1.5
+                        py-0.5
+                        font-mono
+                        text-[8px]
+                        tracking-normal
+                        text-white/45
+
+                        sm:inline
+                    "
+                >
+                    {item?.category_display
+                    ||
+                    item?.category}
+                </span>
+            )}
+
         </span>
     );
 };
@@ -554,6 +798,7 @@ const OwnerControls = ({
     isUpdating,
     isDeleting,
 }) => {
+
     const busy =
         isUpdating
         ||
@@ -561,6 +806,7 @@ const OwnerControls = ({
 
 
     return (
+
         <div
             className="
                 inline-flex
@@ -578,10 +824,6 @@ const OwnerControls = ({
             "
         >
 
-            {/* =============================================
-                OWNER LABEL
-            ============================================== */}
-
             <div
                 className="
                     hidden
@@ -597,6 +839,7 @@ const OwnerControls = ({
                     md:flex
                 "
             >
+
                 <Settings2
                     size={13}
                     className="
@@ -605,6 +848,7 @@ const OwnerControls = ({
                 />
 
                 Owner tools
+
             </div>
 
 
@@ -620,18 +864,17 @@ const OwnerControls = ({
             />
 
 
-            {/* =============================================
-                EDIT
-            ============================================== */}
-
             <button
                 type="button"
+
                 onClick={
                     onEdit
                 }
+
                 disabled={
                     busy
                 }
+
                 className="
                     group
                     inline-flex
@@ -660,14 +903,18 @@ const OwnerControls = ({
                     disabled:opacity-40
                 "
             >
+
                 {isUpdating ? (
+
                     <Loader2
                         size={15}
                         className="
                             animate-spin
                         "
                     />
+
                 ) : (
+
                     <Pencil
                         size={15}
                         className="
@@ -683,26 +930,21 @@ const OwnerControls = ({
                         ? "Saqlanmoqda"
                         : "Tahrirlash"}
                 </span>
+
             </button>
 
 
-            {/* =============================================
-                DELETE
-
-                Bu tugma API ni to'g'ridan-to'g'ri
-                chaqirmaydi.
-
-                Faqat confirmation modalni ochadi.
-            ============================================== */}
-
             <button
                 type="button"
+
                 onClick={
                     onDelete
                 }
+
                 disabled={
                     busy
                 }
+
                 className="
                     group
                     inline-flex
@@ -731,14 +973,18 @@ const OwnerControls = ({
                     disabled:opacity-40
                 "
             >
+
                 {isDeleting ? (
+
                     <Loader2
                         size={15}
                         className="
                             animate-spin
                         "
                     />
+
                 ) : (
+
                     <Trash2
                         size={15}
                         className="
@@ -754,6 +1000,7 @@ const OwnerControls = ({
                         ? "O‘chirilmoqda"
                         : "O‘chirish"}
                 </span>
+
             </button>
 
         </div>
@@ -766,10 +1013,6 @@ const OwnerControls = ({
 // =========================================================
 
 const ProjectDetail = () => {
-
-    // =====================================================
-    // ROUTER
-    // =====================================================
 
     const {
         projectId,
@@ -800,7 +1043,7 @@ const ProjectDetail = () => {
 
 
     // =====================================================
-    // PROJECT REDUX
+    // REDUX
     // =====================================================
 
     const {
@@ -814,15 +1057,9 @@ const ProjectDetail = () => {
 
     // =====================================================
     // LOCAL STATE
+    //
+    // Gallery state endi bu yerda YO‘Q.
     // =====================================================
-
-    const [
-        activeIndex,
-        setActiveIndex,
-    ] = useState(
-        0
-    );
-
 
     const [
         isStarred,
@@ -883,11 +1120,22 @@ const ProjectDetail = () => {
 
 
     const projectImages =
-        Array.isArray(
-            projectData?.images
-        )
-            ? projectData.images
-            : [];
+        useMemo(
+            () => {
+
+                return Array.isArray(
+                    projectData?.images
+                )
+                    ? projectData.images.filter(
+                        Boolean
+                    )
+                    : [];
+
+            },
+            [
+                projectData?.images,
+            ]
+        );
 
 
     const author =
@@ -911,10 +1159,12 @@ const ProjectDetail = () => {
     const featuresList =
         useMemo(
             () => {
+
                 return formatFeatureList(
                     projectData
                         ?.main_features
                 );
+
             },
             [
                 projectData
@@ -924,20 +1174,145 @@ const ProjectDetail = () => {
 
 
     // =====================================================
+    // LANGUAGES
+    // =====================================================
+
+    const projectLanguages =
+        useMemo(
+            () => {
+
+                return normalizeStackList(
+
+                    projectData
+                        ?.languages_data,
+
+                    projectData
+                        ?.language_data,
+
+                    "language"
+                );
+
+            },
+            [
+                projectData
+                    ?.languages_data,
+
+                projectData
+                    ?.language_data,
+            ]
+        );
+
+
+    // =====================================================
+    // TECHNOLOGIES
+    // =====================================================
+
+    const projectTechnologies =
+        useMemo(
+            () => {
+
+                return normalizeStackList(
+
+                    projectData
+                        ?.technologies_data,
+
+                    projectData
+                        ?.technology_data,
+
+                    "technology"
+                );
+
+            },
+            [
+                projectData
+                    ?.technologies_data,
+
+                projectData
+                    ?.technology_data,
+            ]
+        );
+
+
+    const hasProjectStack =
+        projectLanguages.length >
+            0
+        ||
+        projectTechnologies.length >
+            0;
+
+
+    // =====================================================
+    // COLLABORATOR
+    // =====================================================
+
+    const isCollaborator =
+        useMemo(
+            () => {
+
+                if (
+                    !user?.id
+                    ||
+                    !Array.isArray(
+                        projectData
+                            ?.collaborations
+                    )
+                ) {
+                    return false;
+                }
+
+
+                return projectData
+                    .collaborations
+                    .some(
+                        (
+                            collaboration
+                        ) => {
+
+                            return (
+
+                                collaboration
+                                    ?.is_active
+                                !==
+                                false
+
+                                &&
+
+                                Number(
+                                    collaboration
+                                        ?.user
+                                        ?.id
+                                )
+                                ===
+                                Number(
+                                    user.id
+                                )
+                            );
+                        }
+                    );
+
+            },
+            [
+                user?.id,
+                projectData
+                    ?.collaborations,
+            ]
+        );
+
+
+    // =====================================================
     // OWNER
-    //
-    // ID asosiy.
-    // Username fallback.
     // =====================================================
 
     const isOwner =
         useMemo(
             () => {
+
                 if (
                     user?.id
                     &&
                     author?.id
                 ) {
+
                     return (
                         Number(
                             user.id
@@ -955,6 +1330,7 @@ const ProjectDetail = () => {
                     &&
                     author?.username
                 ) {
+
                     return (
                         String(
                             user.username
@@ -968,6 +1344,7 @@ const ProjectDetail = () => {
 
 
                 return false;
+
             },
             [
                 user?.id,
@@ -1003,10 +1380,6 @@ const ProjectDetail = () => {
         );
 
 
-    // =====================================================
-    // OWNER PROFILE PATH
-    // =====================================================
-
     const ownerProfilePath =
         author?.username
             ? `/${author.username}/profile/`
@@ -1014,12 +1387,13 @@ const ProjectDetail = () => {
 
 
     // =====================================================
-    // GET PROJECT DETAIL
+    // LOAD PROJECT
     // =====================================================
 
     const getProjectDetail =
         useCallback(
             async () => {
+
                 if (
                     !projectId
                 ) {
@@ -1033,6 +1407,7 @@ const ProjectDetail = () => {
 
 
                 try {
+
                     const response =
                         await ProjectService
                             .projectDetail(
@@ -1047,35 +1422,6 @@ const ProjectDetail = () => {
                     );
 
 
-                    const responseImages =
-                        Array.isArray(
-                            response?.images
-                        )
-                            ? response.images
-                            : [];
-
-
-                    setActiveIndex(
-                        (
-                            previous
-                        ) => {
-                            if (
-                                responseImages.length ===
-                                0
-                            ) {
-                                return 0;
-                            }
-
-
-                            return Math.min(
-                                previous,
-                                responseImages.length -
-                                1
-                            );
-                        }
-                    );
-
-
                     setIsStarred(
                         Boolean(
                             response
@@ -1086,6 +1432,7 @@ const ProjectDetail = () => {
                 } catch (
                     requestError
                 ) {
+
                     console.error(
                         "ProjectDetail olishda xato:",
                         requestError
@@ -1109,13 +1456,11 @@ const ProjectDetail = () => {
         );
 
 
-    // =====================================================
-    // INITIAL LOAD
-    // =====================================================
-
     useEffect(
         () => {
+
             getProjectDetail();
+
         },
         [
             getProjectDetail,
@@ -1123,18 +1468,16 @@ const ProjectDetail = () => {
     );
 
 
-    // =====================================================
-    // SYNC STAR
-    // =====================================================
-
     useEffect(
         () => {
+
             setIsStarred(
                 Boolean(
                     projectDetail
                         ?.is_starred_by_user
                 )
             );
+
         },
         [
             projectDetail
@@ -1144,11 +1487,12 @@ const ProjectDetail = () => {
 
 
     // =====================================================
-    // OPEN EDIT
+    // EDIT
     // =====================================================
 
     const handleOpenEditModal =
         () => {
+
             if (
                 !isOwner
                 ||
@@ -1166,12 +1510,9 @@ const ProjectDetail = () => {
         };
 
 
-    // =====================================================
-    // CLOSE EDIT
-    // =====================================================
-
     const handleCloseEditModal =
         () => {
+
             if (
                 isUpdating
             ) {
@@ -1185,15 +1526,12 @@ const ProjectDetail = () => {
         };
 
 
-    // =====================================================
-    // UPDATE PROJECT
-    // =====================================================
-
     const handleUpdateProject =
         async (
             formData,
             projectIdToUpdate
         ) => {
+
             if (
                 isUpdating
                 ||
@@ -1212,6 +1550,7 @@ const ProjectDetail = () => {
             if (
                 !targetProjectId
             ) {
+
                 siteToast.error(
                     "Loyiha ID topilmadi.",
                     {
@@ -1219,6 +1558,7 @@ const ProjectDetail = () => {
                             "Loyiha yangilanmadi",
                     }
                 );
+
 
                 return false;
             }
@@ -1240,6 +1580,7 @@ const ProjectDetail = () => {
 
 
             try {
+
                 await ProjectService
                     .updateProject(
                         targetProjectId,
@@ -1275,6 +1616,7 @@ const ProjectDetail = () => {
             } catch (
                 requestError
             ) {
+
                 const message =
                     getErrorMessage(
                         requestError,
@@ -1306,6 +1648,7 @@ const ProjectDetail = () => {
                 throw requestError;
 
             } finally {
+
                 setIsUpdating(
                     false
                 );
@@ -1314,15 +1657,12 @@ const ProjectDetail = () => {
 
 
     // =====================================================
-    // OPEN DELETE CONFIRMATION
-    //
-    // MUHIM:
-    // Bu yerda delete API chaqirilmaydi.
-    // Faqat confirmation modal ochiladi.
+    // DELETE
     // =====================================================
 
     const handleOpenDeleteModal =
         () => {
+
             if (
                 !isOwner
                 ||
@@ -1340,20 +1680,8 @@ const ProjectDetail = () => {
         };
 
 
-    // =====================================================
-    // CLOSE DELETE CONFIRMATION
-    // =====================================================
-
     const handleCloseDeleteModal =
         () => {
-            /*
-                API ishlayotgan bo‘lsa modalni
-                yopishga ruxsat bermaymiz.
-
-                ESC / backdrop / X / cancel
-                DeleteConfirmationModal ichida ham
-                isProcessing orqali bloklanadi.
-            */
 
             if (
                 isDeleting
@@ -1368,15 +1696,9 @@ const ProjectDetail = () => {
         };
 
 
-    // =====================================================
-    // CONFIRM DELETE
-    //
-    // Faqat DeleteConfirmationModal ichidagi
-    // "Ha, o‘chirish" bosilganda ishlaydi.
-    // =====================================================
-
     const handleConfirmDelete =
         async () => {
+
             if (
                 !projectData?.id
                 ||
@@ -1391,21 +1713,6 @@ const ProjectDetail = () => {
             );
 
 
-            /*
-                Modal OCHIQ qoladi.
-
-                isProcessing=true bo‘lgani uchun
-                DeleteConfirmationModal avtomatik:
-
-                - loader ko‘rsatadi
-                - close buttonni bloklaydi
-                - cancelni bloklaydi
-                - delete buttonni bloklaydi
-
-                API success bo‘lgandan keyingina
-                modal yopiladi.
-            */
-
             const toastId =
                 siteToast.loading(
                     `"${projectTitle}" loyihasi o‘chirilmoqda...`,
@@ -1417,15 +1724,12 @@ const ProjectDetail = () => {
 
 
             try {
+
                 await ProjectService
                     .deleteProject(
                         projectData.id
                     );
 
-
-                // =========================================
-                // SUCCESS
-                // =========================================
 
                 setIsDeleteModalOpen(
                     false
@@ -1458,28 +1762,12 @@ const ProjectDetail = () => {
             } catch (
                 requestError
             ) {
-                const message =
+
+                siteToast.error(
                     getErrorMessage(
                         requestError,
                         "Loyihani o‘chirishda xato yuz berdi."
-                    );
-
-
-                console.error(
-                    "Loyihani o‘chirishda xato:",
-                    requestError
-                );
-
-
-                /*
-                    ERROR bo‘lsa modal ochiq qoladi.
-
-                    isDeleting finally ichida false bo‘ladi
-                    va user qayta urinishi mumkin.
-                */
-
-                siteToast.error(
-                    message,
+                    ),
                     {
                         id:
                             toastId,
@@ -1493,6 +1781,7 @@ const ProjectDetail = () => {
                 );
 
             } finally {
+
                 setIsDeleting(
                     false
                 );
@@ -1501,19 +1790,17 @@ const ProjectDetail = () => {
 
 
     // =====================================================
-    // STAR TOGGLE
+    // STAR
     // =====================================================
 
     const handleStarToggle =
         useCallback(
             async () => {
-                // =========================================
-                // AUTH
-                // =========================================
 
                 if (
                     !isLoggedIn
                 ) {
+
                     siteToast.warning(
                         "Loyihaga star berish uchun avval tizimga kiring.",
                         {
@@ -1524,6 +1811,7 @@ const ProjectDetail = () => {
                                 3500,
                         }
                     );
+
 
                     return;
                 }
@@ -1543,10 +1831,6 @@ const ProjectDetail = () => {
                 );
 
 
-                // =========================================
-                // OLD STATE
-                // =========================================
-
                 const oldIsStarred =
                     Boolean(
                         isStarred
@@ -1559,10 +1843,6 @@ const ProjectDetail = () => {
                             ?.stars_count
                     );
 
-
-                // =========================================
-                // OPTIMISTIC STATE
-                // =========================================
 
                 const nextIsStarred =
                     !oldIsStarred;
@@ -1600,6 +1880,7 @@ const ProjectDetail = () => {
 
 
                 try {
+
                     const response =
                         await ProjectService
                             .toggleProjectStar(
@@ -1610,7 +1891,7 @@ const ProjectDetail = () => {
                     const backendIsStarred =
                         typeof response
                             ?.is_starred_by_user ===
-                        "boolean"
+                            "boolean"
 
                             ? response
                                 .is_starred_by_user
@@ -1653,6 +1934,7 @@ const ProjectDetail = () => {
                     if (
                         backendIsStarred
                     ) {
+
                         siteToast.success(
                             "Loyihaga star berildi.",
                             {
@@ -1665,6 +1947,7 @@ const ProjectDetail = () => {
                         );
 
                     } else {
+
                         siteToast.info(
                             "Loyihadan star olib tashlandi.",
                             {
@@ -1680,15 +1963,12 @@ const ProjectDetail = () => {
                 } catch (
                     requestError
                 ) {
+
                     console.error(
                         "Star/Unstar qilishda xato:",
                         requestError
                     );
 
-
-                    // =====================================
-                    // ROLLBACK
-                    // =====================================
 
                     setIsStarred(
                         oldIsStarred
@@ -1723,6 +2003,7 @@ const ProjectDetail = () => {
                     );
 
                 } finally {
+
                     setIsStarLoading(
                         false
                     );
@@ -1748,6 +2029,7 @@ const ProjectDetail = () => {
         &&
         !projectData?.id
     ) {
+
         return (
             <ProjectLoadingSkeleton />
         );
@@ -1763,7 +2045,9 @@ const ProjectDetail = () => {
         ||
         !projectData?.id
     ) {
+
         return (
+
             <div
                 className="
                     min-h-screen
@@ -1802,9 +2086,11 @@ const ProjectDetail = () => {
                             text-red-300
                         "
                     >
+
                         <AlertTriangle
                             size={28}
                         />
+
                     </div>
 
 
@@ -1829,6 +2115,7 @@ const ProjectDetail = () => {
                         "
                     >
                         Loyiha ID:{" "}
+
                         <span
                             className="
                                 font-black
@@ -1841,6 +2128,7 @@ const ProjectDetail = () => {
 
 
                     {projectDetailError && (
+
                         <div
                             className="
                                 mt-5
@@ -1862,9 +2150,11 @@ const ProjectDetail = () => {
 
                     <button
                         type="button"
+
                         onClick={
                             getProjectDetail
                         }
+
                         className="
                             mt-6
                             inline-flex
@@ -1887,11 +2177,13 @@ const ProjectDetail = () => {
                             active:scale-[0.98]
                         "
                     >
+
                         <Loader2
                             size={15}
                         />
 
                         Qayta urinish
+
                     </button>
 
                 </div>
@@ -1902,10 +2194,11 @@ const ProjectDetail = () => {
 
 
     // =====================================================
-    // JSX
+    // RENDER
     // =====================================================
 
     return (
+
         <div
             className="
                 relative
@@ -1916,9 +2209,7 @@ const ProjectDetail = () => {
             "
         >
 
-            {/* =================================================
-                BACKGROUND
-            ================================================== */}
+            {/* BACKGROUND */}
 
             <div
                 className="
@@ -1963,9 +2254,7 @@ const ProjectDetail = () => {
             />
 
 
-            {/* =================================================
-                MAIN
-            ================================================== */}
+            {/* MAIN */}
 
             <main
                 className="
@@ -1995,9 +2284,7 @@ const ProjectDetail = () => {
                     "
                 >
 
-                    {/* =================================================
-                        HEADER
-                    ================================================== */}
+                    {/* HEADER */}
 
                     <header
                         className="
@@ -2010,10 +2297,6 @@ const ProjectDetail = () => {
                             xl:p-10
                         "
                     >
-
-                        {/* =============================================
-                            TITLE + OWNER CONTROLS
-                        ============================================== */}
 
                         <div
                             className="
@@ -2053,11 +2336,13 @@ const ProjectDetail = () => {
                                         text-indigo-300
                                     "
                                 >
+
                                     <Rocket
                                         size={14}
                                     />
 
                                     Project showcase
+
                                 </div>
 
 
@@ -2099,48 +2384,47 @@ const ProjectDetail = () => {
                                         sm:text-base
                                     "
                                 >
-                                    {projectData
-                                        ?.description
-                                        ||
-                                        "Ushbu loyiha uchun hali to‘liq tavsif kiritilmagan."}
+                                    {projectData?.description
+                                    ||
+                                    "Ushbu loyiha uchun hali to‘liq tavsif kiritilmagan."}
                                 </p>
 
                             </div>
 
 
-                            {/* =========================================
-                                OWNER TOOLS
-                            ========================================== */}
-
                             {isOwner && (
+
                                 <div
                                     className="
                                         shrink-0
                                     "
                                 >
+
                                     <OwnerControls
                                         onEdit={
                                             handleOpenEditModal
                                         }
+
                                         onDelete={
                                             handleOpenDeleteModal
                                         }
+
                                         isUpdating={
                                             isUpdating
                                         }
+
                                         isDeleting={
                                             isDeleting
                                         }
                                     />
+
                                 </div>
                             )}
 
                         </div>
 
 
-                        {/* =============================================
-                            STATS
-                        ============================================== */}
+                        {/* STATS */}
 
                         <div
                             className="
@@ -2152,23 +2436,25 @@ const ProjectDetail = () => {
                             "
                         >
 
-                            {/* STAR */}
-
                             <button
                                 type="button"
+
                                 onClick={
                                     handleStarToggle
                                 }
+
                                 disabled={
                                     isStarLoading
                                     ||
                                     isDeleting
                                 }
+
                                 title={
                                     isStarred
                                         ? "Starni olib tashlash"
                                         : "Loyihaga star berish"
                                 }
+
                                 className={`
                                     group
                                     relative
@@ -2191,11 +2477,13 @@ const ProjectDetail = () => {
 
                                     ${
                                         isStarred
+
                                             ? `
                                                 border-yellow-400/25
                                                 bg-yellow-500/[0.10]
                                                 text-yellow-200
                                             `
+
                                             : `
                                                 border-white/[0.07]
                                                 bg-white/[0.025]
@@ -2208,16 +2496,21 @@ const ProjectDetail = () => {
                                     }
                                 `}
                             >
+
                                 {isStarLoading ? (
+
                                     <Loader2
                                         size={17}
                                         className="
                                             animate-spin
                                         "
                                     />
+
                                 ) : (
+
                                     <Star
                                         size={17}
+
                                         className={
                                             isStarred
                                                 ? "fill-yellow-300 text-yellow-300"
@@ -2235,6 +2528,7 @@ const ProjectDetail = () => {
 
 
                                 {isStarred && (
+
                                     <span
                                         className="
                                             absolute
@@ -2256,11 +2550,14 @@ const ProjectDetail = () => {
                                 icon={
                                     Star
                                 }
+
                                 value={
                                     starsCount
                                         .toLocaleString()
                                 }
+
                                 label="star"
+
                                 tone="yellow"
                             />
 
@@ -2269,11 +2566,14 @@ const ProjectDetail = () => {
                                 icon={
                                     Eye
                                 }
+
                                 value={
                                     viewsCount
                                         .toLocaleString()
                                 }
+
                                 label="ko‘rish"
+
                                 tone="cyan"
                             />
 
@@ -2282,260 +2582,36 @@ const ProjectDetail = () => {
                                 icon={
                                     MessageCircle
                                 }
+
                                 value={
                                     commentsCount
                                         .toLocaleString()
                                 }
+
                                 label="sharh"
+
                                 tone="indigo"
                             />
 
                         </div>
 
 
-                        {/* =============================================
-                            GALLERY
-                        ============================================== */}
+                        {/* GALLERY IS NOW SEPARATE */}
 
-                        <div
-                            className="
-                                mt-8
-                            "
-                        >
+                        <ProjectGallery
+                            images={
+                                projectImages
+                            }
 
-                            <div
-                                className="
-                                    relative
-                                    overflow-hidden
-                                    rounded-[26px]
-                                    border
-                                    border-white/[0.07]
-                                    bg-black/30
-                                    shadow-2xl
-                                    shadow-black/30
-                                "
-                            >
-
-                                <div
-                                    className="
-                                        relative
-                                        aspect-video
-                                    "
-                                >
-
-                                    {projectImages.length >
-                                    0 ? (
-                                        projectImages.map(
-                                            (
-                                                image,
-                                                index
-                                            ) => (
-                                                <img
-                                                    key={
-                                                        image?.id
-                                                        ||
-                                                        index
-                                                    }
-                                                    src={
-                                                        getImageUrl(
-                                                            image
-                                                                ?.image
-                                                        )
-                                                    }
-                                                    alt={
-                                                        image?.title
-                                                        ||
-                                                        `Project Screenshot ${index + 1}`
-                                                    }
-                                                    onError={(
-                                                        event
-                                                    ) => {
-                                                        event
-                                                            .currentTarget
-                                                            .onerror =
-                                                            null;
-
-
-                                                        event
-                                                            .currentTarget
-                                                            .src =
-                                                            UserImage;
-                                                    }}
-                                                    className={`
-                                                        absolute
-                                                        inset-0
-                                                        h-full
-                                                        w-full
-                                                        object-contain
-                                                        transition-all
-                                                        duration-500
-
-                                                        ${
-                                                            activeIndex ===
-                                                            index
-                                                                ? `
-                                                                    scale-100
-                                                                    opacity-100
-                                                                `
-                                                                : `
-                                                                    pointer-events-none
-                                                                    scale-[0.98]
-                                                                    opacity-0
-                                                                `
-                                                        }
-                                                    `}
-                                                />
-                                            )
-                                        )
-                                    ) : (
-                                        <div
-                                            className="
-                                                flex
-                                                h-full
-                                                w-full
-                                                items-center
-                                                justify-center
-                                                bg-gray-950/70
-                                            "
-                                        >
-                                            <div
-                                                className="
-                                                    text-center
-                                                "
-                                            >
-                                                <ImageIcon
-                                                    className="
-                                                        mx-auto
-                                                        mb-3
-                                                        text-gray-800
-                                                    "
-                                                    size={72}
-                                                />
-
-
-                                                <p
-                                                    className="
-                                                        text-sm
-                                                        font-bold
-                                                        text-gray-600
-                                                    "
-                                                >
-                                                    Rasm mavjud emas
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                </div>
-
-                            </div>
-
-
-                            {/* =========================================
-                                THUMBNAILS
-                            ========================================== */}
-
-                            {projectImages.length >
-                            1 && (
-                                <div
-                                    className="
-                                        mt-4
-                                        flex
-                                        flex-wrap
-                                        justify-center
-                                        gap-2
-                                    "
-                                >
-                                    {projectImages.map(
-                                        (
-                                            image,
-                                            index
-                                        ) => (
-                                            <button
-                                                key={
-                                                    image?.id
-                                                    ||
-                                                    index
-                                                }
-                                                type="button"
-                                                onClick={() =>
-                                                    setActiveIndex(
-                                                        index
-                                                    )
-                                                }
-                                                className={`
-                                                    h-16
-                                                    w-24
-                                                    overflow-hidden
-                                                    rounded-xl
-                                                    border
-                                                    transition-all
-
-                                                    ${
-                                                        activeIndex ===
-                                                        index
-                                                            ? `
-                                                                border-indigo-400/60
-                                                                opacity-100
-                                                                ring-2
-                                                                ring-indigo-500/20
-                                                            `
-                                                            : `
-                                                                border-white/[0.07]
-                                                                opacity-50
-
-                                                                hover:border-white/[0.15]
-                                                                hover:opacity-100
-                                                            `
-                                                    }
-                                                `}
-                                            >
-                                                <img
-                                                    src={
-                                                        getImageUrl(
-                                                            image
-                                                                ?.image
-                                                        )
-                                                    }
-                                                    alt={
-                                                        image?.title
-                                                        ||
-                                                        ""
-                                                    }
-                                                    className="
-                                                        h-full
-                                                        w-full
-                                                        object-cover
-                                                    "
-                                                    onError={(
-                                                        event
-                                                    ) => {
-                                                        event
-                                                            .currentTarget
-                                                            .onerror =
-                                                            null;
-
-
-                                                        event
-                                                            .currentTarget
-                                                            .src =
-                                                            UserImage;
-                                                    }}
-                                                />
-                                            </button>
-                                        )
-                                    )}
-                                </div>
-                            )}
-
-                        </div>
+                            projectTitle={
+                                projectTitle
+                            }
+                        />
 
                     </header>
 
 
-                    {/* =================================================
-                        CONTENT + SIDEBAR
-                    ================================================== */}
+                    {/* CONTENT */}
 
                     <div
                         className="
@@ -2545,9 +2621,7 @@ const ProjectDetail = () => {
                         "
                     >
 
-                        {/* =============================================
-                            LEFT
-                        ============================================== */}
+                        {/* LEFT */}
 
                         <section
                             className="
@@ -2568,9 +2642,7 @@ const ProjectDetail = () => {
                                 "
                             >
 
-                                {/* =====================================
-                                    INTRO
-                                ====================================== */}
+                                {/* INTRO */}
 
                                 <div
                                     className="
@@ -2588,22 +2660,20 @@ const ProjectDetail = () => {
                                         sm:text-base
                                     "
                                 >
-                                    {projectData
-                                        ?.description
-                                        ||
-                                        "Ushbu loyiha uchun hali to‘liq tavsif kiritilmagan."}
+                                    {projectData?.description
+                                    ||
+                                    "Ushbu loyiha uchun hali to‘liq tavsif kiritilmagan."}
                                 </div>
 
 
-                                {/* =====================================
-                                    ABOUT
-                                ====================================== */}
+                                {/* ABOUT */}
 
                                 <div
                                     className="
                                         mt-9
                                     "
                                 >
+
                                     <h2
                                         className="
                                             flex
@@ -2614,6 +2684,7 @@ const ProjectDetail = () => {
                                             text-white
                                         "
                                     >
+
                                         <Sparkles
                                             size={24}
                                             className="
@@ -2622,6 +2693,7 @@ const ProjectDetail = () => {
                                         />
 
                                         Loyiha haqida
+
                                     </h2>
 
 
@@ -2638,25 +2710,25 @@ const ProjectDetail = () => {
                                             sm:text-base
                                         "
                                     >
-                                        {projectData
-                                            ?.description
-                                            ||
-                                            "Loyiha haqida to‘liqroq ma’lumotlar tez orada kiritiladi."}
+                                        {projectData?.description
+                                        ||
+                                        "Loyiha haqida to‘liqroq ma’lumotlar tez orada kiritiladi."}
                                     </p>
+
                                 </div>
 
 
-                                {/* =====================================
-                                    FEATURES
-                                ====================================== */}
+                                {/* FEATURES */}
 
                                 {featuresList.length >
-                                0 && (
+                                    0 && (
+
                                     <div
                                         className="
                                             mt-9
                                         "
                                     >
+
                                         <h3
                                             className="
                                                 flex
@@ -2669,6 +2741,7 @@ const ProjectDetail = () => {
                                                 sm:text-xl
                                             "
                                         >
+
                                             <ShieldCheck
                                                 size={21}
                                                 className="
@@ -2677,6 +2750,7 @@ const ProjectDetail = () => {
                                             />
 
                                             Asosiy imkoniyatlar
+
                                         </h3>
 
 
@@ -2689,15 +2763,18 @@ const ProjectDetail = () => {
                                                 md:grid-cols-2
                                             "
                                         >
+
                                             {featuresList.map(
                                                 (
                                                     feature,
                                                     index
                                                 ) => (
+
                                                     <div
                                                         key={
                                                             `${feature}-${index}`
                                                         }
+
                                                         className="
                                                             group
                                                             flex
@@ -2719,6 +2796,7 @@ const ProjectDetail = () => {
                                                             hover:text-gray-300
                                                         "
                                                     >
+
                                                         <span
                                                             className="
                                                                 mt-0.5
@@ -2750,21 +2828,23 @@ const ProjectDetail = () => {
                                                         <span>
                                                             {feature}
                                                         </span>
+
                                                     </div>
                                                 )
                                             )}
+
                                         </div>
+
                                     </div>
                                 )}
 
                             </article>
 
 
-                            {/* =========================================
-                                COLLABORATION
-                            ========================================== */}
+                            {/* COLLABORATION */}
 
                             <ProjectCollaboration
+
                                 currentCollaborators={
                                     Array.isArray(
                                         projectData
@@ -2774,19 +2854,27 @@ const ProjectDetail = () => {
                                             .collaborations
                                         : []
                                 }
-                                pendingRequests={[]}
+
+                                pendingRequests={
+                                    []
+                                }
+
                                 projectOwner={
                                     author
                                 }
+
                                 isOwner={
                                     isOwner
                                 }
+
                                 isCollaborator={
-                                    false
+                                    isCollaborator
                                 }
+
                                 hasSentRequest={
                                     false
                                 }
+
                                 projectId={
                                     projectId
                                 }
@@ -2795,9 +2883,7 @@ const ProjectDetail = () => {
                         </section>
 
 
-                        {/* =============================================
-                            SIDEBAR
-                        ============================================== */}
+                        {/* SIDEBAR */}
 
                         <aside
                             className="
@@ -2808,6 +2894,7 @@ const ProjectDetail = () => {
                                 sm:p-7
                             "
                         >
+
                             <div
                                 className="
                                     min-w-0
@@ -2818,11 +2905,10 @@ const ProjectDetail = () => {
                                 "
                             >
 
-                                {/* =====================================
-                                    BOOST
-                                ====================================== */}
+                                {/* BOOST */}
 
                                 {isOwner && (
+
                                     <div
                                         className="
                                             min-w-0
@@ -2833,28 +2919,28 @@ const ProjectDetail = () => {
                                             [&>div]:w-full
                                         "
                                     >
+
                                         <ProjectBoost
                                             projectId={
-                                                projectData
-                                                    .id
+                                                projectData.id
                                             }
+
                                             projectName={
                                                 projectTitle
                                             }
+
                                             userCoins={
                                                 safeNumber(
-                                                    user
-                                                        ?.coins
+                                                    user?.coins
                                                 )
                                             }
                                         />
+
                                     </div>
                                 )}
 
 
-                                {/* =====================================
-                                    AUTHOR
-                                ====================================== */}
+                                {/* AUTHOR */}
 
                                 <section
                                     className="
@@ -2876,6 +2962,7 @@ const ProjectDetail = () => {
                                             gap-3
                                         "
                                     >
+
                                         <div
                                             className="
                                                 flex
@@ -2890,13 +2977,16 @@ const ProjectDetail = () => {
                                                 text-indigo-300
                                             "
                                         >
+
                                             <UserRound
                                                 size={17}
                                             />
+
                                         </div>
 
 
                                         <div>
+
                                             <h3
                                                 className="
                                                     text-sm
@@ -2920,14 +3010,19 @@ const ProjectDetail = () => {
                                             >
                                                 Project owner
                                             </p>
+
                                         </div>
 
                                     </div>
 
 
                                     {author?.username ? (
+
                                         <Link
-                                            to={`/${author.username}/profile/`}
+                                            to={
+                                                `/${author.username}/profile/`
+                                            }
+
                                             className="
                                                 group
                                                 flex
@@ -2944,16 +3039,18 @@ const ProjectDetail = () => {
                                                 hover:bg-indigo-500/[0.04]
                                             "
                                         >
+
                                             <img
                                                 src={
                                                     authorImage
                                                 }
+
                                                 alt={
-                                                    author
-                                                        ?.username
+                                                    author?.username
                                                     ||
                                                     "Project owner"
                                                 }
+
                                                 className="
                                                     h-14
                                                     w-14
@@ -2964,9 +3061,11 @@ const ProjectDetail = () => {
                                                     bg-gray-900
                                                     object-cover
                                                 "
+
                                                 onError={(
                                                     event
                                                 ) => {
+
                                                     event
                                                         .currentTarget
                                                         .onerror =
@@ -2986,6 +3085,7 @@ const ProjectDetail = () => {
                                                     min-w-0
                                                 "
                                             >
+
                                                 <p
                                                     className="
                                                         truncate
@@ -3012,9 +3112,7 @@ const ProjectDetail = () => {
                                                         text-gray-600
                                                     "
                                                 >
-                                                    @
-                                                    {author
-                                                        ?.username}
+                                                    @{author?.username}
                                                 </p>
 
 
@@ -3028,14 +3126,17 @@ const ProjectDetail = () => {
                                                         text-indigo-300
                                                     "
                                                 >
-                                                    {author
-                                                        ?.skill_level
-                                                        ||
-                                                        "Aniqlanmagan"}
+                                                    {author?.skill_level
+                                                    ||
+                                                    "Aniqlanmagan"}
                                                 </p>
+
                                             </div>
+
                                         </Link>
+
                                     ) : (
+
                                         <div
                                             className="
                                                 rounded-2xl
@@ -3054,9 +3155,7 @@ const ProjectDetail = () => {
                                 </section>
 
 
-                                {/* =====================================
-                                    TECHNOLOGIES
-                                ====================================== */}
+                                {/* PROJECT STACK */}
 
                                 <section
                                     className="
@@ -3072,12 +3171,13 @@ const ProjectDetail = () => {
 
                                     <div
                                         className="
-                                            mb-4
+                                            mb-5
                                             flex
                                             items-center
                                             gap-3
                                         "
                                     >
+
                                         <div
                                             className="
                                                 flex
@@ -3092,13 +3192,16 @@ const ProjectDetail = () => {
                                                 text-purple-300
                                             "
                                         >
+
                                             <Code2
                                                 size={17}
                                             />
+
                                         </div>
 
 
                                         <div>
+
                                             <h3
                                                 className="
                                                     text-sm
@@ -3106,7 +3209,7 @@ const ProjectDetail = () => {
                                                     text-white
                                                 "
                                             >
-                                                Texnologiyalar
+                                                Project stack
                                             </h3>
 
 
@@ -3120,90 +3223,225 @@ const ProjectDetail = () => {
                                                     text-gray-700
                                                 "
                                             >
-                                                Project stack
+                                                Tillar va texnologiyalar
                                             </p>
+
                                         </div>
+
                                     </div>
 
 
-                                    <div
-                                        className="
-                                            flex
-                                            flex-wrap
-                                            gap-2
-                                        "
-                                    >
-                                        {projectData
-                                            ?.language_data && (
-                                            <TechBadge
-                                                type="blue"
-                                            >
-                                                {projectData
-                                                    .language_data
-                                                    .name}
-                                            </TechBadge>
-                                        )}
+                                    {hasProjectStack ? (
+
+                                        <div
+                                            className="
+                                                space-y-5
+                                            "
+                                        >
+
+                                            {projectLanguages.length >
+                                                0 && (
+
+                                                <div>
+
+                                                    <div
+                                                        className="
+                                                            mb-2.5
+                                                            flex
+                                                            items-center
+                                                            justify-between
+                                                            gap-3
+                                                        "
+                                                    >
+
+                                                        <p
+                                                            className="
+                                                                font-mono
+                                                                text-[9px]
+                                                                font-black
+                                                                uppercase
+                                                                tracking-[0.16em]
+                                                                text-gray-600
+                                                            "
+                                                        >
+                                                            Dasturlash tillari
+                                                        </p>
 
 
-                                        {projectData
-                                            ?.technology_data && (
-                                            <TechBadge
-                                                type="purple"
-                                            >
-                                                {projectData
-                                                    .technology_data
-                                                    .name}
-                                            </TechBadge>
-                                        )}
+                                                        <span
+                                                            className="
+                                                                rounded-full
+                                                                border
+                                                                border-white/[0.06]
+                                                                bg-black/10
+                                                                px-2
+                                                                py-0.5
+                                                                text-[9px]
+                                                                font-black
+                                                                text-gray-600
+                                                            "
+                                                        >
+                                                            {projectLanguages.length}
+                                                        </span>
+
+                                                    </div>
 
 
-                                        {!projectData
-                                            ?.language_data
-                                            &&
-                                            !projectData
-                                                ?.technology_data
-                                            && (
-                                                <p
-                                                    className="
-                                                        text-sm
-                                                        font-semibold
-                                                        text-gray-600
-                                                    "
-                                                >
-                                                    Texnologiyalar hali kiritilmagan.
-                                                </p>
+                                                    <div
+                                                        className="
+                                                            flex
+                                                            flex-wrap
+                                                            gap-2
+                                                        "
+                                                    >
+
+                                                        {projectLanguages.map(
+                                                            (
+                                                                language
+                                                            ) => (
+
+                                                                <TechBadge
+                                                                    key={
+                                                                        `language-${language.id}`
+                                                                    }
+
+                                                                    item={
+                                                                        language
+                                                                    }
+                                                                />
+                                                            )
+                                                        )}
+
+                                                    </div>
+
+                                                </div>
                                             )}
-                                    </div>
+
+
+                                            {projectTechnologies.length >
+                                                0 && (
+
+                                                <div>
+
+                                                    <div
+                                                        className="
+                                                            mb-2.5
+                                                            flex
+                                                            items-center
+                                                            justify-between
+                                                            gap-3
+                                                        "
+                                                    >
+
+                                                        <p
+                                                            className="
+                                                                font-mono
+                                                                text-[9px]
+                                                                font-black
+                                                                uppercase
+                                                                tracking-[0.16em]
+                                                                text-gray-600
+                                                            "
+                                                        >
+                                                            Texnologiyalar
+                                                        </p>
+
+
+                                                        <span
+                                                            className="
+                                                                rounded-full
+                                                                border
+                                                                border-white/[0.06]
+                                                                bg-black/10
+                                                                px-2
+                                                                py-0.5
+                                                                text-[9px]
+                                                                font-black
+                                                                text-gray-600
+                                                            "
+                                                        >
+                                                            {projectTechnologies.length}
+                                                        </span>
+
+                                                    </div>
+
+
+                                                    <div
+                                                        className="
+                                                            flex
+                                                            flex-wrap
+                                                            gap-2
+                                                        "
+                                                    >
+
+                                                        {projectTechnologies.map(
+                                                            (
+                                                                technology
+                                                            ) => (
+
+                                                                <TechBadge
+                                                                    key={
+                                                                        `technology-${technology.id}`
+                                                                    }
+
+                                                                    item={
+                                                                        technology
+                                                                    }
+
+                                                                    showCategory
+                                                                />
+                                                            )
+                                                        )}
+
+                                                    </div>
+
+                                                </div>
+                                            )}
+
+                                        </div>
+
+                                    ) : (
+
+                                        <p
+                                            className="
+                                                text-sm
+                                                font-semibold
+                                                text-gray-600
+                                            "
+                                        >
+                                            Project stack hali kiritilmagan.
+                                        </p>
+                                    )}
 
                                 </section>
 
 
-                                {/* =====================================
-                                    LINKS
-                                ====================================== */}
+                                {/* LINKS */}
 
                                 {(
-                                    projectData
-                                        ?.github_url
+                                    projectData?.github_url
                                     ||
-                                    projectData
-                                        ?.website_url
+                                    projectData?.website_url
                                 ) && (
+
                                     <section
                                         className="
                                             space-y-2.5
                                         "
                                     >
 
-                                        {projectData
-                                            ?.github_url && (
+                                        {projectData?.github_url && (
+
                                             <a
                                                 href={
                                                     projectData
                                                         .github_url
                                                 }
+
                                                 target="_blank"
+
                                                 rel="noopener noreferrer"
+
                                                 className="
                                                     group
                                                     flex
@@ -3229,6 +3467,7 @@ const ProjectDetail = () => {
                                                     active:scale-[0.98]
                                                 "
                                             >
+
                                                 <span
                                                     className="
                                                         flex
@@ -3236,11 +3475,13 @@ const ProjectDetail = () => {
                                                         gap-2
                                                     "
                                                 >
+
                                                     <Github
                                                         size={18}
                                                     />
 
                                                     GitHub
+
                                                 </span>
 
 
@@ -3253,19 +3494,23 @@ const ProjectDetail = () => {
                                                         group-hover:text-gray-400
                                                     "
                                                 />
+
                                             </a>
                                         )}
 
 
-                                        {projectData
-                                            ?.website_url && (
+                                        {projectData?.website_url && (
+
                                             <a
                                                 href={
                                                     projectData
                                                         .website_url
                                                 }
+
                                                 target="_blank"
+
                                                 rel="noopener noreferrer"
+
                                                 className="
                                                     group
                                                     flex
@@ -3291,6 +3536,7 @@ const ProjectDetail = () => {
                                                     active:scale-[0.98]
                                                 "
                                             >
+
                                                 <span
                                                     className="
                                                         flex
@@ -3298,11 +3544,13 @@ const ProjectDetail = () => {
                                                         gap-2
                                                     "
                                                 >
+
                                                     <ExternalLink
                                                         size={18}
                                                     />
 
                                                     Live Demo
+
                                                 </span>
 
 
@@ -3316,6 +3564,7 @@ const ProjectDetail = () => {
                                                         group-hover:-translate-y-0.5
                                                     "
                                                 />
+
                                             </a>
                                         )}
 
@@ -3323,14 +3572,13 @@ const ProjectDetail = () => {
                                 )}
 
                             </div>
+
                         </aside>
 
                     </div>
 
 
-                    {/* =================================================
-                        DISCUSSION
-                    ================================================== */}
+                    {/* DISCUSSION */}
 
                     <ProjectDiscussion
                         projectId={
@@ -3343,24 +3591,27 @@ const ProjectDetail = () => {
             </main>
 
 
-            {/* =================================================
-                EDIT MODAL
-            ================================================== */}
+            {/* EDIT */}
 
             {isOwner && (
+
                 <ProjectFormModal
                     isOpen={
                         isEditModalOpen
                     }
+
                     onClose={
                         handleCloseEditModal
                     }
+
                     onSubmit={
                         handleUpdateProject
                     }
+
                     initialData={
                         projectData
                     }
+
                     isSubmitting={
                         isUpdating
                     }
@@ -3368,48 +3619,27 @@ const ProjectDetail = () => {
             )}
 
 
-            {/* =================================================
-                DELETE CONFIRMATION MODAL
-
-                FLOW:
-
-                OwnerControls Delete
-                       ↓
-                handleOpenDeleteModal()
-                       ↓
-                DeleteConfirmationModal
-                       ↓
-                "Ha, o‘chirish"
-                       ↓
-                handleConfirmDelete()
-                       ↓
-                isDeleting = true
-                       ↓
-                Modal loader
-                       ↓
-                DELETE API
-                  ↓          ↓
-              SUCCESS       ERROR
-                  ↓          ↓
-               close      modal stays
-               toast      toast error
-               redirect   retry possible
-            ================================================== */}
+            {/* DELETE */}
 
             {isOwner && (
+
                 <DeleteConfirmationModal
                     isOpen={
                         isDeleteModalOpen
                     }
+
                     onClose={
                         handleCloseDeleteModal
                     }
+
                     onConfirm={
                         handleConfirmDelete
                     }
+
                     itemTitle={
                         projectTitle
                     }
+
                     isProcessing={
                         isDeleting
                     }

@@ -7,18 +7,28 @@ import axios from "./api";
 // HELPERS
 // =========================================================
 
-const isCanceledRequest = (error) => {
+const isCanceledRequest = (
+    error
+) => {
     return (
-        error?.code === "ERR_CANCELED" ||
-        error?.name === "CanceledError"
+        error?.code ===
+            "ERR_CANCELED"
+        ||
+        error?.name ===
+            "CanceledError"
     );
 };
 
+
+// =========================================================
+// ERROR LOGGER
+// =========================================================
 
 const logServiceError = (
     label,
     error
 ) => {
+
     if (
         isCanceledRequest(
             error
@@ -27,31 +37,82 @@ const logServiceError = (
         return;
     }
 
+
     console.error(
         label,
-        error?.response?.data ||
-        error?.response ||
-        error?.message ||
+        error?.response?.data
+        ||
+        error?.response
+        ||
+        error?.message
+        ||
         error
     );
 };
 
 
-const normalizePagination = (
+// =========================================================
+// NORMALIZE ARRAY
+// =========================================================
+
+const normalizeArray = (
     data
 ) => {
-    // Eski backend array qaytarsa ham
-    // frontend buzilib ketmasin.
+
     if (
         Array.isArray(
             data
         )
     ) {
+        return data;
+    }
+
+
+    if (
+        Array.isArray(
+            data?.results
+        )
+    ) {
+        return data.results;
+    }
+
+
+    return [];
+};
+
+
+// =========================================================
+// NORMALIZE PAGINATION
+// =========================================================
+
+const normalizePagination = (
+    data
+) => {
+
+    // =====================================================
+    // Backend oddiy array qaytarsa ham
+    // frontend buzilmaydi.
+    // =====================================================
+
+    if (
+        Array.isArray(
+            data
+        )
+    ) {
+
         return {
-            count: data.length,
-            next: null,
-            previous: null,
-            results: data,
+
+            count:
+                data.length,
+
+            next:
+                null,
+
+            previous:
+                null,
+
+            results:
+                data,
         };
     }
 
@@ -65,22 +126,42 @@ const normalizePagination = (
 
 
     return {
+
         count:
             Number(
-                data?.count ??
+                data?.count
+                ??
                 results.length
             ),
 
         next:
-            data?.next ??
+            data?.next
+            ??
             null,
 
         previous:
-            data?.previous ??
+            data?.previous
+            ??
             null,
 
         results,
     };
+};
+
+
+// =========================================================
+// CLEAN SEARCH
+// =========================================================
+
+const cleanText = (
+    value
+) => {
+
+    return String(
+        value
+        ??
+        ""
+    ).trim();
 };
 
 
@@ -90,35 +171,54 @@ const normalizePagination = (
 
 const ProjectService = {
 
+
     // =====================================================
     // PROFILE PROJECTS
     //
-    // Bu hozircha backendda oddiy array qaytaradi.
+    // GET:
+    //
+    // /projects/<username>/projects/
+    //
+    // Backend oddiy array qaytarishi mumkin.
     // =====================================================
 
     async getProjects(
-        username
+        username,
+        {
+            signal = undefined,
+        } = {}
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.get(
+
                 `/projects/${username}/projects/`,
+
                 {
-                    withCredentials: true,
+                    signal,
+
+                    withCredentials:
+                        true,
                 }
             );
 
 
-            return data;
+            return normalizeArray(
+                data
+            );
 
         } catch (
             error
         ) {
+
             logServiceError(
                 "Profile projectlarni olishda xato:",
                 error
             );
+
 
             throw error;
         }
@@ -127,18 +227,32 @@ const ProjectService = {
 
     // =====================================================
     // PROJECT DETAIL
+    //
+    // GET:
+    //
+    // /projects/project/<id>/detail/
     // =====================================================
 
     async projectDetail(
-        projectId
+        projectId,
+        {
+            signal = undefined,
+        } = {}
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.get(
+
                 `/projects/project/${projectId}/detail/`,
+
                 {
-                    withCredentials: true,
+                    signal,
+
+                    withCredentials:
+                        true,
                 }
             );
 
@@ -148,10 +262,12 @@ const ProjectService = {
         } catch (
             error
         ) {
+
             logServiceError(
                 "Project detail olishda xato:",
                 error
             );
+
 
             throw error;
         }
@@ -160,19 +276,44 @@ const ProjectService = {
 
     // =====================================================
     // CREATE PROJECT
+    //
+    // POST:
+    //
+    // /projects/project/create/
+    //
+    // JSON ham FormData ham qabul qilishi mumkin.
+    //
+    // Yangi stack:
+    //
+    // languages: [1, 2]
+    // technologies: [3, 4, 5]
+    //
+    // Agar FormData bo‘lsa:
+    //
+    // formData.append("languages", 1)
+    // formData.append("languages", 2)
+    //
+    // formData.append("technologies", 3)
+    // ...
     // =====================================================
 
     async createProject(
-        formData
+        projectData
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.post(
+
                 "/projects/project/create/",
-                formData,
+
+                projectData,
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
@@ -182,10 +323,12 @@ const ProjectService = {
         } catch (
             error
         ) {
+
             logServiceError(
                 "Project yaratishda xato:",
                 error
             );
+
 
             throw error;
         }
@@ -194,20 +337,33 @@ const ProjectService = {
 
     // =====================================================
     // UPDATE PROJECT
+    //
+    // PATCH:
+    //
+    // /projects/project/<id>/edit/
+    //
+    // PATCH ishlatamiz:
+    // partial update uchun qulayroq.
     // =====================================================
 
     async updateProject(
         projectId,
-        formData
+        projectData
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.patch(
+
                 `/projects/project/${projectId}/edit/`,
-                formData,
+
+                projectData,
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
@@ -217,21 +373,15 @@ const ProjectService = {
         } catch (
             error
         ) {
+
             logServiceError(
                 "Project tahrirlashda xato:",
                 error
             );
 
-            /*
-                Oldin:
-                throw new Error(JSON.stringify(...))
 
-                qilinayotgan edi.
-
-                Bu global toast/error parserni buzishi mumkin.
-
-                Endi original Axios error yuqoriga chiqadi.
-            */
+            // Original Axios errorni
+            // componentga chiqaramiz.
             throw error;
         }
     },
@@ -239,16 +389,25 @@ const ProjectService = {
 
     // =====================================================
     // DELETE PROJECT
+    //
+    // DELETE:
+    //
+    // /projects/project/<id>/edit/
     // =====================================================
 
     async deleteProject(
         projectId
     ) {
+
         try {
+
             await axios.delete(
+
                 `/projects/project/${projectId}/edit/`,
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
@@ -258,10 +417,190 @@ const ProjectService = {
         } catch (
             error
         ) {
+
             logServiceError(
                 "Project o‘chirishda xato:",
                 error
             );
+
+
+            throw error;
+        }
+    },
+
+
+    // =====================================================
+    // LANGUAGES
+    //
+    // Markaziy katalog Problems app ichida.
+    //
+    // GET:
+    //
+    // /problems/languages/
+    // =====================================================
+
+    async getLanguagesList(
+        {
+            signal = undefined,
+        } = {}
+    ) {
+
+        try {
+
+            const {
+                data,
+            } = await axios.get(
+
+                "/problems/languages/",
+
+                {
+                    signal,
+
+                    withCredentials:
+                        true,
+                }
+            );
+
+
+            return normalizeArray(
+                data
+            );
+
+        } catch (
+            error
+        ) {
+
+            logServiceError(
+                "Project uchun dasturlash tillarini olishda xato:",
+                error
+            );
+
+
+            throw error;
+        }
+    },
+
+
+    // =====================================================
+    // TECHNOLOGIES
+    //
+    // GET:
+    //
+    // /problems/technologies/
+    // =====================================================
+
+    async getTechnologiesList(
+        {
+            signal = undefined,
+        } = {}
+    ) {
+
+        try {
+
+            const {
+                data,
+            } = await axios.get(
+
+                "/problems/technologies/",
+
+                {
+                    signal,
+
+                    withCredentials:
+                        true,
+                }
+            );
+
+
+            return normalizeArray(
+                data
+            );
+
+        } catch (
+            error
+        ) {
+
+            logServiceError(
+                "Project uchun texnologiyalarni olishda xato:",
+                error
+            );
+
+
+            throw error;
+        }
+    },
+
+
+    // =====================================================
+    // STACK CATALOG
+    //
+    // Language + Technology ni bir vaqtda oladi.
+    //
+    // Project Create/Edit sahifada juda qulay:
+    //
+    // const {
+    //     languages,
+    //     technologies
+    // } = await ProjectService.getStackCatalog()
+    // =====================================================
+
+    async getStackCatalog(
+        {
+            signal = undefined,
+        } = {}
+    ) {
+
+        try {
+
+            const [
+                languagesResponse,
+                technologiesResponse,
+            ] = await Promise.all([
+
+                axios.get(
+                    "/problems/languages/",
+                    {
+                        signal,
+
+                        withCredentials:
+                            true,
+                    }
+                ),
+
+                axios.get(
+                    "/problems/technologies/",
+                    {
+                        signal,
+
+                        withCredentials:
+                            true,
+                    }
+                ),
+            ]);
+
+
+            return {
+
+                languages:
+                    normalizeArray(
+                        languagesResponse.data
+                    ),
+
+                technologies:
+                    normalizeArray(
+                        technologiesResponse.data
+                    ),
+            };
+
+        } catch (
+            error
+        ) {
+
+            logServiceError(
+                "Project stack katalogini olishda xato:",
+                error
+            );
+
 
             throw error;
         }
@@ -270,31 +609,49 @@ const ProjectService = {
 
     // =====================================================
     // PROJECT COMMENTS
+    //
+    // GET:
+    //
+    // /projects/project/<id>/comments/
     // =====================================================
 
     async getProjectComments(
-        projectId
+        projectId,
+        {
+            signal = undefined,
+        } = {}
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.get(
+
                 `/projects/project/${projectId}/comments/`,
+
                 {
-                    withCredentials: true,
+                    signal,
+
+                    withCredentials:
+                        true,
                 }
             );
 
 
-            return data;
+            return normalizeArray(
+                data
+            );
 
         } catch (
             error
         ) {
+
             logServiceError(
                 "Project commentlarni olishda xato:",
                 error
             );
+
 
             throw error;
         }
@@ -303,20 +660,30 @@ const ProjectService = {
 
     // =====================================================
     // CREATE COMMENT
+    //
+    // POST:
+    //
+    // /projects/project/<id>/comments/
     // =====================================================
 
     async projectCommentCreate(
         projectId,
         commentData
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.post(
+
                 `/projects/project/${projectId}/comments/`,
+
                 commentData,
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
@@ -326,10 +693,12 @@ const ProjectService = {
         } catch (
             error
         ) {
+
             logServiceError(
                 "Project comment yaratishda xato:",
                 error
             );
+
 
             throw error;
         }
@@ -338,6 +707,10 @@ const ProjectService = {
 
     // =====================================================
     // UPDATE COMMENT
+    //
+    // PATCH:
+    //
+    // /projects/project/<projectId>/comment/<commentId>/edit/
     // =====================================================
 
     async projectCommentUpdate(
@@ -345,14 +718,20 @@ const ProjectService = {
         commentId,
         commentData
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.patch(
+
                 `/projects/project/${projectId}/comment/${commentId}/edit/`,
+
                 commentData,
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
@@ -362,10 +741,12 @@ const ProjectService = {
         } catch (
             error
         ) {
+
             logServiceError(
                 "Project comment tahrirlashda xato:",
                 error
             );
+
 
             throw error;
         }
@@ -374,17 +755,26 @@ const ProjectService = {
 
     // =====================================================
     // DELETE COMMENT
+    //
+    // DELETE:
+    //
+    // /projects/project/<projectId>/comment/<commentId>/edit/
     // =====================================================
 
     async projectCommentDelete(
         projectId,
         commentId
     ) {
+
         try {
+
             await axios.delete(
+
                 `/projects/project/${projectId}/comment/${commentId}/edit/`,
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
@@ -394,10 +784,12 @@ const ProjectService = {
         } catch (
             error
         ) {
+
             logServiceError(
                 "Project comment o‘chirishda xato:",
                 error
             );
+
 
             throw error;
         }
@@ -406,20 +798,37 @@ const ProjectService = {
 
     // =====================================================
     // CREATE COLLABORATION REQUEST
+    //
+    // POST:
+    //
+    // /projects/project/<id>/collaboration-requests/
+    //
+    // body:
+    //
+    // {
+    //     role: "backend",
+    //     message: "..."
+    // }
     // =====================================================
 
     async createCollaborationRequest(
         projectId,
         requestData
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.post(
+
                 `/projects/project/${projectId}/collaboration-requests/`,
+
                 requestData,
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
@@ -429,10 +838,12 @@ const ProjectService = {
         } catch (
             error
         ) {
+
             logServiceError(
                 "Hamkorlik so‘rovini yuborishda xato:",
                 error
             );
+
 
             throw error;
         }
@@ -440,32 +851,50 @@ const ProjectService = {
 
 
     // =====================================================
-    // COLLABORATION REQUESTS
+    // COLLABORATION REQUEST LIST
+    //
+    // GET:
+    //
+    // /projects/project/<id>/collaboration-requests/
     // =====================================================
 
     async getCollaborationRequests(
-        projectId
+        projectId,
+        {
+            signal = undefined,
+        } = {}
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.get(
+
                 `/projects/project/${projectId}/collaboration-requests/`,
+
                 {
-                    withCredentials: true,
+                    signal,
+
+                    withCredentials:
+                        true,
                 }
             );
 
 
-            return data;
+            return normalizeArray(
+                data
+            );
 
         } catch (
             error
         ) {
+
             logServiceError(
                 "Hamkorlik so‘rovlarini olishda xato:",
                 error
             );
+
 
             throw error;
         }
@@ -474,31 +903,49 @@ const ProjectService = {
 
     // =====================================================
     // PROJECT COLLABORATORS
+    //
+    // GET:
+    //
+    // /projects/project/<id>/collaborators/
     // =====================================================
 
     async getProjectCollaborators(
-        projectId
+        projectId,
+        {
+            signal = undefined,
+        } = {}
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.get(
+
                 `/projects/project/${projectId}/collaborators/`,
+
                 {
-                    withCredentials: true,
+                    signal,
+
+                    withCredentials:
+                        true,
                 }
             );
 
 
-            return data;
+            return normalizeArray(
+                data
+            );
 
         } catch (
             error
         ) {
+
             logServiceError(
                 "Project hamkorlarini olishda xato:",
                 error
             );
+
 
             throw error;
         }
@@ -507,23 +954,38 @@ const ProjectService = {
 
     // =====================================================
     // UPDATE COLLABORATION REQUEST
+    //
+    // PUT:
+    //
+    // /projects/project/collaboration-requests/<id>/
+    //
+    // newStatus:
+    //
+    // accepted
+    // rejected
     // =====================================================
 
     async updateCollaborationRequest(
         requestId,
         newStatus
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.put(
+
                 `/projects/project/collaboration-requests/${requestId}/`,
+
                 {
                     status:
                         newStatus,
                 },
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
@@ -533,10 +995,12 @@ const ProjectService = {
         } catch (
             error
         ) {
+
             logServiceError(
                 "Hamkorlik so‘rovini yangilashda xato:",
                 error
             );
+
 
             throw error;
         }
@@ -545,16 +1009,25 @@ const ProjectService = {
 
     // =====================================================
     // DELETE COLLABORATION REQUEST
+    //
+    // DELETE:
+    //
+    // /projects/project/collaboration-requests/<id>/
     // =====================================================
 
     async deleteCollaborationRequest(
         requestId
     ) {
+
         try {
+
             await axios.delete(
+
                 `/projects/project/collaboration-requests/${requestId}/`,
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
@@ -564,10 +1037,12 @@ const ProjectService = {
         } catch (
             error
         ) {
+
             logServiceError(
                 "Hamkorlik so‘rovini o‘chirishda xato:",
                 error
             );
+
 
             throw error;
         }
@@ -575,20 +1050,38 @@ const ProjectService = {
 
 
     // =====================================================
-    // PROJECT STAR
+    // PROJECT STAR TOGGLE
+    //
+    // POST:
+    //
+    // /projects/project/<id>/star_toggle/
+    //
+    // Backend:
+    //
+    // {
+    //     detail,
+    //     is_starred_by_user,
+    //     stars_count
+    // }
     // =====================================================
 
     async toggleProjectStar(
         projectId
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.post(
+
                 `/projects/project/${projectId}/star_toggle/`,
+
                 {},
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
@@ -598,10 +1091,12 @@ const ProjectService = {
         } catch (
             error
         ) {
+
             logServiceError(
                 "Project star toggle xato:",
                 error
             );
+
 
             throw error;
         }
@@ -611,16 +1106,17 @@ const ProjectService = {
     // =====================================================
     // ALL PROJECTS
     //
-    // GLOBAL /projects SAHIFASI UCHUN
+    // GLOBAL PROJECTS PAGE
     //
-    // Backend:
+    // GET:
     //
     // /projects/all/
+    //
     // ?page=1
     // &page_size=6
     // &search=django
     //
-    // Response:
+    // Backend response:
     //
     // {
     //     count,
@@ -628,19 +1124,39 @@ const ProjectService = {
     //     previous,
     //     results
     // }
+    //
+    // Search backendda:
+    //
+    // name
+    // main_features
+    // description
+    // username
+    // language
+    // technology
+    // languages
+    // technologies
+    //
+    // bo‘yicha ishlaydi.
     // =====================================================
 
     async getAllProjects(
         {
             page = 1,
+
             pageSize = 6,
+
             search = "",
+
             signal = undefined,
+
             ...filters
         } = {}
     ) {
+
         try {
+
             const params = {
+
                 ...filters,
 
                 page,
@@ -650,30 +1166,34 @@ const ProjectService = {
             };
 
 
-            const cleanSearch =
-                String(
-                    search || ""
-                ).trim();
+            const searchValue =
+                cleanText(
+                    search
+                );
 
 
             if (
-                cleanSearch
+                searchValue
             ) {
+
                 params.search =
-                    cleanSearch;
+                    searchValue;
             }
 
 
             const {
                 data,
             } = await axios.get(
+
                 "/projects/all/",
+
                 {
                     params,
 
                     signal,
 
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
@@ -685,10 +1205,12 @@ const ProjectService = {
         } catch (
             error
         ) {
+
             logServiceError(
                 "Global projectlarni olishda xato:",
                 error
             );
+
 
             throw error;
         }
@@ -697,23 +1219,54 @@ const ProjectService = {
 
     // =====================================================
     // BOOST PROJECT
+    //
+    // POST:
+    //
+    // /projects/project/<id>/boost/
+    //
+    // body:
+    //
+    // {
+    //     plan_id: "basic"
+    // }
+    //
+    // plan:
+    //
+    // basic
+    // premium
+    // ultra
+    //
+    // Backend response:
+    //
+    // {
+    //     detail,
+    //     boost_expires_at,
+    //     new_balance,
+    //     project_id
+    // }
     // =====================================================
 
     async boostProject(
         projectId,
         planId
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.post(
+
                 `/projects/project/${projectId}/boost/`,
+
                 {
                     plan_id:
                         planId,
                 },
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
@@ -723,10 +1276,12 @@ const ProjectService = {
         } catch (
             error
         ) {
+
             logServiceError(
                 "Project boost qilishda xato:",
                 error
             );
+
 
             throw error;
         }
