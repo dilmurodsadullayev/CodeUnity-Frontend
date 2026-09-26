@@ -96,6 +96,7 @@ const getErrorMessage = (
     error,
     fallback = "Xatolik yuz berdi."
 ) => {
+
     const data =
         error?.serverData
         ||
@@ -111,21 +112,27 @@ const getErrorMessage = (
     }
 
 
-    if (data?.detail) {
+    if (
+        data?.detail
+    ) {
         return String(
             data.detail
         );
     }
 
 
-    if (data?.message) {
+    if (
+        data?.message
+    ) {
         return String(
             data.message
         );
     }
 
 
-    if (data?.error) {
+    if (
+        data?.error
+    ) {
         return String(
             data.error
         );
@@ -137,6 +144,7 @@ const getErrorMessage = (
         &&
         typeof data === "object"
     ) {
+
         const firstValue =
             Object.values(
                 data
@@ -150,6 +158,7 @@ const getErrorMessage = (
             &&
             firstValue.length > 0
         ) {
+
             return String(
                 firstValue[0]
             );
@@ -157,42 +166,54 @@ const getErrorMessage = (
 
 
         if (
-            typeof firstValue === "string"
+            typeof firstValue ===
+            "string"
         ) {
             return firstValue;
         }
     }
 
 
-    if (error?.message) {
+    if (
+        error?.message
+    ) {
+
         try {
+
             const parsed =
                 JSON.parse(
                     error.message
                 );
 
 
-            if (parsed?.detail) {
+            if (
+                parsed?.detail
+            ) {
                 return String(
                     parsed.detail
                 );
             }
 
 
-            if (parsed?.message) {
+            if (
+                parsed?.message
+            ) {
                 return String(
                     parsed.message
                 );
             }
 
 
-            if (parsed?.error) {
+            if (
+                parsed?.error
+            ) {
                 return String(
                     parsed.error
                 );
             }
 
         } catch {
+
             return String(
                 error.message
             );
@@ -211,7 +232,10 @@ const getErrorMessage = (
 const getImageUrl = (
     image
 ) => {
-    if (!image) {
+
+    if (
+        !image
+    ) {
         return null;
     }
 
@@ -222,7 +246,9 @@ const getImageUrl = (
         ).trim();
 
 
-    if (!value) {
+    if (
+        !value
+    ) {
         return null;
     }
 
@@ -282,6 +308,7 @@ const DEFAULT_STACK_COLOR =
 const getStackColor = (
     item
 ) => {
+
     const color =
         item?.color;
 
@@ -305,6 +332,7 @@ const withAlpha = (
     color,
     alpha
 ) => {
+
     const safeColor =
         (
             typeof color === "string"
@@ -329,7 +357,10 @@ const StackTag = ({
     item,
     type = "language",
 }) => {
-    if (!item) {
+
+    if (
+        !item
+    ) {
         return null;
     }
 
@@ -341,10 +372,12 @@ const StackTag = ({
 
 
     return (
+
         <span
             title={
                 item?.name
             }
+
             className="
                 group/tag
                 inline-flex
@@ -362,6 +395,7 @@ const StackTag = ({
 
                 hover:-translate-y-0.5
             "
+
             style={{
                 color,
 
@@ -378,10 +412,12 @@ const StackTag = ({
                     ),
 
                 boxShadow:
-                    `0 8px 22px ${withAlpha(
-                        color,
-                        "0D"
-                    )}`,
+                    `0 8px 22px ${
+                        withAlpha(
+                            color,
+                            "0D"
+                        )
+                    }`,
             }}
         >
 
@@ -392,15 +428,18 @@ const StackTag = ({
                     shrink-0
                     rounded-full
                 "
+
                 style={{
                     backgroundColor:
                         color,
 
                     boxShadow:
-                        `0 0 9px ${withAlpha(
-                            color,
-                            "AA"
-                        )}`,
+                        `0 0 9px ${
+                            withAlpha(
+                                color,
+                                "AA"
+                            )
+                        }`,
                 }}
             />
 
@@ -410,17 +449,17 @@ const StackTag = ({
                     truncate
                 "
             >
-                {
-                    item?.name
-                    ||
-                    "Noma’lum"
-                }
+                {item?.name
+                ||
+                "Noma’lum"}
             </span>
 
 
-            {type === "technology"
+            {type ===
+                "technology"
                 &&
                 item?.category && (
+
                 <span
                     className="
                         hidden
@@ -439,11 +478,9 @@ const StackTag = ({
                         sm:inline
                     "
                 >
-                    {
-                        item.category_display
-                        ||
-                        item.category
-                    }
+                    {item.category_display
+                    ||
+                    item.category}
                 </span>
             )}
 
@@ -469,17 +506,24 @@ const AcceptSolutionConfirmationModal = ({
 
     useEffect(
         () => {
-            if (!isOpen) {
+
+            if (
+                !isOpen
+            ) {
                 return undefined;
             }
 
 
             const previousOverflow =
-                document.body.style
+                document
+                    .body
+                    .style
                     .overflow;
 
 
-            document.body.style
+            document
+                .body
+                .style
                 .overflow =
                 "hidden";
 
@@ -488,11 +532,14 @@ const AcceptSolutionConfirmationModal = ({
                 (
                     event
                 ) => {
+
                     if (
-                        event.key === "Escape"
+                        event.key ===
+                            "Escape"
                         &&
                         !isProcessing
                     ) {
+
                         onClose?.();
                     }
                 };
@@ -505,7 +552,10 @@ const AcceptSolutionConfirmationModal = ({
 
 
             return () => {
-                document.body.style
+
+                document
+                    .body
+                    .style
                     .overflow =
                     previousOverflow;
 
@@ -515,6 +565,7 @@ const AcceptSolutionConfirmationModal = ({
                     handleKeyDown
                 );
             };
+
         },
         [
             isOpen,
@@ -524,12 +575,15 @@ const AcceptSolutionConfirmationModal = ({
     );
 
 
-    if (!isOpen) {
+    if (
+        !isOpen
+    ) {
         return null;
     }
 
 
     return (
+
         <div
             className="
                 fixed
@@ -543,21 +597,26 @@ const AcceptSolutionConfirmationModal = ({
                 p-4
                 backdrop-blur-md
             "
+
             onMouseDown={(
                 event
             ) => {
+
                 if (
                     event.target ===
                     event.currentTarget
                     &&
                     !isProcessing
                 ) {
+
                     onClose?.();
                 }
             }}
         >
 
-            {/* GLOW */}
+            {/* =================================================
+                GLOW
+            ================================================== */}
 
             <div
                 className="
@@ -576,12 +635,17 @@ const AcceptSolutionConfirmationModal = ({
             />
 
 
-            {/* MODAL */}
+            {/* =================================================
+                MODAL
+            ================================================== */}
 
             <div
                 role="dialog"
+
                 aria-modal="true"
+
                 aria-labelledby="accept-solution-title"
+
                 className="
                     relative
                     w-full
@@ -594,6 +658,7 @@ const AcceptSolutionConfirmationModal = ({
                     shadow-[0_35px_110px_rgba(0,0,0,0.65)]
                     backdrop-blur-2xl
                 "
+
                 onMouseDown={(
                     event
                 ) =>
@@ -622,13 +687,17 @@ const AcceptSolutionConfirmationModal = ({
 
                 <button
                     type="button"
+
                     onClick={
                         onClose
                     }
+
                     disabled={
                         isProcessing
                     }
+
                     aria-label="Modalni yopish"
+
                     className="
                         absolute
                         right-4
@@ -652,9 +721,11 @@ const AcceptSolutionConfirmationModal = ({
                         disabled:opacity-30
                     "
                 >
+
                     <X
                         size={16}
                     />
+
                 </button>
 
 
@@ -701,6 +772,7 @@ const AcceptSolutionConfirmationModal = ({
 
 
                         {isProcessing ? (
+
                             <Loader2
                                 size={25}
                                 className="
@@ -709,7 +781,9 @@ const AcceptSolutionConfirmationModal = ({
                                     animate-spin
                                 "
                             />
+
                         ) : (
+
                             <CheckCircle2
                                 size={26}
                                 className="
@@ -750,16 +824,19 @@ const AcceptSolutionConfirmationModal = ({
                                 text-emerald-400
                             "
                         >
+
                             <ShieldCheck
                                 size={11}
                             />
 
                             Accept solution
+
                         </div>
 
 
                         <h3
                             id="accept-solution-title"
+
                             className="
                                 text-xl
                                 font-black
@@ -819,6 +896,7 @@ const AcceptSolutionConfirmationModal = ({
                             p-4
                         "
                     >
+
                         <AlertTriangle
                             size={16}
                             className="
@@ -827,6 +905,7 @@ const AcceptSolutionConfirmationModal = ({
                                 text-amber-300
                             "
                         />
+
 
                         <p
                             className="
@@ -839,6 +918,7 @@ const AcceptSolutionConfirmationModal = ({
                             Muammo yechilgan deb belgilangandan keyin
                             yangi yechim yuborish yopiladi.
                         </p>
+
                     </div>
 
 
@@ -856,12 +936,15 @@ const AcceptSolutionConfirmationModal = ({
 
                         <button
                             type="button"
+
                             onClick={
                                 onClose
                             }
+
                             disabled={
                                 isProcessing
                             }
+
                             className="
                                 inline-flex
                                 min-h-[44px]
@@ -886,22 +969,27 @@ const AcceptSolutionConfirmationModal = ({
                                 disabled:opacity-40
                             "
                         >
+
                             <X
                                 size={15}
                             />
 
                             Bekor qilish
+
                         </button>
 
 
                         <button
                             type="button"
+
                             onClick={
                                 onConfirm
                             }
+
                             disabled={
                                 isProcessing
                             }
+
                             className="
                                 inline-flex
                                 min-h-[44px]
@@ -931,6 +1019,7 @@ const AcceptSolutionConfirmationModal = ({
                         >
 
                             {isProcessing ? (
+
                                 <>
                                     <Loader2
                                         size={15}
@@ -941,7 +1030,9 @@ const AcceptSolutionConfirmationModal = ({
 
                                     Qabul qilinmoqda...
                                 </>
+
                             ) : (
+
                                 <>
                                     <Check
                                         size={15}
@@ -973,7 +1064,9 @@ const OwnerActions = ({
     onDelete,
     isDeleting,
 }) => {
+
     return (
+
         <div
             className="
                 inline-flex
@@ -1007,6 +1100,7 @@ const OwnerActions = ({
                     lg:flex
                 "
             >
+
                 <Sparkles
                     size={13}
                     className="
@@ -1015,6 +1109,7 @@ const OwnerActions = ({
                 />
 
                 Owner tools
+
             </div>
 
 
@@ -1034,12 +1129,15 @@ const OwnerActions = ({
 
             <button
                 type="button"
+
                 onClick={
                     onEdit
                 }
+
                 disabled={
                     isDeleting
                 }
+
                 className="
                     group
                     inline-flex
@@ -1067,11 +1165,13 @@ const OwnerActions = ({
                     disabled:opacity-40
                 "
             >
+
                 <Pencil
                     size={15}
                 />
 
                 Tahrirlash
+
             </button>
 
 
@@ -1079,12 +1179,15 @@ const OwnerActions = ({
 
             <button
                 type="button"
+
                 onClick={
                     onDelete
                 }
+
                 disabled={
                     isDeleting
                 }
+
                 className="
                     group
                     inline-flex
@@ -1114,13 +1217,16 @@ const OwnerActions = ({
             >
 
                 {isDeleting ? (
+
                     <Loader2
                         size={15}
                         className="
                             animate-spin
                         "
                     />
+
                 ) : (
+
                     <Trash2
                         size={15}
                     />
@@ -1273,11 +1379,7 @@ const ProblemDetail = () => {
 
 
     // =====================================================
-    // IMPORTANT:
-    // YECHIMLARNI QAYTA YUKLASH KEY
-    //
-    // Yangi yechim yuborilganda shu qiymat +1 bo‘ladi.
-    // React <ProblemResponse /> ni qaytadan mount qiladi.
+    // SOLUTION REFRESH KEY
     // =====================================================
 
     const [
@@ -1334,7 +1436,10 @@ const ProblemDetail = () => {
     const getProblemDetail =
         useCallback(
             async () => {
-                if (!id) {
+
+                if (
+                    !id
+                ) {
                     return;
                 }
 
@@ -1350,6 +1455,7 @@ const ProblemDetail = () => {
 
 
                 try {
+
                     const response =
                         await ProblemService
                             .getProblemDetail(
@@ -1369,6 +1475,7 @@ const ProblemDetail = () => {
                 } catch (
                     error
                 ) {
+
                     console.error(
                         "Problem detail olishda xatolik:",
                         error
@@ -1410,12 +1517,14 @@ const ProblemDetail = () => {
 
     useEffect(
         () => {
+
             getProblemDetail()
                 .catch(
                     () => {
                         // Error yuqorida boshqarildi.
                     }
                 );
+
         },
         [
             getProblemDetail,
@@ -1425,14 +1534,6 @@ const ProblemDetail = () => {
 
     // =====================================================
     // NEW SOLUTION CREATED
-    //
-    // MUHIM FIX:
-    //
-    // 1. Problem detail yangilanadi
-    // 2. response count yangilanadi
-    // 3. ProblemResponse qayta mount bo‘ladi
-    // 4. Yangi solution API'dan qayta olinadi
-    // 5. Yechimlar bo‘limiga scroll qiladi
     // =====================================================
 
     const handleSolutionCreated =
@@ -1440,19 +1541,11 @@ const ProblemDetail = () => {
             async (
                 createdSolution
             ) => {
-                try {
 
-                    // -----------------------------------------
-                    // Avval detail/countni yangilaymiz
-                    // -----------------------------------------
+                try {
 
                     await getProblemDetail();
 
-
-                    // -----------------------------------------
-                    // Keyin response listni majburan refetch
-                    // qilamiz.
-                    // -----------------------------------------
 
                     setResponsesRefreshKey(
                         (
@@ -1462,15 +1555,12 @@ const ProblemDetail = () => {
                     );
 
 
-                    // -----------------------------------------
-                    // React render tugagach solutions sectionga
-                    // olib boramiz.
-                    // -----------------------------------------
-
                     window.requestAnimationFrame(
                         () => {
+
                             window.requestAnimationFrame(
                                 () => {
+
                                     responsesSectionRef
                                         .current
                                         ?.scrollIntoView({
@@ -1491,15 +1581,6 @@ const ProblemDetail = () => {
                 } catch (
                     error
                 ) {
-                    /*
-                        Solution allaqachon backendga yozilgan.
-
-                        Detail refresh xato qilsa ham
-                        formdagi successni errorga aylantirib
-                        yubormasligimiz kerak.
-
-                        Response listni baribir yangilaymiz.
-                    */
 
                     console.error(
                         "Yechim yuborilgandan keyin sahifani yangilashda xatolik:",
@@ -1542,12 +1623,16 @@ const ProblemDetail = () => {
 
     const handleCopy =
         async () => {
+
             const code =
                 problemDetail
                     ?.code;
 
 
-            if (!code) {
+            if (
+                !code
+            ) {
+
                 siteToast.warning(
                     "Nusxalash uchun kod mavjud emas.",
                     {
@@ -1556,16 +1641,19 @@ const ProblemDetail = () => {
                     }
                 );
 
+
                 return;
             }
 
 
             try {
+
                 if (
                     navigator
                         ?.clipboard
                         ?.writeText
                 ) {
+
                     await navigator
                         .clipboard
                         .writeText(
@@ -1573,6 +1661,7 @@ const ProblemDetail = () => {
                         );
 
                 } else {
+
                     const textarea =
                         document
                             .createElement(
@@ -1592,7 +1681,8 @@ const ProblemDetail = () => {
                         "0";
 
 
-                    document.body
+                    document
+                        .body
                         .appendChild(
                             textarea
                         );
@@ -1629,16 +1719,20 @@ const ProblemDetail = () => {
 
                 window.setTimeout(
                     () => {
+
                         setCopied(
                             false
                         );
+
                     },
                     2000
                 );
 
+
             } catch (
                 error
             ) {
+
                 console.error(
                     "Copy xato:",
                     error
@@ -1670,6 +1764,7 @@ const ProblemDetail = () => {
                 ||
                 !user
             ) {
+
                 siteToast.warning(
                     "Star berish uchun avval tizimga kiring.",
                     {
@@ -1677,6 +1772,7 @@ const ProblemDetail = () => {
                             "Kirish talab qilinadi",
                     }
                 );
+
 
                 return;
             }
@@ -1703,6 +1799,7 @@ const ProblemDetail = () => {
 
 
             try {
+
                 const response =
                     await ProblemService
                         .addStar(
@@ -1731,9 +1828,11 @@ const ProblemDetail = () => {
 
                 await getProblemDetail();
 
+
             } catch (
                 error
             ) {
+
                 console.error(
                     "Star qo‘shishda xatolik:",
                     error
@@ -1754,7 +1853,9 @@ const ProblemDetail = () => {
                     }
                 );
 
+
             } finally {
+
                 setIsStarLoading(
                     false
                 );
@@ -1792,6 +1893,7 @@ const ProblemDetail = () => {
 
 
             try {
+
                 const response =
                     await ProblemService
                         .removeStar(
@@ -1820,9 +1922,11 @@ const ProblemDetail = () => {
 
                 await getProblemDetail();
 
+
             } catch (
                 error
             ) {
+
                 const message =
                     getErrorMessage(
                         error,
@@ -1854,7 +1958,9 @@ const ProblemDetail = () => {
                     }
                 );
 
+
             } finally {
+
                 setIsStarLoading(
                     false
                 );
@@ -1885,7 +1991,7 @@ const ProblemDetail = () => {
 
 
     // =====================================================
-    // DELETE MODAL
+    // DELETE
     // =====================================================
 
     const handleOpenDeleteModal =
@@ -1909,7 +2015,9 @@ const ProblemDetail = () => {
     const handleCloseDeleteModal =
         () => {
 
-            if (isDeleting) {
+            if (
+                isDeleting
+            ) {
                 return;
             }
 
@@ -1919,10 +2027,6 @@ const ProblemDetail = () => {
             );
         };
 
-
-    // =====================================================
-    // CONFIRM DELETE
-    // =====================================================
 
     const handleConfirmDelete =
         async () => {
@@ -1959,6 +2063,7 @@ const ProblemDetail = () => {
 
 
             try {
+
                 await ProblemService
                     .deleteProblem(
                         id
@@ -1993,9 +2098,11 @@ const ProblemDetail = () => {
                     }
                 );
 
+
             } catch (
                 error
             ) {
+
                 console.error(
                     "Muammoni o‘chirishda xatolik:",
                     error
@@ -2019,7 +2126,9 @@ const ProblemDetail = () => {
                     }
                 );
 
+
             } finally {
+
                 setIsDeleting(
                     false
                 );
@@ -2028,7 +2137,7 @@ const ProblemDetail = () => {
 
 
     // =====================================================
-    // SCROLL TO RESPONSE FORM
+    // WORK
     // =====================================================
 
     const handleWorkClick =
@@ -2038,6 +2147,7 @@ const ProblemDetail = () => {
                 problemDetail
                     ?.is_solved
             ) {
+
                 siteToast.info(
                     "Bu muammo allaqachon yechilgan.",
                     {
@@ -2045,6 +2155,7 @@ const ProblemDetail = () => {
                             "Muammo yopilgan",
                     }
                 );
+
 
                 return;
             }
@@ -2063,7 +2174,7 @@ const ProblemDetail = () => {
 
 
     // =====================================================
-    // OPEN ACCEPT SOLUTION
+    // ACCEPT SOLUTION
     // =====================================================
 
     const handleAcceptSolution =
@@ -2071,7 +2182,10 @@ const ProblemDetail = () => {
             solutionId
         ) => {
 
-            if (!isOwner) {
+            if (
+                !isOwner
+            ) {
+
                 siteToast.warning(
                     "Faqat muammo egasi yechimni qabul qila oladi.",
                     {
@@ -2079,6 +2193,7 @@ const ProblemDetail = () => {
                             "Ruxsat yo‘q",
                     }
                 );
+
 
                 return;
             }
@@ -2088,6 +2203,7 @@ const ProblemDetail = () => {
                 problemDetail
                     ?.is_solved
             ) {
+
                 siteToast.info(
                     "Bu muammo allaqachon yechilgan.",
                     {
@@ -2096,11 +2212,15 @@ const ProblemDetail = () => {
                     }
                 );
 
+
                 return;
             }
 
 
-            if (!solutionId) {
+            if (
+                !solutionId
+            ) {
+
                 siteToast.error(
                     "Yechim ID topilmadi.",
                     {
@@ -2108,6 +2228,7 @@ const ProblemDetail = () => {
                             "Yechim tanlanmadi",
                     }
                 );
+
 
                 return;
             }
@@ -2123,10 +2244,6 @@ const ProblemDetail = () => {
             );
         };
 
-
-    // =====================================================
-    // CLOSE ACCEPT MODAL
-    // =====================================================
 
     const handleCloseAcceptModal =
         useCallback(
@@ -2147,16 +2264,13 @@ const ProblemDetail = () => {
                 setSolutionToAccept(
                     null
                 );
+
             },
             [
                 isAcceptingSolution,
             ]
         );
 
-
-    // =====================================================
-    // CONFIRM ACCEPT SOLUTION
-    // =====================================================
 
     const handleConfirmAcceptSolution =
         async () => {
@@ -2191,6 +2305,7 @@ const ProblemDetail = () => {
 
 
             try {
+
                 const response =
                     await ProblemService
                         .acceptSolution(
@@ -2231,19 +2346,8 @@ const ProblemDetail = () => {
                 );
 
 
-                // =========================================
-                // DETAIL REFRESH
-                // =========================================
-
                 await getProblemDetail();
 
-
-                // =========================================
-                // RESPONSE LIST HAM REFRESH BO‘LADI
-                //
-                // selected solution yangi holatini darhol
-                // ko‘rsatadi.
-                // =========================================
 
                 setResponsesRefreshKey(
                     (
@@ -2252,9 +2356,11 @@ const ProblemDetail = () => {
                         previous + 1
                 );
 
+
             } catch (
                 error
             ) {
+
                 const message =
                     getErrorMessage(
                         error,
@@ -2283,7 +2389,9 @@ const ProblemDetail = () => {
                     }
                 );
 
+
             } finally {
+
                 setIsAcceptingSolution(
                     false
                 );
@@ -2300,7 +2408,9 @@ const ProblemDetail = () => {
         &&
         !problemDetail
     ) {
+
         return (
+
             <main
                 className="
                     min-h-screen
@@ -2309,6 +2419,7 @@ const ProblemDetail = () => {
                     py-20
                 "
             >
+
                 <div
                     className="
                         mx-auto
@@ -2340,12 +2451,14 @@ const ProblemDetail = () => {
                             text-cyan-300
                         "
                     >
+
                         <Loader2
                             size={27}
                             className="
                                 animate-spin
                             "
                         />
+
                     </div>
 
 
@@ -2371,6 +2484,7 @@ const ProblemDetail = () => {
                     </p>
 
                 </div>
+
             </main>
         );
     }
@@ -2385,7 +2499,9 @@ const ProblemDetail = () => {
         &&
         !problemDetail
     ) {
+
         return (
+
             <main
                 className="
                     min-h-screen
@@ -2425,9 +2541,11 @@ const ProblemDetail = () => {
                             text-red-300
                         "
                     >
+
                         <AlertTriangle
                             size={27}
                         />
+
                     </div>
 
 
@@ -2457,12 +2575,14 @@ const ProblemDetail = () => {
 
                     <button
                         type="button"
+
                         onClick={() =>
                             getProblemDetail()
                                 .catch(
                                     () => {}
                                 )
                         }
+
                         className="
                             mt-6
                             inline-flex
@@ -2496,7 +2616,9 @@ const ProblemDetail = () => {
     // EMPTY
     // =====================================================
 
-    if (!problemDetail) {
+    if (
+        !problemDetail
+    ) {
         return null;
     }
 
@@ -2517,17 +2639,25 @@ const ProblemDetail = () => {
         Number(
             problemDetail
                 ?.total_responses
+
             ??
+
             problemDetail
                 ?.response_count
+
             ??
+
             problemDetail
                 ?.responses_count
+
             ??
+
             problemDetail
                 ?.responses
                 ?.length
+
             ??
+
             0
         );
 
@@ -2542,6 +2672,7 @@ const ProblemDetail = () => {
                 .filter(
                     Boolean
                 )
+
             : [];
 
 
@@ -2555,6 +2686,7 @@ const ProblemDetail = () => {
                 .filter(
                     Boolean
                 )
+
             : [];
 
 
@@ -2563,6 +2695,7 @@ const ProblemDetail = () => {
     // =====================================================
 
     return (
+
         <>
 
             <main
@@ -2736,6 +2869,7 @@ const ProblemDetail = () => {
 
                                         {problemDetail
                                             ?.is_solved ? (
+
                                             <span
                                                 className="
                                                     inline-flex
@@ -2754,13 +2888,17 @@ const ProblemDetail = () => {
                                                     text-green-300
                                                 "
                                             >
+
                                                 <CheckCircle2
                                                     size={14}
                                                 />
 
                                                 Yechilgan
+
                                             </span>
+
                                         ) : (
+
                                             <span
                                                 className="
                                                     inline-flex
@@ -2779,17 +2917,20 @@ const ProblemDetail = () => {
                                                     text-red-300
                                                 "
                                             >
+
                                                 <Clock3
                                                     size={14}
                                                 />
 
                                                 Yechilmagan
+
                                             </span>
                                         )}
 
 
                                         {problemDetail
                                             ?.star_by_user && (
+
                                             <span
                                                 className="
                                                     inline-flex
@@ -2808,6 +2949,7 @@ const ProblemDetail = () => {
                                                     text-yellow-300
                                                 "
                                             >
+
                                                 <Star
                                                     size={13}
                                                     className="
@@ -2816,12 +2958,14 @@ const ProblemDetail = () => {
                                                 />
 
                                                 Siz star berdingiz
+
                                             </span>
                                         )}
 
 
                                         {problemDetail
                                             ?.is_urgent && (
+
                                             <span
                                                 className="
                                                     inline-flex
@@ -2851,6 +2995,7 @@ const ProblemDetail = () => {
                                             ||
                                             0
                                         ) > 0 && (
+
                                             <span
                                                 className="
                                                     inline-flex
@@ -2869,16 +3014,17 @@ const ProblemDetail = () => {
                                                     text-yellow-300
                                                 "
                                             >
+
                                                 <Coins
                                                     size={14}
                                                 />
 
-                                                {
-                                                    problemDetail
-                                                        .offered_coins
-                                                }
+
+                                                {problemDetail
+                                                    .offered_coins}
 
                                                 {" "}FCoin
+
                                             </span>
                                         )}
 
@@ -2887,9 +3033,6 @@ const ProblemDetail = () => {
 
                                     {/* =========================================
                                         LANGUAGES
-
-                                        Tillar title oldida ixcham ko‘rinadi.
-                                        Rang backenddagi Language.color dan olinadi.
                                     ========================================== */}
 
                                     <div
@@ -2921,20 +3064,24 @@ const ProblemDetail = () => {
                                                 text-gray-600
                                             "
                                         >
+
                                             <Code2
                                                 size={12}
                                             />
 
                                             Til
+
                                         </span>
 
 
                                         {problemLanguages.length > 0 ? (
+
                                             problemLanguages.map(
                                                 (
                                                     language,
                                                     index
                                                 ) => (
+
                                                     <StackTag
                                                         key={
                                                             language?.id
@@ -2943,14 +3090,18 @@ const ProblemDetail = () => {
                                                             ||
                                                             `language-${index}`
                                                         }
+
                                                         item={
                                                             language
                                                         }
+
                                                         type="language"
                                                     />
                                                 )
                                             )
+
                                         ) : (
+
                                             <span
                                                 className="
                                                     rounded-full
@@ -3007,10 +3158,7 @@ const ProblemDetail = () => {
                                                 "
                                             >
                                                 fsociety://problem/
-                                                {
-                                                    problemDetail
-                                                        ?.id
-                                                }
+                                                {problemDetail?.id}
                                             </p>
 
 
@@ -3027,32 +3175,34 @@ const ProblemDetail = () => {
                                                     lg:text-5xl
                                                 "
                                             >
-                                                {
-                                                    problemDetail
-                                                        ?.problem
-                                                }
+                                                {problemDetail?.problem}
                                             </h1>
 
                                         </div>
 
 
                                         {isOwner && (
+
                                             <div
                                                 className="
                                                     shrink-0
                                                 "
                                             >
+
                                                 <OwnerActions
                                                     onEdit={
                                                         handleEditProblem
                                                     }
+
                                                     onDelete={
                                                         handleOpenDeleteModal
                                                     }
+
                                                     isDeleting={
                                                         isDeleting
                                                     }
                                                 />
+
                                             </div>
                                         )}
 
@@ -3088,9 +3238,11 @@ const ProblemDetail = () => {
                                                 ||
                                                 UserImage
                                             }
+
                                             onError={(
                                                 event
                                             ) => {
+
                                                 event
                                                     .currentTarget
                                                     .onerror =
@@ -3102,6 +3254,7 @@ const ProblemDetail = () => {
                                                     .src =
                                                     UserImage;
                                             }}
+
                                             className="
                                                 h-12
                                                 w-12
@@ -3111,6 +3264,7 @@ const ProblemDetail = () => {
                                                 border-cyan-400/20
                                                 object-cover
                                             "
+
                                             alt={
                                                 problemDetail
                                                     ?.user
@@ -3131,8 +3285,10 @@ const ProblemDetail = () => {
                                             {problemDetail
                                                 ?.user
                                                 ?.username ? (
+
                                                 <Link
                                                     to={`/${problemDetail.user.username}/profile/`}
+
                                                     className="
                                                         block
                                                         truncate
@@ -3144,14 +3300,13 @@ const ProblemDetail = () => {
                                                         hover:text-cyan-300
                                                     "
                                                 >
-                                                    @
-                                                    {
-                                                        problemDetail
-                                                            .user
-                                                            .username
-                                                    }
+                                                    @{problemDetail
+                                                        .user
+                                                        .username}
                                                 </Link>
+
                                             ) : (
+
                                                 <p
                                                     className="
                                                         text-base
@@ -3180,6 +3335,7 @@ const ProblemDetail = () => {
 
                                                 {problemDetail
                                                     ?.created_at && (
+
                                                     <span>
                                                         {timeAgo(
                                                             problemDetail
@@ -3210,18 +3366,19 @@ const ProblemDetail = () => {
                                                         gap-1
                                                     "
                                                 >
+
                                                     <Eye
                                                         size={12}
                                                     />
 
-                                                    {
-                                                        problemDetail
-                                                            ?.total_views
-                                                        ||
-                                                        0
-                                                    }
+
+                                                    {problemDetail
+                                                        ?.total_views
+                                                    ||
+                                                    0}
 
                                                     {" "}marta ko‘rilgan
+
                                                 </span>
 
 
@@ -3242,10 +3399,7 @@ const ProblemDetail = () => {
                                                         text-cyan-400
                                                     "
                                                 >
-                                                    {
-                                                        responseCount
-                                                    }
-
+                                                    {responseCount}
                                                     {" "}ta yechim
                                                 </span>
 
@@ -3263,41 +3417,49 @@ const ProblemDetail = () => {
                                     {(
                                         problemDetail
                                             ?.is_urgent
+
                                         ||
+
                                         Number(
                                             problemDetail
                                                 ?.offered_coins
                                             ||
                                             0
                                         ) > 0
+
                                         ||
+
                                         problemDetail
                                             ?.deadline
+
                                     ) && (
+
                                         <div
                                             className={`
                                                 mb-8
                                                 flex
                                                 flex-col
-                                                items-start
+                                                items-stretch
                                                 justify-between
-                                                gap-4
+                                                gap-5
                                                 rounded-3xl
                                                 border
                                                 p-5
 
-                                                md:flex-row
-                                                md:items-center
+                                                lg:flex-row
+                                                lg:items-center
 
                                                 ${
                                                     problemDetail
                                                         ?.is_urgent
+
                                                         ? `
                                                             border-red-400/25
                                                             bg-red-500/[0.07]
                                                             shadow-xl
                                                             shadow-red-500/[0.04]
                                                         `
+
                                                         : `
                                                             border-white/10
                                                             bg-white/[0.035]
@@ -3306,121 +3468,223 @@ const ProblemDetail = () => {
                                             `}
                                         >
 
+                                            {/* LEFT INFO */}
+
                                             <div
                                                 className="
-                                                    flex
-                                                    flex-wrap
-                                                    gap-3
+                                                    min-w-0
+                                                    flex-1
                                                 "
                                             >
 
-                                                {problemDetail
-                                                    ?.is_urgent && (
-                                                    <div
-                                                        className="
-                                                            inline-flex
-                                                            items-center
-                                                            rounded-full
-                                                            border
-                                                            border-red-400/30
-                                                            bg-red-500/10
-                                                            px-4
-                                                            py-2
-                                                            text-sm
-                                                            font-black
-                                                            text-red-300
-                                                        "
-                                                    >
-                                                        ⚡ Favqulodda muammo
-                                                    </div>
-                                                )}
+                                                {/* BADGES */}
+
+                                                <div
+                                                    className="
+                                                        flex
+                                                        flex-wrap
+                                                        items-center
+                                                        gap-3
+                                                    "
+                                                >
+
+                                                    {problemDetail
+                                                        ?.is_urgent && (
+
+                                                        <div
+                                                            className="
+                                                                inline-flex
+                                                                items-center
+                                                                gap-2
+                                                                rounded-full
+                                                                border
+                                                                border-red-400/30
+                                                                bg-red-500/10
+                                                                px-4
+                                                                py-2
+                                                                text-sm
+                                                                font-black
+                                                                text-red-300
+                                                            "
+                                                        >
+
+                                                            <span
+                                                                aria-hidden="true"
+                                                            >
+                                                                ⚡
+                                                            </span>
+
+                                                            Favqulodda muammo
+
+                                                        </div>
+                                                    )}
 
 
-                                                {Number(
-                                                    problemDetail
-                                                        ?.offered_coins
-                                                    ||
-                                                    0
-                                                ) > 0 && (
-                                                    <div
-                                                        className="
-                                                            inline-flex
-                                                            items-center
-                                                            gap-2
-                                                            rounded-full
-                                                            border
-                                                            border-yellow-400/30
-                                                            bg-yellow-400/10
-                                                            px-4
-                                                            py-2
-                                                            text-sm
-                                                            font-black
-                                                            text-yellow-300
-                                                        "
-                                                    >
-                                                        <Coins
-                                                            size={15}
-                                                        />
+                                                    {Number(
+                                                        problemDetail
+                                                            ?.offered_coins
+                                                        ||
+                                                        0
+                                                    ) > 0 && (
 
-                                                        Mukofot:{" "}
+                                                        <div
+                                                            className="
+                                                                inline-flex
+                                                                items-center
+                                                                gap-2
+                                                                rounded-full
+                                                                border
+                                                                border-yellow-400/30
+                                                                bg-yellow-400/10
+                                                                px-4
+                                                                py-2
+                                                                text-sm
+                                                                font-black
+                                                                text-yellow-300
+                                                            "
+                                                        >
 
-                                                        {
-                                                            problemDetail
-                                                                .offered_coins
-                                                        }
+                                                            <Coins
+                                                                size={15}
+                                                            />
 
-                                                        {" "}FCoin
-                                                    </div>
-                                                )}
 
+                                                            <span>
+                                                                Mukofot:{" "}
+                                                                {problemDetail
+                                                                    .offered_coins}
+                                                                {" "}FCoin
+                                                            </span>
+
+                                                        </div>
+                                                    )}
+
+                                                </div>
+
+
+                                                {/* =================================
+                                                    UNIVERSAL COUNTDOWN
+                                                ================================== */}
 
                                                 {problemDetail
                                                     ?.deadline && (
+
                                                     <div
                                                         className="
-                                                            inline-flex
-                                                            items-center
-                                                            gap-2
-                                                            rounded-full
+                                                            mt-4
+                                                            w-fit
+                                                            max-w-full
+                                                            rounded-[22px]
                                                             border
-                                                            border-indigo-400/30
-                                                            bg-indigo-500/10
-                                                            px-4
-                                                            py-2
-                                                            text-sm
-                                                            font-black
-                                                            text-indigo-300
+                                                            border-indigo-400/20
+                                                            bg-indigo-500/[0.055]
+                                                            p-3.5
+                                                            shadow-lg
+                                                            shadow-indigo-500/[0.04]
                                                         "
                                                     >
-                                                        <Clock3
-                                                            size={15}
+
+                                                        <div
+                                                            className="
+                                                                mb-2.5
+                                                                flex
+                                                                items-center
+                                                                gap-2
+                                                            "
+                                                        >
+
+                                                            <Clock3
+                                                                size={14}
+                                                                className="
+                                                                    shrink-0
+                                                                    text-indigo-300
+                                                                "
+                                                            />
+
+
+                                                            <span
+                                                                className="
+                                                                    text-[10px]
+                                                                    font-black
+                                                                    uppercase
+                                                                    tracking-[0.14em]
+                                                                    text-indigo-300/70
+                                                                "
+                                                            >
+                                                                Muddat
+                                                            </span>
+
+                                                        </div>
+
+
+                                                        <CountdownTimer
+                                                            targetDate={
+                                                                problemDetail
+                                                                    .deadline
+                                                            }
+
+                                                            variant="cards"
+
+                                                            tone="emerald"
+
+                                                            size="sm"
+
+                                                            showLabel={
+                                                                false
+                                                            }
+
+                                                            showIcon={
+                                                                false
+                                                            }
+
+                                                            expiredText="Muammo muddati tugagan"
                                                         />
 
-                                                        Muddat:
 
-                                                        <span>
-                                                            <CountdownTimer
-                                                                targetDate={
-                                                                    problemDetail
-                                                                        .deadline
-                                                                }
+                                                        <div
+                                                            className="
+                                                                mt-2.5
+                                                                flex
+                                                                items-center
+                                                                gap-1.5
+                                                                text-[8px]
+                                                                font-semibold
+                                                                text-indigo-300/40
+                                                            "
+                                                        >
+
+                                                            <Clock3
+                                                                size={10}
+                                                                className="
+                                                                    shrink-0
+                                                                "
                                                             />
-                                                        </span>
+
+                                                            Muammo muddati tugashigacha qolgan vaqt
+
+                                                        </div>
+
                                                     </div>
                                                 )}
 
                                             </div>
 
 
+                                            {/* WORK BUTTON */}
+
                                             {!problemDetail
                                                 ?.is_solved && (
+
                                                 <button
                                                     type="button"
+
                                                     onClick={
                                                         handleWorkClick
                                                     }
+
                                                     className="
                                                         inline-flex
+                                                        min-h-[46px]
                                                         w-full
                                                         shrink-0
                                                         items-center
@@ -3445,14 +3709,16 @@ const ProblemDetail = () => {
                                                         active:translate-y-0
                                                         active:scale-[0.98]
 
-                                                        md:w-auto
+                                                        lg:w-auto
                                                     "
                                                 >
+
                                                     <Hammer
                                                         size={16}
                                                     />
 
                                                     Men ishlayman!
+
                                                 </button>
                                             )}
 
@@ -3473,9 +3739,7 @@ const ProblemDetail = () => {
                                         "
                                     >
 
-                                        {/* =====================================
-                                            STAR COLUMN
-                                        ====================================== */}
+                                        {/* STAR COLUMN */}
 
                                         <aside
                                             className="
@@ -3508,17 +3772,20 @@ const ProblemDetail = () => {
 
                                                 <button
                                                     type="button"
+
                                                     onClick={() =>
                                                         handleStarClick(
                                                             problemDetail.id
                                                         )
                                                     }
+
                                                     disabled={
                                                         problemDetail
                                                             ?.star_by_user
                                                         ||
                                                         isStarLoading
                                                     }
+
                                                     className={`
                                                         flex
                                                         h-11
@@ -3535,12 +3802,14 @@ const ProblemDetail = () => {
                                                         ${
                                                             problemDetail
                                                                 ?.star_by_user
+
                                                                 ? `
                                                                     cursor-not-allowed
                                                                     border-green-400/30
                                                                     bg-green-500/10
                                                                     text-green-300
                                                                 `
+
                                                                 : `
                                                                     border-green-400/20
                                                                     bg-green-500/10
@@ -3551,6 +3820,7 @@ const ProblemDetail = () => {
                                                                 `
                                                         }
                                                     `}
+
                                                     title={
                                                         problemDetail
                                                             ?.star_by_user
@@ -3560,13 +3830,16 @@ const ProblemDetail = () => {
                                                 >
 
                                                     {isStarLoading ? (
+
                                                         <Loader2
                                                             size={18}
                                                             className="
                                                                 animate-spin
                                                             "
                                                         />
+
                                                     ) : (
+
                                                         <ArrowUp
                                                             size={20}
                                                         />
@@ -3587,12 +3860,9 @@ const ProblemDetail = () => {
                                                         sm:text-3xl
                                                     "
                                                 >
-                                                    {
-                                                        problemDetail
-                                                            ?.star
-                                                        ??
-                                                        0
-                                                    }
+                                                    {problemDetail?.star
+                                                    ??
+                                                    0}
                                                 </span>
 
 
@@ -3600,17 +3870,20 @@ const ProblemDetail = () => {
 
                                                 <button
                                                     type="button"
+
                                                     onClick={() =>
                                                         handleStarDeleteClick(
                                                             problemDetail.id
                                                         )
                                                     }
+
                                                     disabled={
                                                         !problemDetail
                                                             ?.star_by_user
                                                         ||
                                                         isStarLoading
                                                     }
+
                                                     className={`
                                                         flex
                                                         h-11
@@ -3627,6 +3900,7 @@ const ProblemDetail = () => {
                                                         ${
                                                             problemDetail
                                                                 ?.star_by_user
+
                                                                 ? `
                                                                     border-red-400/30
                                                                     bg-red-500/10
@@ -3635,6 +3909,7 @@ const ProblemDetail = () => {
                                                                     hover:scale-105
                                                                     hover:bg-red-500/20
                                                                 `
+
                                                                 : `
                                                                     cursor-not-allowed
                                                                     border-white/10
@@ -3643,6 +3918,7 @@ const ProblemDetail = () => {
                                                                 `
                                                         }
                                                     `}
+
                                                     title={
                                                         problemDetail
                                                             ?.star_by_user
@@ -3652,13 +3928,16 @@ const ProblemDetail = () => {
                                                 >
 
                                                     {isStarLoading ? (
+
                                                         <Loader2
                                                             size={18}
                                                             className="
                                                                 animate-spin
                                                             "
                                                         />
+
                                                     ) : (
+
                                                         <ArrowDown
                                                             size={20}
                                                         />
@@ -3687,11 +3966,13 @@ const ProblemDetail = () => {
                                                         ${
                                                             problemDetail
                                                                 ?.star_by_user
+
                                                                 ? `
                                                                     border-yellow-400/30
                                                                     bg-yellow-400/10
                                                                     text-yellow-300
                                                                 `
+
                                                                 : `
                                                                     border-white/10
                                                                     bg-white/[0.035]
@@ -3703,10 +3984,13 @@ const ProblemDetail = () => {
 
                                                     {problemDetail
                                                         ?.star_by_user ? (
+
                                                         <Check
                                                             size={14}
                                                         />
+
                                                     ) : (
+
                                                         <Star
                                                             size={14}
                                                         />
@@ -3719,9 +4003,7 @@ const ProblemDetail = () => {
                                         </aside>
 
 
-                                        {/* =====================================
-                                            ARTICLE
-                                        ====================================== */}
+                                        {/* ARTICLE */}
 
                                         <article
                                             className="
@@ -3772,22 +4054,16 @@ const ProblemDetail = () => {
                                                         md:leading-8
                                                     "
                                                 >
-                                                    {
-                                                        problemDetail
-                                                            ?.description
-                                                    }
+                                                    {problemDetail
+                                                        ?.description}
                                                 </p>
 
 
-                                                {/* =================================
-                                                    TECHNOLOGY TAGS
+                                                {/* TECHNOLOGIES */}
 
-                                                    Taglar tavsifning pastida metadata
-                                                    sifatida chiqadi. Shu sabab title
-                                                    tepasini band qilmaydi.
-                                                ================================== */}
+                                                {problemTechnologies.length >
+                                                    0 && (
 
-                                                {problemTechnologies.length > 0 && (
                                                     <div
                                                         className="
                                                             mt-5
@@ -3815,12 +4091,14 @@ const ProblemDetail = () => {
                                                                     gap-2
                                                                 "
                                                             >
+
                                                                 <Tags
                                                                     size={13}
                                                                     className="
                                                                         text-indigo-400
                                                                     "
                                                                 />
+
 
                                                                 <span
                                                                     className="
@@ -3834,6 +4112,7 @@ const ProblemDetail = () => {
                                                                 >
                                                                     Teglar / Texnologiyalar
                                                                 </span>
+
                                                             </div>
 
 
@@ -3869,6 +4148,7 @@ const ProblemDetail = () => {
                                                                     technology,
                                                                     index
                                                                 ) => (
+
                                                                     <StackTag
                                                                         key={
                                                                             technology?.id
@@ -3877,9 +4157,11 @@ const ProblemDetail = () => {
                                                                             ||
                                                                             `technology-${index}`
                                                                         }
+
                                                                         item={
                                                                             technology
                                                                         }
+
                                                                         type="technology"
                                                                     />
                                                                 )
@@ -3960,11 +4242,14 @@ const ProblemDetail = () => {
 
                                                     {problemDetail
                                                         ?.code && (
+
                                                         <button
                                                             type="button"
+
                                                             onClick={
                                                                 handleCopy
                                                             }
+
                                                             className="
                                                                 inline-flex
                                                                 items-center
@@ -3988,10 +4273,13 @@ const ProblemDetail = () => {
                                                         >
 
                                                             {copied ? (
+
                                                                 <Check
                                                                     size={14}
                                                                 />
+
                                                             ) : (
+
                                                                 <Clipboard
                                                                     size={14}
                                                                 />
@@ -4011,6 +4299,7 @@ const ProblemDetail = () => {
 
                                                 {problemDetail
                                                     ?.code ? (
+
                                                     <pre
                                                         className="
                                                             max-h-[520px]
@@ -4025,20 +4314,23 @@ const ProblemDetail = () => {
                                                             sm:text-sm
                                                         "
                                                     >
+
                                                         <code>
-                                                            {
-                                                                problemDetail
-                                                                    .code
-                                                            }
+                                                            {problemDetail
+                                                                .code}
                                                         </code>
+
                                                     </pre>
+
                                                 ) : (
+
                                                     <div
                                                         className="
                                                             p-6
                                                             text-center
                                                         "
                                                     >
+
                                                         <p
                                                             className="
                                                                 text-sm
@@ -4049,6 +4341,7 @@ const ProblemDetail = () => {
                                                         >
                                                             Kod mavjud emas.
                                                         </p>
+
                                                     </div>
                                                 )}
 
@@ -4072,6 +4365,7 @@ const ProblemDetail = () => {
                                                     sm:p-5
                                                 "
                                             >
+
                                                 <Sparkles
                                                     size={17}
                                                     className="
@@ -4113,6 +4407,7 @@ const ProblemDetail = () => {
                                 ref={
                                     responsesSectionRef
                                 }
+
                                 className="
                                     mt-8
                                     scroll-mt-28
@@ -4200,9 +4495,7 @@ const ProblemDetail = () => {
                                                         text-cyan-300
                                                     "
                                                 >
-                                                    {
-                                                        responseCount
-                                                    }
+                                                    {responseCount}
                                                 </span>
 
                                             </h2>
@@ -4225,11 +4518,14 @@ const ProblemDetail = () => {
 
                                         {!problemDetail
                                             ?.is_solved && (
+
                                             <button
                                                 type="button"
+
                                                 onClick={
                                                     handleWorkClick
                                                 }
+
                                                 className="
                                                     inline-flex
                                                     items-center
@@ -4251,11 +4547,13 @@ const ProblemDetail = () => {
                                                     active:scale-[0.98]
                                                 "
                                             >
+
                                                 <Pencil
                                                     size={15}
                                                 />
 
                                                 Yechim yozish
+
                                             </button>
                                         )}
 
@@ -4264,12 +4562,7 @@ const ProblemDetail = () => {
                                 </div>
 
 
-                                {/* =========================================
-                                    RESPONSE LIST
-
-                                    MUHIM:
-                                    KEY o‘zgarsa component qayta mount bo‘ladi.
-                                ========================================== */}
+                                {/* RESPONSE LIST */}
 
                                 <div
                                     className="
@@ -4286,16 +4579,20 @@ const ProblemDetail = () => {
 
                                     <ProblemResponse
                                         key={`problem-responses-${id}-${responsesRefreshKey}`}
+
                                         id={
                                             id
                                         }
+
                                         isOwner={
                                             isOwner
                                         }
+
                                         isSolved={
                                             problemDetail
                                                 ?.is_solved
                                         }
+
                                         onAcceptSolution={
                                             handleAcceptSolution
                                         }
@@ -4317,6 +4614,7 @@ const ProblemDetail = () => {
                                     ref={
                                         responseFormRef
                                     }
+
                                     className="
                                         mt-8
                                         scroll-mt-28
@@ -4381,17 +4679,15 @@ const ProblemDetail = () => {
                                     </div>
 
 
-                                    {/* =====================================
-                                        IMPORTANT FIX
-                                    ====================================== */}
-
                                     <ProblemResponseForm
                                         id={
                                             id
                                         }
+
                                         problemLanguages={
                                             problemLanguages
                                         }
+
                                         onSuccess={
                                             handleSolutionCreated
                                         }
@@ -4429,9 +4725,11 @@ const ProblemDetail = () => {
                                             text-green-300
                                         "
                                     >
+
                                         <CheckCircle2
                                             size={25}
                                         />
+
                                     </div>
 
 
@@ -4485,11 +4783,13 @@ const ProblemDetail = () => {
                                     lg:top-28
                                 "
                             >
+
                                 <SimilarProblems
                                     problemId={
                                         id
                                     }
                                 />
+
                             </div>
 
                         </aside>
@@ -4506,22 +4806,27 @@ const ProblemDetail = () => {
             ================================================== */}
 
             {isOwner && (
+
                 <DeleteConfirmationModal
                     isOpen={
                         isDeleteModalOpen
                     }
+
                     onClose={
                         handleCloseDeleteModal
                     }
+
                     onConfirm={
                         handleConfirmDelete
                     }
+
                     itemTitle={
                         problemDetail
                             ?.problem
                         ||
                         "Muammo"
                     }
+
                     isProcessing={
                         isDeleting
                     }
@@ -4537,12 +4842,15 @@ const ProblemDetail = () => {
                 isOpen={
                     isAcceptModalOpen
                 }
+
                 onClose={
                     handleCloseAcceptModal
                 }
+
                 onConfirm={
                     handleConfirmAcceptSolution
                 }
+
                 isProcessing={
                     isAcceptingSolution
                 }

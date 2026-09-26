@@ -22,15 +22,6 @@ const initialState = {
 
     // =====================================================
     // PROJECT PAGINATION
-    //
-    // /projects/all/
-    //
-    // {
-    //     count,
-    //     next,
-    //     previous,
-    //     results
-    // }
     // =====================================================
 
     projectCount: 0,
@@ -96,12 +87,62 @@ const initialState = {
 
 
     // =====================================================
-    // PROJECT BOOST
+    // PROJECT BOOST OPTIONS
+    // =====================================================
+
+    boostOptionsIsLoading: false,
+
+    boostOptionsError: null,
+
+    boostProjectId: null,
+
+    boostPlans: [],
+
+    boostBalance: null,
+
+    boostDailyLimit: 0,
+
+    boostDailyUsed: 0,
+
+    boostDailyRemaining: 0,
+
+    boostIsActive: false,
+
+    boostExpiresAt: null,
+
+
+    // =====================================================
+    // PROJECT BOOST ACTION
     // =====================================================
 
     isBoosting: false,
 
     boostError: null,
+
+    lastBoostResult: null,
+};
+
+
+// =========================================================
+// HELPERS
+// =========================================================
+
+const safeNumber = (
+    value,
+    fallback = 0
+) => {
+
+    const number =
+        Number(
+            value
+        );
+
+
+    return Number.isFinite(
+        number
+    )
+        ? number
+        : fallback;
 };
 
 
@@ -137,22 +178,6 @@ export const projectSlice =
 
             // =================================================
             // PROJECT LIST SUCCESS
-            //
-            // Qo‘llab-quvvatlaydi:
-            //
-            // 1)
-            // [
-            //    {...},
-            //    {...}
-            // ]
-            //
-            // 2)
-            // {
-            //    count: 20,
-            //    next: "...",
-            //    previous: null,
-            //    results: [...]
-            // }
             // =================================================
 
             getProjectSuccess: (
@@ -173,8 +198,6 @@ export const projectSlice =
 
                 // =============================================
                 // SIMPLE ARRAY
-                //
-                // Profile projects endpoint uchun.
                 // =============================================
 
                 if (
@@ -200,9 +223,7 @@ export const projectSlice =
 
 
                 // =============================================
-                // PAGINATED RESPONSE
-                //
-                // Global projects endpoint uchun.
+                // PAGINATION
                 // =============================================
 
                 if (
@@ -220,9 +241,8 @@ export const projectSlice =
                         payload.results;
 
                     state.projectCount =
-                        Number(
-                            payload.count
-                            ??
+                        safeNumber(
+                            payload.count,
                             payload.results.length
                         );
 
@@ -274,10 +294,7 @@ export const projectSlice =
 
 
             // =================================================
-            // ADD PROJECT TO LIST
-            //
-            // Project yaratgandan keyin local Redux state
-            // yangilash kerak bo‘lsa ishlatish mumkin.
+            // ADD PROJECT
             // =================================================
 
             addProjectSuccess: (
@@ -303,13 +320,19 @@ export const projectSlice =
                         (
                             item
                         ) =>
-                            item.id
+                            Number(
+                                item.id
+                            )
                             ===
-                            project.id
+                            Number(
+                                project.id
+                            )
                     );
 
 
-                if (!exists) {
+                if (
+                    !exists
+                ) {
 
                     state.projects.unshift(
                         project
@@ -322,7 +345,7 @@ export const projectSlice =
 
 
             // =================================================
-            // UPDATE PROJECT IN LIST
+            // UPDATE PROJECT
             // =================================================
 
             updateProjectSuccess: (
@@ -348,9 +371,13 @@ export const projectSlice =
                         (
                             item
                         ) =>
-                            item.id
+                            Number(
+                                item.id
+                            )
                             ===
-                            project.id
+                            Number(
+                                project.id
+                            )
                     );
 
 
@@ -375,9 +402,13 @@ export const projectSlice =
                 if (
                     state.projectDetail
                     &&
-                    state.projectDetail.id
+                    Number(
+                        state.projectDetail.id
+                    )
                     ===
-                    project.id
+                    Number(
+                        project.id
+                    )
                 ) {
 
                     state.projectDetail = {
@@ -391,7 +422,7 @@ export const projectSlice =
 
 
             // =================================================
-            // DELETE PROJECT FROM LIST
+            // DELETE PROJECT
             // =================================================
 
             deleteProjectSuccess: (
@@ -403,6 +434,10 @@ export const projectSlice =
                     Number(
                         action.payload
                     );
+
+
+                const beforeLength =
+                    state.projects.length;
 
 
                 state.projects =
@@ -418,12 +453,19 @@ export const projectSlice =
                     );
 
 
-                state.projectCount =
-                    Math.max(
-                        0,
-                        state.projectCount -
-                        1
-                    );
+                if (
+                    state.projects.length
+                    <
+                    beforeLength
+                ) {
+
+                    state.projectCount =
+                        Math.max(
+                            0,
+                            state.projectCount -
+                            1
+                        );
+                }
 
 
                 if (
@@ -471,6 +513,38 @@ export const projectSlice =
 
                 state.projectDetailError =
                     null;
+
+
+                // =============================================
+                // BOOST STATE HAM DETAILDAN SYNC
+                // =============================================
+
+                if (
+                    action.payload
+                ) {
+
+                    state.boostProjectId =
+                        action.payload.id
+                        ??
+                        state.boostProjectId;
+
+
+                    state.boostIsActive =
+                        Boolean(
+                            action.payload
+                                .is_boosted_active
+                            ??
+                            action.payload
+                                .is_boosted
+                        );
+
+
+                    state.boostExpiresAt =
+                        action.payload
+                            .boost_expires_at
+                        ??
+                        null;
+                }
             },
 
 
@@ -488,10 +562,6 @@ export const projectSlice =
                     "Project ma’lumotlarini olishda xatolik yuz berdi.";
             },
 
-
-            // =================================================
-            // CLEAR PROJECT DETAIL
-            // =================================================
 
             clearProjectDetail: (
                 state
@@ -560,7 +630,7 @@ export const projectSlice =
 
 
             // =================================================
-            // COMMENT CREATE
+            // ADD COMMENT
             // =================================================
 
             addProjectCommentSuccess: (
@@ -581,8 +651,6 @@ export const projectSlice =
                 }
 
 
-                // Backend commentlarni
-                // -created_at bo‘yicha qaytaradi.
                 state.projectComments.unshift(
                     comment
                 );
@@ -592,24 +660,20 @@ export const projectSlice =
                     state.projectDetail
                 ) {
 
-                    const oldCount =
-                        Number(
-                            state.projectDetail
-                                .comments_count
-                            ??
-                            0
-                        );
-
-
                     state.projectDetail
                         .comments_count =
-                        oldCount + 1;
+                        safeNumber(
+                            state.projectDetail
+                                .comments_count
+                        )
+                        +
+                        1;
                 }
             },
 
 
             // =================================================
-            // COMMENT UPDATE
+            // UPDATE COMMENT
             // =================================================
 
             updateProjectCommentSuccess: (
@@ -636,9 +700,13 @@ export const projectSlice =
                             (
                                 item
                             ) =>
-                                item.id
+                                Number(
+                                    item.id
+                                )
                                 ===
-                                comment.id
+                                Number(
+                                    comment.id
+                                )
                         );
 
 
@@ -662,11 +730,7 @@ export const projectSlice =
 
 
             // =================================================
-            // COMMENT DELETE
-            //
-            // payload:
-            //
-            // commentId
+            // DELETE COMMENT
             // =================================================
 
             deleteProjectCommentSuccess: (
@@ -712,20 +776,16 @@ export const projectSlice =
                     state.projectDetail
                 ) {
 
-                    const oldCount =
-                        Number(
-                            state.projectDetail
-                                .comments_count
-                            ??
-                            0
-                        );
-
-
                     state.projectDetail
                         .comments_count =
                         Math.max(
                             0,
-                            oldCount - 1
+                            safeNumber(
+                                state.projectDetail
+                                    .comments_count
+                            )
+                            -
+                            1
                         );
                 }
             },
@@ -826,7 +886,7 @@ export const projectSlice =
 
 
             // =================================================
-            // ADD COLLABORATION REQUEST
+            // ADD COLLAB REQUEST
             // =================================================
 
             addCollaborationRequestSuccess: (
@@ -841,14 +901,14 @@ export const projectSlice =
                     null;
 
 
-                const collaborationRequest =
+                const request =
                     action.payload;
 
 
                 if (
-                    !collaborationRequest
+                    !request
                     ||
-                    !collaborationRequest.id
+                    !request.id
                 ) {
                     return;
                 }
@@ -860,26 +920,30 @@ export const projectSlice =
                             (
                                 item
                             ) =>
-                                item.id
+                                Number(
+                                    item.id
+                                )
                                 ===
-                                collaborationRequest.id
+                                Number(
+                                    request.id
+                                )
                         );
 
 
-                if (!exists) {
+                if (
+                    !exists
+                ) {
 
                     state.collaborationRequests
                         .unshift(
-                            collaborationRequest
+                            request
                         );
                 }
             },
 
 
             // =================================================
-            // UPDATE COLLABORATION REQUEST
-            //
-            // accepted / rejected
+            // UPDATE COLLAB REQUEST
             // =================================================
 
             updateCollaborationRequestSuccess: (
@@ -913,9 +977,13 @@ export const projectSlice =
                             (
                                 item
                             ) =>
-                                item.id
+                                Number(
+                                    item.id
+                                )
                                 ===
-                                updatedRequest.id
+                                Number(
+                                    updatedRequest.id
+                                )
                         );
 
 
@@ -939,11 +1007,7 @@ export const projectSlice =
 
 
             // =================================================
-            // DELETE COLLABORATION REQUEST
-            //
-            // payload:
-            //
-            // requestId
+            // DELETE COLLAB REQUEST
             // =================================================
 
             deleteCollaborationRequestSuccess: (
@@ -1046,26 +1110,6 @@ export const projectSlice =
             },
 
 
-            // =================================================
-            // STAR SUCCESS
-            //
-            // Backend:
-            //
-            // {
-            //     detail,
-            //     is_starred_by_user,
-            //     stars_count
-            // }
-            //
-            // action.payload:
-            //
-            // {
-            //     projectId,
-            //     is_starred_by_user,
-            //     stars_count
-            // }
-            // =================================================
-
             projectStarSuccess: (
                 state,
                 action
@@ -1102,10 +1146,8 @@ export const projectSlice =
 
 
                 const starsCount =
-                    Number(
+                    safeNumber(
                         payload.stars_count
-                        ??
-                        0
                     );
 
 
@@ -1158,7 +1200,9 @@ export const projectSlice =
                     );
 
 
-                if (project) {
+                if (
+                    project
+                ) {
 
                     project.stars_count =
                         starsCount;
@@ -1185,7 +1229,189 @@ export const projectSlice =
 
 
             // =================================================
-            // BOOST
+            // BOOST OPTIONS START
+            // =================================================
+
+            getBoostOptionsStart: (
+                state
+            ) => {
+
+                state.boostOptionsIsLoading =
+                    true;
+
+                state.boostOptionsError =
+                    null;
+            },
+
+
+            // =================================================
+            // BOOST OPTIONS SUCCESS
+            //
+            // GET /boost/
+            // =================================================
+
+            getBoostOptionsSuccess: (
+                state,
+                action
+            ) => {
+
+                state.boostOptionsIsLoading =
+                    false;
+
+                state.boostOptionsError =
+                    null;
+
+
+                const payload =
+                    action.payload
+                    ||
+                    {};
+
+
+                state.boostProjectId =
+                    payload.project_id
+                    ??
+                    state.boostProjectId;
+
+
+                state.boostPlans =
+                    Array.isArray(
+                        payload.plans
+                    )
+                        ? payload.plans
+                        : [];
+
+
+                if (
+                    payload.balance !==
+                    undefined
+                ) {
+
+                    state.boostBalance =
+                        Math.max(
+                            0,
+                            safeNumber(
+                                payload.balance
+                            )
+                        );
+                }
+
+
+                state.boostDailyLimit =
+                    Math.max(
+                        0,
+                        safeNumber(
+                            payload.daily_limit
+                        )
+                    );
+
+
+                state.boostDailyUsed =
+                    Math.max(
+                        0,
+                        safeNumber(
+                            payload.daily_used
+                        )
+                    );
+
+
+                state.boostDailyRemaining =
+                    Math.max(
+                        0,
+                        safeNumber(
+                            payload.daily_remaining
+                        )
+                    );
+
+
+                state.boostIsActive =
+                    Boolean(
+                        payload
+                            .is_boosted_active
+                        ??
+                        payload
+                            .is_boosted
+                    );
+
+
+                state.boostExpiresAt =
+                    payload
+                        .boost_expires_at
+                    ??
+                    null;
+
+
+                // =============================================
+                // DETAIL SYNC
+                // =============================================
+
+                const projectId =
+                    Number(
+                        payload.project_id
+                    );
+
+
+                if (
+                    Number.isFinite(
+                        projectId
+                    )
+                    &&
+                    state.projectDetail
+                    &&
+                    Number(
+                        state.projectDetail.id
+                    )
+                    ===
+                    projectId
+                ) {
+
+                    state.projectDetail
+                        .is_boosted =
+                        Boolean(
+                            payload
+                                .is_boosted
+                        );
+
+
+                    state.projectDetail
+                        .is_boosted_active =
+                        Boolean(
+                            payload
+                                .is_boosted_active
+                        );
+
+
+                    state.projectDetail
+                        .boost_expires_at =
+                        payload
+                            .boost_expires_at
+                        ??
+                        null;
+                }
+            },
+
+
+            // =================================================
+            // BOOST OPTIONS FAILURE
+            // =================================================
+
+            getBoostOptionsFailure: (
+                state,
+                action
+            ) => {
+
+                state.boostOptionsIsLoading =
+                    false;
+
+                state.boostOptionsError =
+                    action.payload
+                    ||
+                    "Boost ma’lumotlarini olishda xatolik yuz berdi.";
+            },
+
+
+            // =================================================
+            // BOOST START
             // =================================================
 
             boostProjectStart: (
@@ -1197,6 +1423,9 @@ export const projectSlice =
 
                 state.boostError =
                     null;
+
+                state.lastBoostResult =
+                    null;
             },
 
 
@@ -1207,9 +1436,17 @@ export const projectSlice =
             //
             // {
             //     detail,
-            //     boost_expires_at,
+            //     project_id,
+            //     plan_id,
+            //     plan_name,
+            //     spent_coins,
             //     new_balance,
-            //     project_id
+            //     is_boosted,
+            //     is_boosted_active,
+            //     boost_expires_at,
+            //     daily_limit,
+            //     daily_used,
+            //     daily_remaining
             // }
             // =================================================
 
@@ -1231,6 +1468,10 @@ export const projectSlice =
                     {};
 
 
+                state.lastBoostResult =
+                    payload;
+
+
                 const projectId =
                     Number(
                         payload.project_id
@@ -1238,10 +1479,108 @@ export const projectSlice =
 
 
                 // =============================================
-                // DETAIL
+                // BOOST STATE
                 // =============================================
 
                 if (
+                    Number.isFinite(
+                        projectId
+                    )
+                ) {
+
+                    state.boostProjectId =
+                        projectId;
+                }
+
+
+                if (
+                    payload.new_balance !==
+                    undefined
+                ) {
+
+                    state.boostBalance =
+                        Math.max(
+                            0,
+                            safeNumber(
+                                payload.new_balance
+                            )
+                        );
+                }
+
+
+                if (
+                    payload.daily_limit !==
+                    undefined
+                ) {
+
+                    state.boostDailyLimit =
+                        Math.max(
+                            0,
+                            safeNumber(
+                                payload.daily_limit
+                            )
+                        );
+                }
+
+
+                if (
+                    payload.daily_used !==
+                    undefined
+                ) {
+
+                    state.boostDailyUsed =
+                        Math.max(
+                            0,
+                            safeNumber(
+                                payload.daily_used
+                            )
+                        );
+                }
+
+
+                if (
+                    payload.daily_remaining !==
+                    undefined
+                ) {
+
+                    state.boostDailyRemaining =
+                        Math.max(
+                            0,
+                            safeNumber(
+                                payload.daily_remaining
+                            )
+                        );
+                }
+
+
+                state.boostIsActive =
+                    Boolean(
+                        payload
+                            .is_boosted_active
+                        ??
+                        payload
+                            .is_boosted
+                        ??
+                        true
+                    );
+
+
+                state.boostExpiresAt =
+                    payload
+                        .boost_expires_at
+                    ??
+                    state.boostExpiresAt;
+
+
+                // =============================================
+                // PROJECT DETAIL
+                // =============================================
+
+                if (
+                    Number.isFinite(
+                        projectId
+                    )
+                    &&
                     state.projectDetail
                     &&
                     Number(
@@ -1254,28 +1593,35 @@ export const projectSlice =
                     state.projectDetail
                         .boost_expires_at =
                         payload
+                            .boost_expires_at
+                        ??
+                        state.projectDetail
                             .boost_expires_at;
 
 
-                    // ProjectDetailSerializer:
-                    // is_boosted -> model field.
                     state.projectDetail
                         .is_boosted =
-                        true;
+                        Boolean(
+                            payload
+                                .is_boosted
+                            ??
+                            true
+                        );
 
 
-                    // Model property.
                     state.projectDetail
                         .is_boosted_active =
-                        true;
+                        Boolean(
+                            payload
+                                .is_boosted_active
+                            ??
+                            true
+                        );
                 }
 
 
                 // =============================================
                 // PROJECT LIST
-                //
-                // ProjectListSerializerda is_boosted
-                // active boost qiymatini bildiradi.
                 // =============================================
 
                 const project =
@@ -1291,17 +1637,44 @@ export const projectSlice =
                     );
 
 
-                if (project) {
+                if (
+                    project
+                ) {
 
                     project.is_boosted =
-                        true;
+                        Boolean(
+                            payload
+                                .is_boosted_active
+                            ??
+                            payload
+                                .is_boosted
+                            ??
+                            true
+                        );
+
+
+                    project.is_boosted_active =
+                        Boolean(
+                            payload
+                                .is_boosted_active
+                            ??
+                            true
+                        );
+
 
                     project.boost_expires_at =
                         payload
+                            .boost_expires_at
+                        ??
+                        project
                             .boost_expires_at;
                 }
             },
 
+
+            // =================================================
+            // BOOST FAILURE
+            // =================================================
 
             boostProjectFailure: (
                 state,
@@ -1319,7 +1692,56 @@ export const projectSlice =
 
 
             // =================================================
-            // CLEAR PROJECT ERROR
+            // RESET BOOST
+            // =================================================
+
+            resetBoostState: (
+                state
+            ) => {
+
+                state.boostOptionsIsLoading =
+                    false;
+
+                state.boostOptionsError =
+                    null;
+
+                state.boostProjectId =
+                    null;
+
+                state.boostPlans =
+                    [];
+
+                state.boostBalance =
+                    null;
+
+                state.boostDailyLimit =
+                    0;
+
+                state.boostDailyUsed =
+                    0;
+
+                state.boostDailyRemaining =
+                    0;
+
+                state.boostIsActive =
+                    false;
+
+                state.boostExpiresAt =
+                    null;
+
+                state.isBoosting =
+                    false;
+
+                state.boostError =
+                    null;
+
+                state.lastBoostResult =
+                    null;
+            },
+
+
+            // =================================================
+            // CLEAR ERRORS
             // =================================================
 
             clearProjectError: (
@@ -1342,6 +1764,9 @@ export const projectSlice =
                     null;
 
                 state.projectStarError =
+                    null;
+
+                state.boostOptionsError =
                     null;
 
                 state.boostError =
@@ -1417,7 +1842,7 @@ export const {
 
 
     // =====================================================
-    // COLLABORATION REQUESTS
+    // COLLABORATION
     // =====================================================
 
     getCollaborationRequestsStart,
@@ -1462,6 +1887,17 @@ export const {
 
 
     // =====================================================
+    // BOOST OPTIONS
+    // =====================================================
+
+    getBoostOptionsStart,
+
+    getBoostOptionsSuccess,
+
+    getBoostOptionsFailure,
+
+
+    // =====================================================
     // BOOST
     // =====================================================
 
@@ -1470,6 +1906,8 @@ export const {
     boostProjectSuccess,
 
     boostProjectFailure,
+
+    resetBoostState,
 
 
     // =====================================================

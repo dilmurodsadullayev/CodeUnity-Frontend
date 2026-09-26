@@ -10,6 +10,7 @@ import axios from "./api";
 const isCanceledRequest = (
     error
 ) => {
+
     return (
         error?.code ===
             "ERR_CANCELED"
@@ -89,11 +90,6 @@ const normalizePagination = (
     data
 ) => {
 
-    // =====================================================
-    // Backend oddiy array qaytarsa ham
-    // frontend buzilmaydi.
-    // =====================================================
-
     if (
         Array.isArray(
             data
@@ -150,7 +146,7 @@ const normalizePagination = (
 
 
 // =========================================================
-// CLEAN SEARCH
+// CLEAN TEXT
 // =========================================================
 
 const cleanText = (
@@ -166,6 +162,127 @@ const cleanText = (
 
 
 // =========================================================
+// SAFE NUMBER
+// =========================================================
+
+const safeNumber = (
+    value,
+    fallback = 0
+) => {
+
+    const number =
+        Number(
+            value
+        );
+
+
+    return Number.isFinite(
+        number
+    )
+        ? number
+        : fallback;
+};
+
+
+// =========================================================
+// NORMALIZE BOOST OPTIONS
+// =========================================================
+
+const normalizeBoostOptions = (
+    projectId,
+    data
+) => {
+
+    const plans =
+        Array.isArray(
+            data?.plans
+        )
+            ? data.plans
+            : [];
+
+
+    const dailyLimit =
+        Math.max(
+            0,
+            safeNumber(
+                data?.daily_limit,
+                0
+            )
+        );
+
+
+    const dailyUsed =
+        Math.max(
+            0,
+            safeNumber(
+                data?.daily_used,
+                0
+            )
+        );
+
+
+    const dailyRemaining =
+        Math.max(
+            0,
+            safeNumber(
+                data?.daily_remaining,
+                Math.max(
+                    0,
+                    dailyLimit -
+                    dailyUsed
+                )
+            )
+        );
+
+
+    return {
+
+        project_id:
+            safeNumber(
+                data?.project_id
+                ??
+                projectId
+            ),
+
+        plans,
+
+        balance:
+            Math.max(
+                0,
+                safeNumber(
+                    data?.balance,
+                    0
+                )
+            ),
+
+        daily_limit:
+            dailyLimit,
+
+        daily_used:
+            dailyUsed,
+
+        daily_remaining:
+            dailyRemaining,
+
+        is_boosted:
+            Boolean(
+                data?.is_boosted
+            ),
+
+        is_boosted_active:
+            Boolean(
+                data?.is_boosted_active
+            ),
+
+        boost_expires_at:
+            data?.boost_expires_at
+            ??
+            null,
+    };
+};
+
+
+// =========================================================
 // PROJECT SERVICE
 // =========================================================
 
@@ -176,10 +293,7 @@ const ProjectService = {
     // PROFILE PROJECTS
     //
     // GET:
-    //
     // /projects/<username>/projects/
-    //
-    // Backend oddiy array qaytarishi mumkin.
     // =====================================================
 
     async getProjects(
@@ -229,7 +343,6 @@ const ProjectService = {
     // PROJECT DETAIL
     //
     // GET:
-    //
     // /projects/project/<id>/detail/
     // =====================================================
 
@@ -278,23 +391,7 @@ const ProjectService = {
     // CREATE PROJECT
     //
     // POST:
-    //
     // /projects/project/create/
-    //
-    // JSON ham FormData ham qabul qilishi mumkin.
-    //
-    // Yangi stack:
-    //
-    // languages: [1, 2]
-    // technologies: [3, 4, 5]
-    //
-    // Agar FormData bo‘lsa:
-    //
-    // formData.append("languages", 1)
-    // formData.append("languages", 2)
-    //
-    // formData.append("technologies", 3)
-    // ...
     // =====================================================
 
     async createProject(
@@ -339,11 +436,7 @@ const ProjectService = {
     // UPDATE PROJECT
     //
     // PATCH:
-    //
     // /projects/project/<id>/edit/
-    //
-    // PATCH ishlatamiz:
-    // partial update uchun qulayroq.
     // =====================================================
 
     async updateProject(
@@ -380,8 +473,6 @@ const ProjectService = {
             );
 
 
-            // Original Axios errorni
-            // componentga chiqaramiz.
             throw error;
         }
     },
@@ -391,7 +482,6 @@ const ProjectService = {
     // DELETE PROJECT
     //
     // DELETE:
-    //
     // /projects/project/<id>/edit/
     // =====================================================
 
@@ -432,10 +522,7 @@ const ProjectService = {
     // =====================================================
     // LANGUAGES
     //
-    // Markaziy katalog Problems app ichida.
-    //
     // GET:
-    //
     // /problems/languages/
     // =====================================================
 
@@ -485,7 +572,6 @@ const ProjectService = {
     // TECHNOLOGIES
     //
     // GET:
-    //
     // /problems/technologies/
     // =====================================================
 
@@ -534,14 +620,7 @@ const ProjectService = {
     // =====================================================
     // STACK CATALOG
     //
-    // Language + Technology ni bir vaqtda oladi.
-    //
-    // Project Create/Edit sahifada juda qulay:
-    //
-    // const {
-    //     languages,
-    //     technologies
-    // } = await ProjectService.getStackCatalog()
+    // Language + Technology
     // =====================================================
 
     async getStackCatalog(
@@ -611,7 +690,6 @@ const ProjectService = {
     // PROJECT COMMENTS
     //
     // GET:
-    //
     // /projects/project/<id>/comments/
     // =====================================================
 
@@ -660,10 +738,6 @@ const ProjectService = {
 
     // =====================================================
     // CREATE COMMENT
-    //
-    // POST:
-    //
-    // /projects/project/<id>/comments/
     // =====================================================
 
     async projectCommentCreate(
@@ -707,10 +781,6 @@ const ProjectService = {
 
     // =====================================================
     // UPDATE COMMENT
-    //
-    // PATCH:
-    //
-    // /projects/project/<projectId>/comment/<commentId>/edit/
     // =====================================================
 
     async projectCommentUpdate(
@@ -755,10 +825,6 @@ const ProjectService = {
 
     // =====================================================
     // DELETE COMMENT
-    //
-    // DELETE:
-    //
-    // /projects/project/<projectId>/comment/<commentId>/edit/
     // =====================================================
 
     async projectCommentDelete(
@@ -798,17 +864,6 @@ const ProjectService = {
 
     // =====================================================
     // CREATE COLLABORATION REQUEST
-    //
-    // POST:
-    //
-    // /projects/project/<id>/collaboration-requests/
-    //
-    // body:
-    //
-    // {
-    //     role: "backend",
-    //     message: "..."
-    // }
     // =====================================================
 
     async createCollaborationRequest(
@@ -852,10 +907,6 @@ const ProjectService = {
 
     // =====================================================
     // COLLABORATION REQUEST LIST
-    //
-    // GET:
-    //
-    // /projects/project/<id>/collaboration-requests/
     // =====================================================
 
     async getCollaborationRequests(
@@ -903,10 +954,6 @@ const ProjectService = {
 
     // =====================================================
     // PROJECT COLLABORATORS
-    //
-    // GET:
-    //
-    // /projects/project/<id>/collaborators/
     // =====================================================
 
     async getProjectCollaborators(
@@ -954,15 +1001,6 @@ const ProjectService = {
 
     // =====================================================
     // UPDATE COLLABORATION REQUEST
-    //
-    // PUT:
-    //
-    // /projects/project/collaboration-requests/<id>/
-    //
-    // newStatus:
-    //
-    // accepted
-    // rejected
     // =====================================================
 
     async updateCollaborationRequest(
@@ -1009,10 +1047,6 @@ const ProjectService = {
 
     // =====================================================
     // DELETE COLLABORATION REQUEST
-    //
-    // DELETE:
-    //
-    // /projects/project/collaboration-requests/<id>/
     // =====================================================
 
     async deleteCollaborationRequest(
@@ -1050,19 +1084,7 @@ const ProjectService = {
 
 
     // =====================================================
-    // PROJECT STAR TOGGLE
-    //
-    // POST:
-    //
-    // /projects/project/<id>/star_toggle/
-    //
-    // Backend:
-    //
-    // {
-    //     detail,
-    //     is_starred_by_user,
-    //     stars_count
-    // }
+    // PROJECT STAR
     // =====================================================
 
     async toggleProjectStar(
@@ -1104,39 +1126,7 @@ const ProjectService = {
 
 
     // =====================================================
-    // ALL PROJECTS
-    //
-    // GLOBAL PROJECTS PAGE
-    //
-    // GET:
-    //
-    // /projects/all/
-    //
-    // ?page=1
-    // &page_size=6
-    // &search=django
-    //
-    // Backend response:
-    //
-    // {
-    //     count,
-    //     next,
-    //     previous,
-    //     results
-    // }
-    //
-    // Search backendda:
-    //
-    // name
-    // main_features
-    // description
-    // username
-    // language
-    // technology
-    // languages
-    // technologies
-    //
-    // bo‘yicha ishlaydi.
+    // GLOBAL PROJECTS
     // =====================================================
 
     async getAllProjects(
@@ -1218,31 +1208,96 @@ const ProjectService = {
 
 
     // =====================================================
+    // BOOST OPTIONS
+    //
+    // GET:
+    //
+    // /projects/project/<id>/boost/
+    //
+    // Backend:
+    //
+    // {
+    //     plans,
+    //     balance,
+    //     daily_limit,
+    //     daily_used,
+    //     daily_remaining,
+    //     is_boosted,
+    //     is_boosted_active,
+    //     boost_expires_at
+    // }
+    // =====================================================
+
+    async getBoostOptions(
+        projectId,
+        {
+            signal = undefined,
+        } = {}
+    ) {
+
+        try {
+
+            const {
+                data,
+            } = await axios.get(
+
+                `/projects/project/${projectId}/boost/`,
+
+                {
+                    signal,
+
+                    withCredentials:
+                        true,
+                }
+            );
+
+
+            return normalizeBoostOptions(
+                projectId,
+                data
+            );
+
+        } catch (
+            error
+        ) {
+
+            logServiceError(
+                "Project boost ma’lumotlarini olishda xato:",
+                error
+            );
+
+
+            throw error;
+        }
+    },
+
+
+    // =====================================================
     // BOOST PROJECT
     //
     // POST:
     //
     // /projects/project/<id>/boost/
     //
-    // body:
-    //
     // {
-    //     plan_id: "basic"
+    //     plan_id: "premium"
     // }
-    //
-    // plan:
-    //
-    // basic
-    // premium
-    // ultra
     //
     // Backend response:
     //
     // {
     //     detail,
-    //     boost_expires_at,
+    //     project_id,
+    //     plan_id,
+    //     plan_name,
+    //     spent_coins,
     //     new_balance,
-    //     project_id
+    //     is_boosted,
+    //     is_boosted_active,
+    //     boost_expires_at,
+    //     daily_limit,
+    //     daily_used,
+    //     daily_remaining
     // }
     // =====================================================
 
@@ -1271,7 +1326,17 @@ const ProjectService = {
             );
 
 
-            return data;
+            return {
+
+                ...data,
+
+                project_id:
+                    safeNumber(
+                        data?.project_id
+                        ??
+                        projectId
+                    ),
+            };
 
         } catch (
             error
