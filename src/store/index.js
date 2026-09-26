@@ -36,6 +36,7 @@ import RoadmapReducer from "../features/roadmap";
 import BadgeReducer from "../features/badge";
 
 import BotReducer from "../features/bot";
+import promotionReducer from "../features/promotions";
 
 
 // =========================================================
@@ -174,6 +175,10 @@ export const store = configureStore({
 
         updates:
             updatesReducer,
+
+        // PROMOTIONS
+        promotion:
+            promotionReducer,
     },
 
 

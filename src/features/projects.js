@@ -1,6 +1,4 @@
-import {
-    createSlice,
-} from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 
 
 // =========================================================
@@ -85,41 +83,6 @@ const initialState = {
 
     projectStarError: null,
 
-
-    // =====================================================
-    // PROJECT BOOST OPTIONS
-    // =====================================================
-
-    boostOptionsIsLoading: false,
-
-    boostOptionsError: null,
-
-    boostProjectId: null,
-
-    boostPlans: [],
-
-    boostBalance: null,
-
-    boostDailyLimit: 0,
-
-    boostDailyUsed: 0,
-
-    boostDailyRemaining: 0,
-
-    boostIsActive: false,
-
-    boostExpiresAt: null,
-
-
-    // =====================================================
-    // PROJECT BOOST ACTION
-    // =====================================================
-
-    isBoosting: false,
-
-    boostError: null,
-
-    lastBoostResult: null,
 };
 
 
@@ -159,6 +122,7 @@ export const projectSlice =
         initialState,
 
         reducers: {
+
 
             // =================================================
             // PROJECT LIST
@@ -218,6 +182,7 @@ export const projectSlice =
                     state.projectPrevious =
                         null;
 
+
                     return;
                 }
 
@@ -228,10 +193,14 @@ export const projectSlice =
 
                 if (
                     payload
+
                     &&
+
                     typeof payload ===
                         "object"
+
                     &&
+
                     Array.isArray(
                         payload.results
                     )
@@ -240,21 +209,28 @@ export const projectSlice =
                     state.projects =
                         payload.results;
 
+
                     state.projectCount =
                         safeNumber(
+
                             payload.count,
+
                             payload.results.length
+
                         );
+
 
                     state.projectNext =
                         payload.next
                         ??
                         null;
 
+
                     state.projectPrevious =
                         payload.previous
                         ??
                         null;
+
 
                     return;
                 }
@@ -286,6 +262,7 @@ export const projectSlice =
                 state.project_isLoading =
                     false;
 
+
                 state.project_error =
                     action.payload
                     ||
@@ -311,6 +288,7 @@ export const projectSlice =
                     ||
                     !project.id
                 ) {
+
                     return;
                 }
 
@@ -320,10 +298,13 @@ export const projectSlice =
                         (
                             item
                         ) =>
+
                             Number(
                                 item.id
                             )
+
                             ===
+
                             Number(
                                 project.id
                             )
@@ -337,6 +318,7 @@ export const projectSlice =
                     state.projects.unshift(
                         project
                     );
+
 
                     state.projectCount +=
                         1;
@@ -362,6 +344,7 @@ export const projectSlice =
                     ||
                     !project.id
                 ) {
+
                     return;
                 }
 
@@ -371,10 +354,13 @@ export const projectSlice =
                         (
                             item
                         ) =>
+
                             Number(
                                 item.id
                             )
+
                             ===
+
                             Number(
                                 project.id
                             )
@@ -395,17 +381,22 @@ export const projectSlice =
                         ],
 
                         ...project,
+
                     };
                 }
 
 
                 if (
                     state.projectDetail
+
                     &&
+
                     Number(
                         state.projectDetail.id
                     )
+
                     ===
+
                     Number(
                         project.id
                     )
@@ -416,6 +407,7 @@ export const projectSlice =
                         ...state.projectDetail,
 
                         ...project,
+
                     };
                 }
             },
@@ -445,10 +437,13 @@ export const projectSlice =
                         (
                             project
                         ) =>
+
                             Number(
                                 project.id
                             )
+
                             !==
+
                             projectId
                     );
 
@@ -461,20 +456,27 @@ export const projectSlice =
 
                     state.projectCount =
                         Math.max(
+
                             0,
+
                             state.projectCount -
                             1
+
                         );
                 }
 
 
                 if (
                     state.projectDetail
+
                     &&
+
                     Number(
                         state.projectDetail.id
                     )
+
                     ===
+
                     projectId
                 ) {
 
@@ -508,43 +510,13 @@ export const projectSlice =
                 state.projectDetailIsLoading =
                     false;
 
+
                 state.projectDetail =
                     action.payload;
 
+
                 state.projectDetailError =
                     null;
-
-
-                // =============================================
-                // BOOST STATE HAM DETAILDAN SYNC
-                // =============================================
-
-                if (
-                    action.payload
-                ) {
-
-                    state.boostProjectId =
-                        action.payload.id
-                        ??
-                        state.boostProjectId;
-
-
-                    state.boostIsActive =
-                        Boolean(
-                            action.payload
-                                .is_boosted_active
-                            ??
-                            action.payload
-                                .is_boosted
-                        );
-
-
-                    state.boostExpiresAt =
-                        action.payload
-                            .boost_expires_at
-                        ??
-                        null;
-                }
             },
 
 
@@ -555,6 +527,7 @@ export const projectSlice =
 
                 state.projectDetailIsLoading =
                     false;
+
 
                 state.projectDetailError =
                     action.payload
@@ -570,8 +543,10 @@ export const projectSlice =
                 state.projectDetail =
                     null;
 
+
                 state.projectDetailError =
                     null;
+
 
                 state.projectDetailIsLoading =
                     false;
@@ -589,6 +564,7 @@ export const projectSlice =
                 state.project_comment_isLoading =
                     true;
 
+
                 state.project_comment_error =
                     null;
             },
@@ -602,12 +578,16 @@ export const projectSlice =
                 state.project_comment_isLoading =
                     false;
 
+
                 state.projectComments =
                     Array.isArray(
                         action.payload
                     )
+
                         ? action.payload
+
                         : [];
+
 
                 state.project_comment_error =
                     null;
@@ -621,6 +601,7 @@ export const projectSlice =
 
                 state.project_comment_isLoading =
                     false;
+
 
                 state.project_comment_error =
                     action.payload
@@ -647,6 +628,7 @@ export const projectSlice =
                     ||
                     !comment.id
                 ) {
+
                     return;
                 }
 
@@ -662,11 +644,14 @@ export const projectSlice =
 
                     state.projectDetail
                         .comments_count =
+
                         safeNumber(
                             state.projectDetail
                                 .comments_count
                         )
+
                         +
+
                         1;
                 }
             },
@@ -690,6 +675,7 @@ export const projectSlice =
                     ||
                     !comment.id
                 ) {
+
                     return;
                 }
 
@@ -700,10 +686,13 @@ export const projectSlice =
                             (
                                 item
                             ) =>
+
                                 Number(
                                     item.id
                                 )
+
                                 ===
+
                                 Number(
                                     comment.id
                                 )
@@ -724,6 +713,7 @@ export const projectSlice =
                         ],
 
                         ...comment,
+
                     };
                 }
             },
@@ -755,37 +745,51 @@ export const projectSlice =
                             (
                                 comment
                             ) =>
+
                                 Number(
                                     comment.id
                                 )
+
                                 !==
+
                                 commentId
                         );
 
 
                 const removed =
+
                     state.projectComments
                         .length
+
                     <
+
                     oldLength;
 
 
                 if (
                     removed
+
                     &&
+
                     state.projectDetail
                 ) {
 
                     state.projectDetail
                         .comments_count =
+
                         Math.max(
+
                             0,
+
                             safeNumber(
                                 state.projectDetail
                                     .comments_count
                             )
+
                             -
+
                             1
+
                         );
                 }
             },
@@ -802,6 +806,7 @@ export const projectSlice =
                 state.collaborationRequestIsLoading =
                     true;
 
+
                 state.collaborationRequestError =
                     null;
             },
@@ -815,12 +820,16 @@ export const projectSlice =
                 state.collaborationRequestIsLoading =
                     false;
 
+
                 state.collaborationRequests =
                     Array.isArray(
                         action.payload
                     )
+
                         ? action.payload
+
                         : [];
+
 
                 state.collaborationRequestError =
                     null;
@@ -834,6 +843,7 @@ export const projectSlice =
 
                 state.collaborationRequestIsLoading =
                     false;
+
 
                 state.collaborationRequestError =
                     action.payload
@@ -853,6 +863,7 @@ export const projectSlice =
                 state.isCollaborationActionLoading =
                     true;
 
+
                 state.collaborationRequestError =
                     null;
             },
@@ -864,6 +875,7 @@ export const projectSlice =
 
                 state.isCollaborationActionLoading =
                     false;
+
 
                 state.collaborationRequestError =
                     null;
@@ -877,6 +889,7 @@ export const projectSlice =
 
                 state.isCollaborationActionLoading =
                     false;
+
 
                 state.collaborationRequestError =
                     action.payload
@@ -897,6 +910,7 @@ export const projectSlice =
                 state.isCollaborationActionLoading =
                     false;
 
+
                 state.collaborationRequestError =
                     null;
 
@@ -910,6 +924,7 @@ export const projectSlice =
                     ||
                     !request.id
                 ) {
+
                     return;
                 }
 
@@ -920,10 +935,13 @@ export const projectSlice =
                             (
                                 item
                             ) =>
+
                                 Number(
                                     item.id
                                 )
+
                                 ===
+
                                 Number(
                                     request.id
                                 )
@@ -954,6 +972,7 @@ export const projectSlice =
                 state.isCollaborationActionLoading =
                     false;
 
+
                 state.collaborationRequestError =
                     null;
 
@@ -967,6 +986,7 @@ export const projectSlice =
                     ||
                     !updatedRequest.id
                 ) {
+
                     return;
                 }
 
@@ -977,10 +997,13 @@ export const projectSlice =
                             (
                                 item
                             ) =>
+
                                 Number(
                                     item.id
                                 )
+
                                 ===
+
                                 Number(
                                     updatedRequest.id
                                 )
@@ -1001,6 +1024,7 @@ export const projectSlice =
                         ],
 
                         ...updatedRequest,
+
                     };
                 }
             },
@@ -1018,6 +1042,7 @@ export const projectSlice =
                 state.isCollaborationActionLoading =
                     false;
 
+
                 state.collaborationRequestError =
                     null;
 
@@ -1034,10 +1059,13 @@ export const projectSlice =
                             (
                                 item
                             ) =>
+
                                 Number(
                                     item.id
                                 )
+
                                 !==
+
                                 requestId
                         );
             },
@@ -1054,6 +1082,7 @@ export const projectSlice =
                 state.collaboratorsIsLoading =
                     true;
 
+
                 state.collaboratorsError =
                     null;
             },
@@ -1067,12 +1096,16 @@ export const projectSlice =
                 state.collaboratorsIsLoading =
                     false;
 
+
                 state.collaborators =
                     Array.isArray(
                         action.payload
                     )
+
                         ? action.payload
+
                         : [];
+
 
                 state.collaboratorsError =
                     null;
@@ -1086,6 +1119,7 @@ export const projectSlice =
 
                 state.collaboratorsIsLoading =
                     false;
+
 
                 state.collaboratorsError =
                     action.payload
@@ -1105,6 +1139,7 @@ export const projectSlice =
                 state.isProjectStarLoading =
                     true;
 
+
                 state.projectStarError =
                     null;
             },
@@ -1118,6 +1153,7 @@ export const projectSlice =
                 state.isProjectStarLoading =
                     false;
 
+
                 state.projectStarError =
                     null;
 
@@ -1130,9 +1166,13 @@ export const projectSlice =
 
                 const projectId =
                     Number(
+
                         payload.projectId
+
                         ??
+
                         payload.project_id
+
                     );
 
 
@@ -1141,6 +1181,7 @@ export const projectSlice =
                         projectId
                     )
                 ) {
+
                     return;
                 }
 
@@ -1164,11 +1205,15 @@ export const projectSlice =
 
                 if (
                     state.projectDetail
+
                     &&
+
                     Number(
                         state.projectDetail.id
                     )
+
                     ===
+
                     projectId
                 ) {
 
@@ -1192,10 +1237,13 @@ export const projectSlice =
                         (
                             item
                         ) =>
+
                             Number(
                                 item.id
                             )
+
                             ===
+
                             projectId
                     );
 
@@ -1206,6 +1254,7 @@ export const projectSlice =
 
                     project.stars_count =
                         starsCount;
+
 
                     project.is_starred_by_user =
                         isStarred;
@@ -1221,522 +1270,11 @@ export const projectSlice =
                 state.isProjectStarLoading =
                     false;
 
+
                 state.projectStarError =
                     action.payload
                     ||
                     "Projectga star berishda xatolik yuz berdi.";
-            },
-
-
-            // =================================================
-            // BOOST OPTIONS START
-            // =================================================
-
-            getBoostOptionsStart: (
-                state
-            ) => {
-
-                state.boostOptionsIsLoading =
-                    true;
-
-                state.boostOptionsError =
-                    null;
-            },
-
-
-            // =================================================
-            // BOOST OPTIONS SUCCESS
-            //
-            // GET /boost/
-            // =================================================
-
-            getBoostOptionsSuccess: (
-                state,
-                action
-            ) => {
-
-                state.boostOptionsIsLoading =
-                    false;
-
-                state.boostOptionsError =
-                    null;
-
-
-                const payload =
-                    action.payload
-                    ||
-                    {};
-
-
-                state.boostProjectId =
-                    payload.project_id
-                    ??
-                    state.boostProjectId;
-
-
-                state.boostPlans =
-                    Array.isArray(
-                        payload.plans
-                    )
-                        ? payload.plans
-                        : [];
-
-
-                if (
-                    payload.balance !==
-                    undefined
-                ) {
-
-                    state.boostBalance =
-                        Math.max(
-                            0,
-                            safeNumber(
-                                payload.balance
-                            )
-                        );
-                }
-
-
-                state.boostDailyLimit =
-                    Math.max(
-                        0,
-                        safeNumber(
-                            payload.daily_limit
-                        )
-                    );
-
-
-                state.boostDailyUsed =
-                    Math.max(
-                        0,
-                        safeNumber(
-                            payload.daily_used
-                        )
-                    );
-
-
-                state.boostDailyRemaining =
-                    Math.max(
-                        0,
-                        safeNumber(
-                            payload.daily_remaining
-                        )
-                    );
-
-
-                state.boostIsActive =
-                    Boolean(
-                        payload
-                            .is_boosted_active
-                        ??
-                        payload
-                            .is_boosted
-                    );
-
-
-                state.boostExpiresAt =
-                    payload
-                        .boost_expires_at
-                    ??
-                    null;
-
-
-                // =============================================
-                // DETAIL SYNC
-                // =============================================
-
-                const projectId =
-                    Number(
-                        payload.project_id
-                    );
-
-
-                if (
-                    Number.isFinite(
-                        projectId
-                    )
-                    &&
-                    state.projectDetail
-                    &&
-                    Number(
-                        state.projectDetail.id
-                    )
-                    ===
-                    projectId
-                ) {
-
-                    state.projectDetail
-                        .is_boosted =
-                        Boolean(
-                            payload
-                                .is_boosted
-                        );
-
-
-                    state.projectDetail
-                        .is_boosted_active =
-                        Boolean(
-                            payload
-                                .is_boosted_active
-                        );
-
-
-                    state.projectDetail
-                        .boost_expires_at =
-                        payload
-                            .boost_expires_at
-                        ??
-                        null;
-                }
-            },
-
-
-            // =================================================
-            // BOOST OPTIONS FAILURE
-            // =================================================
-
-            getBoostOptionsFailure: (
-                state,
-                action
-            ) => {
-
-                state.boostOptionsIsLoading =
-                    false;
-
-                state.boostOptionsError =
-                    action.payload
-                    ||
-                    "Boost ma’lumotlarini olishda xatolik yuz berdi.";
-            },
-
-
-            // =================================================
-            // BOOST START
-            // =================================================
-
-            boostProjectStart: (
-                state
-            ) => {
-
-                state.isBoosting =
-                    true;
-
-                state.boostError =
-                    null;
-
-                state.lastBoostResult =
-                    null;
-            },
-
-
-            // =================================================
-            // BOOST SUCCESS
-            //
-            // Backend:
-            //
-            // {
-            //     detail,
-            //     project_id,
-            //     plan_id,
-            //     plan_name,
-            //     spent_coins,
-            //     new_balance,
-            //     is_boosted,
-            //     is_boosted_active,
-            //     boost_expires_at,
-            //     daily_limit,
-            //     daily_used,
-            //     daily_remaining
-            // }
-            // =================================================
-
-            boostProjectSuccess: (
-                state,
-                action
-            ) => {
-
-                state.isBoosting =
-                    false;
-
-                state.boostError =
-                    null;
-
-
-                const payload =
-                    action.payload
-                    ||
-                    {};
-
-
-                state.lastBoostResult =
-                    payload;
-
-
-                const projectId =
-                    Number(
-                        payload.project_id
-                    );
-
-
-                // =============================================
-                // BOOST STATE
-                // =============================================
-
-                if (
-                    Number.isFinite(
-                        projectId
-                    )
-                ) {
-
-                    state.boostProjectId =
-                        projectId;
-                }
-
-
-                if (
-                    payload.new_balance !==
-                    undefined
-                ) {
-
-                    state.boostBalance =
-                        Math.max(
-                            0,
-                            safeNumber(
-                                payload.new_balance
-                            )
-                        );
-                }
-
-
-                if (
-                    payload.daily_limit !==
-                    undefined
-                ) {
-
-                    state.boostDailyLimit =
-                        Math.max(
-                            0,
-                            safeNumber(
-                                payload.daily_limit
-                            )
-                        );
-                }
-
-
-                if (
-                    payload.daily_used !==
-                    undefined
-                ) {
-
-                    state.boostDailyUsed =
-                        Math.max(
-                            0,
-                            safeNumber(
-                                payload.daily_used
-                            )
-                        );
-                }
-
-
-                if (
-                    payload.daily_remaining !==
-                    undefined
-                ) {
-
-                    state.boostDailyRemaining =
-                        Math.max(
-                            0,
-                            safeNumber(
-                                payload.daily_remaining
-                            )
-                        );
-                }
-
-
-                state.boostIsActive =
-                    Boolean(
-                        payload
-                            .is_boosted_active
-                        ??
-                        payload
-                            .is_boosted
-                        ??
-                        true
-                    );
-
-
-                state.boostExpiresAt =
-                    payload
-                        .boost_expires_at
-                    ??
-                    state.boostExpiresAt;
-
-
-                // =============================================
-                // PROJECT DETAIL
-                // =============================================
-
-                if (
-                    Number.isFinite(
-                        projectId
-                    )
-                    &&
-                    state.projectDetail
-                    &&
-                    Number(
-                        state.projectDetail.id
-                    )
-                    ===
-                    projectId
-                ) {
-
-                    state.projectDetail
-                        .boost_expires_at =
-                        payload
-                            .boost_expires_at
-                        ??
-                        state.projectDetail
-                            .boost_expires_at;
-
-
-                    state.projectDetail
-                        .is_boosted =
-                        Boolean(
-                            payload
-                                .is_boosted
-                            ??
-                            true
-                        );
-
-
-                    state.projectDetail
-                        .is_boosted_active =
-                        Boolean(
-                            payload
-                                .is_boosted_active
-                            ??
-                            true
-                        );
-                }
-
-
-                // =============================================
-                // PROJECT LIST
-                // =============================================
-
-                const project =
-                    state.projects.find(
-                        (
-                            item
-                        ) =>
-                            Number(
-                                item.id
-                            )
-                            ===
-                            projectId
-                    );
-
-
-                if (
-                    project
-                ) {
-
-                    project.is_boosted =
-                        Boolean(
-                            payload
-                                .is_boosted_active
-                            ??
-                            payload
-                                .is_boosted
-                            ??
-                            true
-                        );
-
-
-                    project.is_boosted_active =
-                        Boolean(
-                            payload
-                                .is_boosted_active
-                            ??
-                            true
-                        );
-
-
-                    project.boost_expires_at =
-                        payload
-                            .boost_expires_at
-                        ??
-                        project
-                            .boost_expires_at;
-                }
-            },
-
-
-            // =================================================
-            // BOOST FAILURE
-            // =================================================
-
-            boostProjectFailure: (
-                state,
-                action
-            ) => {
-
-                state.isBoosting =
-                    false;
-
-                state.boostError =
-                    action.payload
-                    ||
-                    "Projectni boost qilishda xatolik yuz berdi.";
-            },
-
-
-            // =================================================
-            // RESET BOOST
-            // =================================================
-
-            resetBoostState: (
-                state
-            ) => {
-
-                state.boostOptionsIsLoading =
-                    false;
-
-                state.boostOptionsError =
-                    null;
-
-                state.boostProjectId =
-                    null;
-
-                state.boostPlans =
-                    [];
-
-                state.boostBalance =
-                    null;
-
-                state.boostDailyLimit =
-                    0;
-
-                state.boostDailyUsed =
-                    0;
-
-                state.boostDailyRemaining =
-                    0;
-
-                state.boostIsActive =
-                    false;
-
-                state.boostExpiresAt =
-                    null;
-
-                state.isBoosting =
-                    false;
-
-                state.boostError =
-                    null;
-
-                state.lastBoostResult =
-                    null;
             },
 
 
@@ -1751,25 +1289,24 @@ export const projectSlice =
                 state.project_error =
                     null;
 
+
                 state.projectDetailError =
                     null;
+
 
                 state.project_comment_error =
                     null;
 
+
                 state.collaborationRequestError =
                     null;
+
 
                 state.collaboratorsError =
                     null;
 
+
                 state.projectStarError =
-                    null;
-
-                state.boostOptionsError =
-                    null;
-
-                state.boostError =
                     null;
             },
 
@@ -1778,13 +1315,15 @@ export const projectSlice =
             // RESET PROJECT STORE
             // =================================================
 
-            resetProjectState: () => {
+            resetProjectState:
+                () => ({
 
-                return {
                     ...initialState,
-                };
-            },
+
+                }),
+
         },
+
     });
 
 
@@ -1884,30 +1423,6 @@ export const {
     projectStarSuccess,
 
     projectStarFailure,
-
-
-    // =====================================================
-    // BOOST OPTIONS
-    // =====================================================
-
-    getBoostOptionsStart,
-
-    getBoostOptionsSuccess,
-
-    getBoostOptionsFailure,
-
-
-    // =====================================================
-    // BOOST
-    // =====================================================
-
-    boostProjectStart,
-
-    boostProjectSuccess,
-
-    boostProjectFailure,
-
-    resetBoostState,
 
 
     // =====================================================

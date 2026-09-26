@@ -12,11 +12,15 @@ const isCanceledRequest = (
 ) => {
 
     return (
+
         error?.code ===
             "ERR_CANCELED"
+
         ||
+
         error?.name ===
             "CanceledError"
+
     );
 };
 
@@ -35,19 +39,29 @@ const logServiceError = (
             error
         )
     ) {
+
         return;
     }
 
 
     console.error(
+
         label,
+
         error?.response?.data
+
         ||
+
         error?.response
+
         ||
+
         error?.message
+
         ||
+
         error
+
     );
 };
 
@@ -65,6 +79,7 @@ const normalizeArray = (
             data
         )
     ) {
+
         return data;
     }
 
@@ -74,6 +89,7 @@ const normalizeArray = (
             data?.results
         )
     ) {
+
         return data.results;
     }
 
@@ -109,6 +125,7 @@ const normalizePagination = (
 
             results:
                 data,
+
         };
     }
 
@@ -117,7 +134,9 @@ const normalizePagination = (
         Array.isArray(
             data?.results
         )
+
             ? data.results
+
             : [];
 
 
@@ -125,9 +144,13 @@ const normalizePagination = (
 
         count:
             Number(
+
                 data?.count
+
                 ??
+
                 results.length
+
             ),
 
         next:
@@ -141,6 +164,7 @@ const normalizePagination = (
             null,
 
         results,
+
     };
 };
 
@@ -154,131 +178,14 @@ const cleanText = (
 ) => {
 
     return String(
+
         value
+
         ??
+
         ""
+
     ).trim();
-};
-
-
-// =========================================================
-// SAFE NUMBER
-// =========================================================
-
-const safeNumber = (
-    value,
-    fallback = 0
-) => {
-
-    const number =
-        Number(
-            value
-        );
-
-
-    return Number.isFinite(
-        number
-    )
-        ? number
-        : fallback;
-};
-
-
-// =========================================================
-// NORMALIZE BOOST OPTIONS
-// =========================================================
-
-const normalizeBoostOptions = (
-    projectId,
-    data
-) => {
-
-    const plans =
-        Array.isArray(
-            data?.plans
-        )
-            ? data.plans
-            : [];
-
-
-    const dailyLimit =
-        Math.max(
-            0,
-            safeNumber(
-                data?.daily_limit,
-                0
-            )
-        );
-
-
-    const dailyUsed =
-        Math.max(
-            0,
-            safeNumber(
-                data?.daily_used,
-                0
-            )
-        );
-
-
-    const dailyRemaining =
-        Math.max(
-            0,
-            safeNumber(
-                data?.daily_remaining,
-                Math.max(
-                    0,
-                    dailyLimit -
-                    dailyUsed
-                )
-            )
-        );
-
-
-    return {
-
-        project_id:
-            safeNumber(
-                data?.project_id
-                ??
-                projectId
-            ),
-
-        plans,
-
-        balance:
-            Math.max(
-                0,
-                safeNumber(
-                    data?.balance,
-                    0
-                )
-            ),
-
-        daily_limit:
-            dailyLimit,
-
-        daily_used:
-            dailyUsed,
-
-        daily_remaining:
-            dailyRemaining,
-
-        is_boosted:
-            Boolean(
-                data?.is_boosted
-            ),
-
-        is_boosted_active:
-            Boolean(
-                data?.is_boosted_active
-            ),
-
-        boost_expires_at:
-            data?.boost_expires_at
-            ??
-            null,
-    };
 };
 
 
@@ -293,6 +200,7 @@ const ProjectService = {
     // PROFILE PROJECTS
     //
     // GET:
+    //
     // /projects/<username>/projects/
     // =====================================================
 
@@ -324,6 +232,7 @@ const ProjectService = {
                 data
             );
 
+
         } catch (
             error
         ) {
@@ -343,6 +252,7 @@ const ProjectService = {
     // PROJECT DETAIL
     //
     // GET:
+    //
     // /projects/project/<id>/detail/
     // =====================================================
 
@@ -372,6 +282,7 @@ const ProjectService = {
 
             return data;
 
+
         } catch (
             error
         ) {
@@ -391,6 +302,7 @@ const ProjectService = {
     // CREATE PROJECT
     //
     // POST:
+    //
     // /projects/project/create/
     // =====================================================
 
@@ -417,6 +329,7 @@ const ProjectService = {
 
             return data;
 
+
         } catch (
             error
         ) {
@@ -436,6 +349,7 @@ const ProjectService = {
     // UPDATE PROJECT
     //
     // PATCH:
+    //
     // /projects/project/<id>/edit/
     // =====================================================
 
@@ -463,6 +377,7 @@ const ProjectService = {
 
             return data;
 
+
         } catch (
             error
         ) {
@@ -482,6 +397,7 @@ const ProjectService = {
     // DELETE PROJECT
     //
     // DELETE:
+    //
     // /projects/project/<id>/edit/
     // =====================================================
 
@@ -504,6 +420,7 @@ const ProjectService = {
 
             return true;
 
+
         } catch (
             error
         ) {
@@ -523,6 +440,7 @@ const ProjectService = {
     // LANGUAGES
     //
     // GET:
+    //
     // /problems/languages/
     // =====================================================
 
@@ -553,6 +471,7 @@ const ProjectService = {
                 data
             );
 
+
         } catch (
             error
         ) {
@@ -572,6 +491,7 @@ const ProjectService = {
     // TECHNOLOGIES
     //
     // GET:
+    //
     // /problems/technologies/
     // =====================================================
 
@@ -601,6 +521,7 @@ const ProjectService = {
             return normalizeArray(
                 data
             );
+
 
         } catch (
             error
@@ -637,7 +558,9 @@ const ProjectService = {
             ] = await Promise.all([
 
                 axios.get(
+
                     "/problems/languages/",
+
                     {
                         signal,
 
@@ -647,7 +570,9 @@ const ProjectService = {
                 ),
 
                 axios.get(
+
                     "/problems/technologies/",
+
                     {
                         signal,
 
@@ -655,6 +580,7 @@ const ProjectService = {
                             true,
                     }
                 ),
+
             ]);
 
 
@@ -669,7 +595,9 @@ const ProjectService = {
                     normalizeArray(
                         technologiesResponse.data
                     ),
+
             };
+
 
         } catch (
             error
@@ -690,6 +618,7 @@ const ProjectService = {
     // PROJECT COMMENTS
     //
     // GET:
+    //
     // /projects/project/<id>/comments/
     // =====================================================
 
@@ -720,6 +649,7 @@ const ProjectService = {
             return normalizeArray(
                 data
             );
+
 
         } catch (
             error
@@ -763,6 +693,7 @@ const ProjectService = {
 
 
             return data;
+
 
         } catch (
             error
@@ -808,6 +739,7 @@ const ProjectService = {
 
             return data;
 
+
         } catch (
             error
         ) {
@@ -846,6 +778,7 @@ const ProjectService = {
 
 
             return true;
+
 
         } catch (
             error
@@ -889,6 +822,7 @@ const ProjectService = {
 
 
             return data;
+
 
         } catch (
             error
@@ -937,6 +871,7 @@ const ProjectService = {
                 data
             );
 
+
         } catch (
             error
         ) {
@@ -984,6 +919,7 @@ const ProjectService = {
                 data
             );
 
+
         } catch (
             error
         ) {
@@ -1030,6 +966,7 @@ const ProjectService = {
 
             return data;
 
+
         } catch (
             error
         ) {
@@ -1067,6 +1004,7 @@ const ProjectService = {
 
 
             return true;
+
 
         } catch (
             error
@@ -1110,6 +1048,7 @@ const ProjectService = {
 
             return data;
 
+
         } catch (
             error
         ) {
@@ -1127,6 +1066,14 @@ const ProjectService = {
 
     // =====================================================
     // GLOBAL PROJECTS
+    //
+    // GET:
+    //
+    // /projects/all/
+    //
+    // ?page=1
+    // &page_size=6
+    // &search=django
     // =====================================================
 
     async getAllProjects(
@@ -1153,6 +1100,7 @@ const ProjectService = {
 
                 page_size:
                     pageSize,
+
             };
 
 
@@ -1192,6 +1140,7 @@ const ProjectService = {
                 data
             );
 
+
         } catch (
             error
         ) {
@@ -1206,151 +1155,6 @@ const ProjectService = {
         }
     },
 
-
-    // =====================================================
-    // BOOST OPTIONS
-    //
-    // GET:
-    //
-    // /projects/project/<id>/boost/
-    //
-    // Backend:
-    //
-    // {
-    //     plans,
-    //     balance,
-    //     daily_limit,
-    //     daily_used,
-    //     daily_remaining,
-    //     is_boosted,
-    //     is_boosted_active,
-    //     boost_expires_at
-    // }
-    // =====================================================
-
-    async getBoostOptions(
-        projectId,
-        {
-            signal = undefined,
-        } = {}
-    ) {
-
-        try {
-
-            const {
-                data,
-            } = await axios.get(
-
-                `/projects/project/${projectId}/boost/`,
-
-                {
-                    signal,
-
-                    withCredentials:
-                        true,
-                }
-            );
-
-
-            return normalizeBoostOptions(
-                projectId,
-                data
-            );
-
-        } catch (
-            error
-        ) {
-
-            logServiceError(
-                "Project boost ma’lumotlarini olishda xato:",
-                error
-            );
-
-
-            throw error;
-        }
-    },
-
-
-    // =====================================================
-    // BOOST PROJECT
-    //
-    // POST:
-    //
-    // /projects/project/<id>/boost/
-    //
-    // {
-    //     plan_id: "premium"
-    // }
-    //
-    // Backend response:
-    //
-    // {
-    //     detail,
-    //     project_id,
-    //     plan_id,
-    //     plan_name,
-    //     spent_coins,
-    //     new_balance,
-    //     is_boosted,
-    //     is_boosted_active,
-    //     boost_expires_at,
-    //     daily_limit,
-    //     daily_used,
-    //     daily_remaining
-    // }
-    // =====================================================
-
-    async boostProject(
-        projectId,
-        planId
-    ) {
-
-        try {
-
-            const {
-                data,
-            } = await axios.post(
-
-                `/projects/project/${projectId}/boost/`,
-
-                {
-                    plan_id:
-                        planId,
-                },
-
-                {
-                    withCredentials:
-                        true,
-                }
-            );
-
-
-            return {
-
-                ...data,
-
-                project_id:
-                    safeNumber(
-                        data?.project_id
-                        ??
-                        projectId
-                    ),
-            };
-
-        } catch (
-            error
-        ) {
-
-            logServiceError(
-                "Project boost qilishda xato:",
-                error
-            );
-
-
-            throw error;
-        }
-    },
 };
 
 

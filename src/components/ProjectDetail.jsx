@@ -1,3 +1,5 @@
+// src/components/ProjectDetail.jsx
+
 import React, {
     useCallback,
     useEffect,
@@ -49,12 +51,19 @@ import {
 import UserImage from "../assests/userImage.jpeg";
 
 import ProjectDiscussion from "./ProjectDiscussion";
+
 import ProjectCollaboration from "./ProjectCollaboration";
+
 import ProjectLoadingSkeleton from "./ProjectLoadingSkeleton";
+
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
-import ProjectBoost from "./ProjectBoost";
+
+import ProjectPromotion from "./promotions/ProjectPromotion";
+
+import PromotionBadge from "./promotions/PromotionBadge";
 
 import ProjectFormModal from "./projects/CreateProjectModal";
+
 import ProjectGallery from "./projects/ProjectGallery";
 
 import {
@@ -63,7 +72,7 @@ import {
 
 
 // =========================================================
-// SELECTOR
+// REDUX SELECTOR
 // =========================================================
 
 const selectProjectState = (
@@ -85,21 +94,22 @@ const safeNumber = (
         );
 
 
-    if (
-        !Number.isFinite(
+    return Number.isFinite(
+        number
+    )
+
+        ? Math.max(
+            0,
             number
         )
-    ) {
-        return 0;
-    }
 
-
-    return Math.max(
-        0,
-        number
-    );
+        : 0;
 };
 
+
+// =========================================================
+// ERROR
+// =========================================================
 
 const getErrorMessage = (
     error,
@@ -107,17 +117,23 @@ const getErrorMessage = (
 ) => {
 
     const data =
+
         error?.serverData
+
         ||
+
         error?.response?.data;
 
 
     if (
         typeof data ===
             "string"
+
         &&
+
         data.trim()
     ) {
+
         return data;
     }
 
@@ -125,15 +141,27 @@ const getErrorMessage = (
     if (
         data?.detail
     ) {
-        return String(
+
+        return Array.isArray(
             data.detail
-        );
+        )
+
+            ? String(
+                data.detail[0]
+                ||
+                fallback
+            )
+
+            : String(
+                data.detail
+            );
     }
 
 
     if (
         data?.message
     ) {
+
         return String(
             data.message
         );
@@ -143,6 +171,7 @@ const getErrorMessage = (
     if (
         data?.error
     ) {
+
         return String(
             data.error
         );
@@ -151,12 +180,15 @@ const getErrorMessage = (
 
     if (
         data
+
         &&
+
         typeof data ===
             "object"
     ) {
 
         const firstValue =
+
             Object.values(
                 data
             )[0];
@@ -166,10 +198,13 @@ const getErrorMessage = (
             Array.isArray(
                 firstValue
             )
+
             &&
+
             firstValue.length >
                 0
         ) {
+
             return String(
                 firstValue[0]
             );
@@ -180,6 +215,7 @@ const getErrorMessage = (
             typeof firstValue ===
                 "string"
         ) {
+
             return firstValue;
         }
     }
@@ -192,6 +228,7 @@ const getErrorMessage = (
         try {
 
             const parsed =
+
                 JSON.parse(
                     error.message
                 );
@@ -200,15 +237,27 @@ const getErrorMessage = (
             if (
                 parsed?.detail
             ) {
-                return String(
+
+                return Array.isArray(
                     parsed.detail
-                );
+                )
+
+                    ? String(
+                        parsed.detail[0]
+                        ||
+                        fallback
+                    )
+
+                    : String(
+                        parsed.detail
+                    );
             }
 
 
             if (
                 parsed?.message
             ) {
+
                 return String(
                     parsed.message
                 );
@@ -218,46 +267,12 @@ const getErrorMessage = (
             if (
                 parsed?.error
             ) {
+
                 return String(
                     parsed.error
                 );
             }
 
-
-            if (
-                parsed
-                &&
-                typeof parsed ===
-                    "object"
-            ) {
-
-                const firstValue =
-                    Object.values(
-                        parsed
-                    )[0];
-
-
-                if (
-                    Array.isArray(
-                        firstValue
-                    )
-                    &&
-                    firstValue.length >
-                        0
-                ) {
-                    return String(
-                        firstValue[0]
-                    );
-                }
-
-
-                if (
-                    typeof firstValue ===
-                        "string"
-                ) {
-                    return firstValue;
-                }
-            }
 
         } catch {
 
@@ -272,6 +287,10 @@ const getErrorMessage = (
 };
 
 
+// =========================================================
+// FEATURES
+// =========================================================
+
 const formatFeatureList = (
     featuresString
 ) => {
@@ -279,6 +298,7 @@ const formatFeatureList = (
     if (
         !featuresString
     ) {
+
         return [];
     }
 
@@ -301,22 +321,33 @@ const formatFeatureList = (
 };
 
 
+// =========================================================
+// IMAGE
+// =========================================================
+
 const getImageUrl = (
     image
 ) => {
 
-    if (!image) {
+    if (
+        !image
+    ) {
+
         return UserImage;
     }
 
 
     const value =
+
         String(
             image
         ).trim();
 
 
-    if (!value) {
+    if (
+        !value
+    ) {
+
         return UserImage;
     }
 
@@ -325,20 +356,26 @@ const getImageUrl = (
         /^https?:\/\//i.test(
             value
         )
+
         ||
+
         value.startsWith(
             "blob:"
         )
+
         ||
+
         value.startsWith(
             "data:"
         )
     ) {
+
         return value;
     }
 
 
     const baseUrl =
+
         String(
             BACKEND_URL
             ||
@@ -350,24 +387,39 @@ const getImageUrl = (
 
 
     return (
+
         `${baseUrl}${
-            value.startsWith("/")
+
+            value.startsWith(
+                "/"
+            )
+
                 ? value
+
                 : `/${value}`
         }`
     );
 };
 
 
+// =========================================================
+// TITLES
+// =========================================================
+
 const getProjectTitle = (
     project
 ) => {
 
     return (
+
         project?.name
+
         ||
+
         project?.title
+
         ||
+
         "Noma’lum loyiha"
     );
 };
@@ -378,6 +430,7 @@ const getAuthorName = (
 ) => {
 
     const fullName =
+
         `${
             author?.first_name
             ||
@@ -391,24 +444,36 @@ const getAuthorName = (
 
 
     return (
+
         fullName
+
         ||
+
         author?.username
+
         ||
+
         "Noma’lum foydalanuvchi"
     );
 };
 
 
 // =========================================================
-// STAT
+// STAT PILL
 // =========================================================
 
 const StatPill = ({
-    icon: Icon,
+
+    icon:
+        Icon,
+
     label,
+
     value,
-    tone = "default",
+
+    tone =
+        "default",
+
 }) => {
 
     const tones = {
@@ -448,7 +513,10 @@ const StatPill = ({
         >
 
             <Icon
-                size={15}
+                size={
+                    15
+                }
+
                 className={
                     tones[
                         tone
@@ -483,7 +551,7 @@ const StatPill = ({
 
 
 // =========================================================
-// STACK
+// STACK HELPERS
 // =========================================================
 
 const DEFAULT_STACK_COLOR =
@@ -498,19 +566,20 @@ const getStackColor = (
         item?.color;
 
 
-    if (
+    return (
         typeof color ===
             "string"
+
         &&
+
         /^#[0-9A-Fa-f]{6}$/.test(
             color
         )
-    ) {
-        return color;
-    }
+    )
 
+        ? color
 
-    return DEFAULT_STACK_COLOR;
+        : DEFAULT_STACK_COLOR;
 };
 
 
@@ -520,40 +589,58 @@ const withAlpha = (
 ) => {
 
     const safeColor =
+
         (
             typeof color ===
                 "string"
+
             &&
+
             /^#[0-9A-Fa-f]{6}$/.test(
                 color
             )
         )
+
             ? color
+
             : DEFAULT_STACK_COLOR;
 
 
-    return `${safeColor}${alpha}`;
+    return (
+        `${safeColor}${alpha}`
+    );
 };
 
 
 const normalizeStackList = (
+
     fullList,
+
     primaryItem,
+
     type
+
 ) => {
 
     const source =
+
         Array.isArray(
             fullList
         )
+
         &&
+
         fullList.length >
             0
+
             ? fullList
+
             : primaryItem
+
                 ? [
                     primaryItem,
                 ]
+
                 : [];
 
 
@@ -562,9 +649,11 @@ const normalizeStackList = (
 
 
     return source
+
         .filter(
             Boolean
         )
+
         .map(
             (
                 item,
@@ -598,14 +687,20 @@ const normalizeStackList = (
 
                     id:
                         item?.id
+
                         ??
+
                         `${type}-${item?.name || index}`,
 
                     name:
                         item?.name
+
                         ||
+
                         item?.title
+
                         ||
+
                         "Noma’lum",
 
                     color:
@@ -617,12 +712,14 @@ const normalizeStackList = (
                 };
             }
         )
+
         .filter(
             (
                 item
             ) => {
 
                 const key =
+
                     `${item.type}-${item.id || item.name}`;
 
 
@@ -631,6 +728,7 @@ const normalizeStackList = (
                         key
                     )
                 ) {
+
                     return false;
                 }
 
@@ -647,20 +745,28 @@ const normalizeStackList = (
 
 
 // =========================================================
-// STACK BADGE
+// TECH BADGE
 // =========================================================
 
 const TechBadge = ({
+
     item,
-    showCategory = false,
+
+    showCategory =
+        false,
+
 }) => {
 
-    if (!item) {
+    if (
+        !item
+    ) {
+
         return null;
     }
 
 
     const color =
+
         getStackColor(
             item
         );
@@ -754,34 +860,44 @@ const TechBadge = ({
             {showCategory
                 &&
                 (
-                    item?.category_display
+                    item
+                        ?.category_display
+
                     ||
-                    item?.category
+
+                    item
+                        ?.category
                 )
                 && (
 
-                <span
-                    className="
-                        hidden
-                        rounded-full
-                        border
-                        border-white/[0.07]
-                        bg-black/10
-                        px-1.5
-                        py-0.5
-                        font-mono
-                        text-[8px]
-                        tracking-normal
-                        text-white/45
+                    <span
+                        className="
+                            hidden
+                            rounded-full
+                            border
+                            border-white/[0.07]
+                            bg-black/10
+                            px-1.5
+                            py-0.5
+                            font-mono
+                            text-[8px]
+                            tracking-normal
+                            text-white/45
 
-                        sm:inline
-                    "
-                >
-                    {item?.category_display
-                    ||
-                    item?.category}
-                </span>
-            )}
+                            sm:inline
+                        "
+                    >
+                        {
+                            item
+                                ?.category_display
+
+                            ||
+
+                            item
+                                ?.category
+                        }
+                    </span>
+                )}
 
         </span>
     );
@@ -793,15 +909,23 @@ const TechBadge = ({
 // =========================================================
 
 const OwnerControls = ({
+
     onEdit,
+
     onDelete,
+
     isUpdating,
+
     isDeleting,
+
 }) => {
 
     const busy =
+
         isUpdating
+
         ||
+
         isDeleting;
 
 
@@ -841,7 +965,10 @@ const OwnerControls = ({
             >
 
                 <Settings2
-                    size={13}
+                    size={
+                        13
+                    }
+
                     className="
                         text-indigo-400
                     "
@@ -891,7 +1018,6 @@ const OwnerControls = ({
                     font-black
                     text-indigo-300
                     transition-all
-                    duration-200
 
                     hover:border-indigo-400/20
                     hover:bg-indigo-500/[0.08]
@@ -907,7 +1033,10 @@ const OwnerControls = ({
                 {isUpdating ? (
 
                     <Loader2
-                        size={15}
+                        size={
+                            15
+                        }
+
                         className="
                             animate-spin
                         "
@@ -916,9 +1045,13 @@ const OwnerControls = ({
                 ) : (
 
                     <Pencil
-                        size={15}
+                        size={
+                            15
+                        }
+
                         className="
                             transition-transform
+
                             group-hover:-rotate-6
                         "
                     />
@@ -926,9 +1059,11 @@ const OwnerControls = ({
 
 
                 <span>
-                    {isUpdating
-                        ? "Saqlanmoqda"
-                        : "Tahrirlash"}
+                    {
+                        isUpdating
+                            ? "Saqlanmoqda"
+                            : "Tahrirlash"
+                    }
                 </span>
 
             </button>
@@ -961,7 +1096,6 @@ const OwnerControls = ({
                     font-black
                     text-red-400
                     transition-all
-                    duration-200
 
                     hover:border-red-400/20
                     hover:bg-red-500/[0.08]
@@ -977,7 +1111,10 @@ const OwnerControls = ({
                 {isDeleting ? (
 
                     <Loader2
-                        size={15}
+                        size={
+                            15
+                        }
+
                         className="
                             animate-spin
                         "
@@ -986,9 +1123,13 @@ const OwnerControls = ({
                 ) : (
 
                     <Trash2
-                        size={15}
+                        size={
+                            15
+                        }
+
                         className="
                             transition-transform
+
                             group-hover:rotate-6
                         "
                     />
@@ -996,9 +1137,11 @@ const OwnerControls = ({
 
 
                 <span>
-                    {isDeleting
-                        ? "O‘chirilmoqda"
-                        : "O‘chirish"}
+                    {
+                        isDeleting
+                            ? "O‘chirilmoqda"
+                            : "O‘chirish"
+                    }
                 </span>
 
             </button>
@@ -1032,8 +1175,11 @@ const ProjectDetail = () => {
     // =====================================================
 
     const {
+
         isLoggedIn,
+
         user,
+
     } = useSelector(
         (
             state
@@ -1043,13 +1189,17 @@ const ProjectDetail = () => {
 
 
     // =====================================================
-    // REDUX
+    // PROJECT REDUX
     // =====================================================
 
     const {
+
         projectDetail,
+
         projectDetailIsLoading,
+
         projectDetailError,
+
     } = useSelector(
         selectProjectState
     );
@@ -1057,8 +1207,6 @@ const ProjectDetail = () => {
 
     // =====================================================
     // LOCAL STATE
-    //
-    // Gallery state endi bu yerda YO‘Q.
     // =====================================================
 
     const [
@@ -1114,49 +1262,66 @@ const ProjectDetail = () => {
     // =====================================================
 
     const projectData =
+
         projectDetail
+
         ||
+
         {};
 
 
     const projectImages =
+
         useMemo(
             () => {
 
                 return Array.isArray(
-                    projectData?.images
+                    projectData
+                        ?.images
                 )
-                    ? projectData.images.filter(
-                        Boolean
-                    )
-                    : [];
 
+                    ? projectData
+                        .images
+                        .filter(
+                            Boolean
+                        )
+
+                    : [];
             },
             [
-                projectData?.images,
+                projectData
+                    ?.images,
             ]
         );
 
 
     const author =
-        projectData?.user
+
+        projectData
+            ?.user
+
         ||
+
         {};
 
 
     const projectTitle =
+
         getProjectTitle(
             projectData
         );
 
 
     const authorImage =
+
         getImageUrl(
-            author?.image
+            author
+                ?.image
         );
 
 
     const featuresList =
+
         useMemo(
             () => {
 
@@ -1164,7 +1329,6 @@ const ProjectDetail = () => {
                     projectData
                         ?.main_features
                 );
-
             },
             [
                 projectData
@@ -1174,10 +1338,11 @@ const ProjectDetail = () => {
 
 
     // =====================================================
-    // LANGUAGES
+    // STACK
     // =====================================================
 
     const projectLanguages =
+
         useMemo(
             () => {
 
@@ -1191,7 +1356,6 @@ const ProjectDetail = () => {
 
                     "language"
                 );
-
             },
             [
                 projectData
@@ -1203,11 +1367,8 @@ const ProjectDetail = () => {
         );
 
 
-    // =====================================================
-    // TECHNOLOGIES
-    // =====================================================
-
     const projectTechnologies =
+
         useMemo(
             () => {
 
@@ -1221,7 +1382,6 @@ const ProjectDetail = () => {
 
                     "technology"
                 );
-
             },
             [
                 projectData
@@ -1234,9 +1394,12 @@ const ProjectDetail = () => {
 
 
     const hasProjectStack =
+
         projectLanguages.length >
             0
+
         ||
+
         projectTechnologies.length >
             0;
 
@@ -1246,17 +1409,21 @@ const ProjectDetail = () => {
     // =====================================================
 
     const isCollaborator =
+
         useMemo(
             () => {
 
                 if (
                     !user?.id
+
                     ||
+
                     !Array.isArray(
                         projectData
                             ?.collaborations
                     )
                 ) {
+
                     return false;
                 }
 
@@ -1272,7 +1439,9 @@ const ProjectDetail = () => {
 
                                 collaboration
                                     ?.is_active
+
                                 !==
+
                                 false
 
                                 &&
@@ -1282,17 +1451,19 @@ const ProjectDetail = () => {
                                         ?.user
                                         ?.id
                                 )
+
                                 ===
+
                                 Number(
                                     user.id
                                 )
                             );
                         }
                     );
-
             },
             [
                 user?.id,
+
                 projectData
                     ?.collaborations,
             ]
@@ -1304,20 +1475,26 @@ const ProjectDetail = () => {
     // =====================================================
 
     const isOwner =
+
         useMemo(
             () => {
 
                 if (
                     user?.id
+
                     &&
+
                     author?.id
                 ) {
 
                     return (
+
                         Number(
                             user.id
                         )
+
                         ===
+
                         Number(
                             author.id
                         )
@@ -1327,15 +1504,20 @@ const ProjectDetail = () => {
 
                 if (
                     user?.username
+
                     &&
+
                     author?.username
                 ) {
 
                     return (
+
                         String(
                             user.username
                         )
+
                         ===
+
                         String(
                             author.username
                         )
@@ -1344,12 +1526,14 @@ const ProjectDetail = () => {
 
 
                 return false;
-
             },
             [
                 user?.id,
+
                 user?.username,
+
                 author?.id,
+
                 author?.username,
             ]
         );
@@ -1360,6 +1544,7 @@ const ProjectDetail = () => {
     // =====================================================
 
     const starsCount =
+
         safeNumber(
             projectData
                 ?.stars_count
@@ -1367,6 +1552,7 @@ const ProjectDetail = () => {
 
 
     const viewsCount =
+
         safeNumber(
             projectData
                 ?.views_count
@@ -1374,15 +1560,41 @@ const ProjectDetail = () => {
 
 
     const commentsCount =
+
         safeNumber(
             projectData
                 ?.comments_count
         );
 
 
+    // =====================================================
+    // PROMOTION
+    // =====================================================
+
+    const isPromoted =
+
+        Boolean(
+            projectData
+                ?.is_promoted
+        );
+
+
+    const promotionExpiresAt =
+
+        projectData
+            ?.promotion_expires_at
+
+        ??
+
+        null;
+
+
     const ownerProfilePath =
+
         author?.username
+
             ? `/${author.username}/profile/`
+
             : "/projects";
 
 
@@ -1391,12 +1603,14 @@ const ProjectDetail = () => {
     // =====================================================
 
     const getProjectDetail =
+
         useCallback(
             async () => {
 
                 if (
                     !projectId
                 ) {
+
                     return;
                 }
 
@@ -1409,6 +1623,7 @@ const ProjectDetail = () => {
                 try {
 
                     const response =
+
                         await ProjectService
                             .projectDetail(
                                 projectId
@@ -1429,6 +1644,7 @@ const ProjectDetail = () => {
                         )
                     );
 
+
                 } catch (
                     requestError
                 ) {
@@ -1442,7 +1658,9 @@ const ProjectDetail = () => {
                     dispatch(
                         getProjectDetailFailure(
                             getErrorMessage(
+
                                 requestError,
+
                                 "Loyihani yuklashda xato yuz berdi."
                             )
                         )
@@ -1495,11 +1713,16 @@ const ProjectDetail = () => {
 
             if (
                 !isOwner
+
                 ||
+
                 isUpdating
+
                 ||
+
                 isDeleting
             ) {
+
                 return;
             }
 
@@ -1516,6 +1739,7 @@ const ProjectDetail = () => {
             if (
                 isUpdating
             ) {
+
                 return;
             }
 
@@ -1537,13 +1761,17 @@ const ProjectDetail = () => {
                 ||
                 isDeleting
             ) {
+
                 return false;
             }
 
 
             const targetProjectId =
+
                 projectIdToUpdate
+
                 ||
+
                 projectData?.id;
 
 
@@ -1570,6 +1798,7 @@ const ProjectDetail = () => {
 
 
             const toastId =
+
                 siteToast.loading(
                     "Loyihadagi o‘zgarishlar saqlanmoqda...",
                     {
@@ -1613,13 +1842,16 @@ const ProjectDetail = () => {
 
                 return true;
 
+
             } catch (
                 requestError
             ) {
 
                 const message =
+
                     getErrorMessage(
                         requestError,
+
                         "Loyihani tahrirlashda xato yuz berdi."
                     );
 
@@ -1647,6 +1879,7 @@ const ProjectDetail = () => {
 
                 throw requestError;
 
+
             } finally {
 
                 setIsUpdating(
@@ -1665,11 +1898,16 @@ const ProjectDetail = () => {
 
             if (
                 !isOwner
+
                 ||
+
                 isUpdating
+
                 ||
+
                 isDeleting
             ) {
+
                 return;
             }
 
@@ -1686,6 +1924,7 @@ const ProjectDetail = () => {
             if (
                 isDeleting
             ) {
+
                 return;
             }
 
@@ -1701,9 +1940,12 @@ const ProjectDetail = () => {
 
             if (
                 !projectData?.id
+
                 ||
+
                 isDeleting
             ) {
+
                 return;
             }
 
@@ -1714,6 +1956,7 @@ const ProjectDetail = () => {
 
 
             const toastId =
+
                 siteToast.loading(
                     `"${projectTitle}" loyihasi o‘chirilmoqda...`,
                     {
@@ -1759,6 +2002,7 @@ const ProjectDetail = () => {
                     }
                 );
 
+
             } catch (
                 requestError
             ) {
@@ -1766,6 +2010,7 @@ const ProjectDetail = () => {
                 siteToast.error(
                     getErrorMessage(
                         requestError,
+
                         "Loyihani o‘chirishda xato yuz berdi."
                     ),
                     {
@@ -1779,6 +2024,7 @@ const ProjectDetail = () => {
                             5000,
                     }
                 );
+
 
             } finally {
 
@@ -1794,6 +2040,7 @@ const ProjectDetail = () => {
     // =====================================================
 
     const handleStarToggle =
+
         useCallback(
             async () => {
 
@@ -1819,9 +2066,12 @@ const ProjectDetail = () => {
 
                 if (
                     isStarLoading
+
                     ||
+
                     !projectDetail?.id
                 ) {
+
                     return;
                 }
 
@@ -1832,12 +2082,14 @@ const ProjectDetail = () => {
 
 
                 const oldIsStarred =
+
                     Boolean(
                         isStarred
                     );
 
 
                 const oldStarsCount =
+
                     safeNumber(
                         projectDetail
                             ?.stars_count
@@ -1845,17 +2097,24 @@ const ProjectDetail = () => {
 
 
                 const nextIsStarred =
+
                     !oldIsStarred;
 
 
                 const optimisticStarsCount =
+
                     Math.max(
                         0,
+
                         oldStarsCount
+
                         +
+
                         (
                             nextIsStarred
+
                                 ? 1
+
                                 : -1
                         )
                     );
@@ -1868,6 +2127,7 @@ const ProjectDetail = () => {
 
                 dispatch(
                     getProjectDetailSuccess({
+
                         ...projectDetail,
 
                         stars_count:
@@ -1882,6 +2142,7 @@ const ProjectDetail = () => {
                 try {
 
                     const response =
+
                         await ProjectService
                             .toggleProjectStar(
                                 projectId
@@ -1889,9 +2150,13 @@ const ProjectDetail = () => {
 
 
                     const backendIsStarred =
+
                         typeof response
-                            ?.is_starred_by_user ===
-                            "boolean"
+                            ?.is_starred_by_user
+
+                        ===
+
+                        "boolean"
 
                             ? response
                                 .is_starred_by_user
@@ -1900,16 +2165,19 @@ const ProjectDetail = () => {
 
 
                     const backendStarsCount =
+
                         Number.isFinite(
                             Number(
                                 response
                                     ?.stars_count
                             )
                         )
+
                             ? safeNumber(
                                 response
                                     ?.stars_count
                             )
+
                             : optimisticStarsCount;
 
 
@@ -1920,6 +2188,7 @@ const ProjectDetail = () => {
 
                     dispatch(
                         getProjectDetailSuccess({
+
                             ...projectDetail,
 
                             stars_count:
@@ -1946,6 +2215,7 @@ const ProjectDetail = () => {
                             }
                         );
 
+
                     } else {
 
                         siteToast.info(
@@ -1959,6 +2229,7 @@ const ProjectDetail = () => {
                             }
                         );
                     }
+
 
                 } catch (
                     requestError
@@ -1977,6 +2248,7 @@ const ProjectDetail = () => {
 
                     dispatch(
                         getProjectDetailSuccess({
+
                             ...projectDetail,
 
                             stars_count:
@@ -1991,6 +2263,7 @@ const ProjectDetail = () => {
                     siteToast.error(
                         getErrorMessage(
                             requestError,
+
                             "Star amalini bajarib bo‘lmadi."
                         ),
                         {
@@ -2001,6 +2274,7 @@ const ProjectDetail = () => {
                                 4500,
                         }
                     );
+
 
                 } finally {
 
@@ -2026,7 +2300,9 @@ const ProjectDetail = () => {
 
     if (
         projectDetailIsLoading
+
         &&
+
         !projectData?.id
     ) {
 
@@ -2042,7 +2318,9 @@ const ProjectDetail = () => {
 
     if (
         projectDetailError
+
         ||
+
         !projectData?.id
     ) {
 
@@ -2088,7 +2366,9 @@ const ProjectDetail = () => {
                     >
 
                         <AlertTriangle
-                            size={28}
+                            size={
+                                28
+                            }
                         />
 
                     </div>
@@ -2179,7 +2459,9 @@ const ProjectDetail = () => {
                     >
 
                         <Loader2
-                            size={15}
+                            size={
+                                15
+                            }
                         />
 
                         Qayta urinish
@@ -2209,7 +2491,9 @@ const ProjectDetail = () => {
             "
         >
 
-            {/* BACKGROUND */}
+            {/* =================================================
+                BACKGROUND
+            ================================================== */}
 
             <div
                 className="
@@ -2254,7 +2538,9 @@ const ProjectDetail = () => {
             />
 
 
-            {/* MAIN */}
+            {/* =================================================
+                MAIN
+            ================================================== */}
 
             <main
                 className="
@@ -2284,7 +2570,9 @@ const ProjectDetail = () => {
                     "
                 >
 
-                    {/* HEADER */}
+                    {/* =========================================
+                        HEADER
+                    ========================================== */}
 
                     <header
                         className="
@@ -2338,12 +2626,46 @@ const ProjectDetail = () => {
                                 >
 
                                     <Rocket
-                                        size={14}
+                                        size={
+                                            14
+                                        }
                                     />
 
                                     Project showcase
 
                                 </div>
+
+
+                                {/* =================================
+                                    PUBLIC PROMOTION BADGE
+                                ================================== */}
+
+                                {isPromoted && (
+
+                                    <div
+                                        className="
+                                            mb-4
+                                            flex
+                                            flex-wrap
+                                            items-center
+                                            gap-2
+                                        "
+                                    >
+
+                                        <PromotionBadge
+                                            isPromoted={
+                                                isPromoted
+                                            }
+
+                                            expiresAt={
+                                                promotionExpiresAt
+                                            }
+
+                                            showTimer
+                                        />
+
+                                    </div>
+                                )}
 
 
                                 <h1
@@ -2384,9 +2706,14 @@ const ProjectDetail = () => {
                                         sm:text-base
                                     "
                                 >
-                                    {projectData?.description
-                                    ||
-                                    "Ushbu loyiha uchun hali to‘liq tavsif kiritilmagan."}
+                                    {
+                                        projectData
+                                            ?.description
+
+                                        ||
+
+                                        "Ushbu loyiha uchun hali to‘liq tavsif kiritilmagan."
+                                    }
                                 </p>
 
                             </div>
@@ -2424,7 +2751,9 @@ const ProjectDetail = () => {
                         </div>
 
 
-                        {/* STATS */}
+                        {/* =========================================
+                            STATS
+                        ========================================== */}
 
                         <div
                             className="
@@ -2445,13 +2774,17 @@ const ProjectDetail = () => {
 
                                 disabled={
                                     isStarLoading
+
                                     ||
+
                                     isDeleting
                                 }
 
                                 title={
                                     isStarred
+
                                         ? "Starni olib tashlash"
+
                                         : "Loyihaga star berish"
                                 }
 
@@ -2478,21 +2811,27 @@ const ProjectDetail = () => {
                                     ${
                                         isStarred
 
-                                            ? `
-                                                border-yellow-400/25
-                                                bg-yellow-500/[0.10]
-                                                text-yellow-200
-                                            `
+                                            ? (
+                                                "border-yellow-400/25 "
+                                                +
+                                                "bg-yellow-500/[0.10] "
+                                                +
+                                                "text-yellow-200"
+                                            )
 
-                                            : `
-                                                border-white/[0.07]
-                                                bg-white/[0.025]
-                                                text-gray-400
-
-                                                hover:border-yellow-400/20
-                                                hover:bg-yellow-500/[0.06]
-                                                hover:text-yellow-300
-                                            `
+                                            : (
+                                                "border-white/[0.07] "
+                                                +
+                                                "bg-white/[0.025] "
+                                                +
+                                                "text-gray-400 "
+                                                +
+                                                "hover:border-yellow-400/20 "
+                                                +
+                                                "hover:bg-yellow-500/[0.06] "
+                                                +
+                                                "hover:text-yellow-300"
+                                            )
                                     }
                                 `}
                             >
@@ -2500,7 +2839,10 @@ const ProjectDetail = () => {
                                 {isStarLoading ? (
 
                                     <Loader2
-                                        size={17}
+                                        size={
+                                            17
+                                        }
+
                                         className="
                                             animate-spin
                                         "
@@ -2509,11 +2851,15 @@ const ProjectDetail = () => {
                                 ) : (
 
                                     <Star
-                                        size={17}
+                                        size={
+                                            17
+                                        }
 
                                         className={
                                             isStarred
+
                                                 ? "fill-yellow-300 text-yellow-300"
+
                                                 : ""
                                         }
                                     />
@@ -2521,9 +2867,13 @@ const ProjectDetail = () => {
 
 
                                 <span>
-                                    {isStarred
-                                        ? "Starred"
-                                        : "Star berish"}
+                                    {
+                                        isStarred
+
+                                            ? "Starred"
+
+                                            : "Star berish"
+                                    }
                                 </span>
 
 
@@ -2556,9 +2906,13 @@ const ProjectDetail = () => {
                                         .toLocaleString()
                                 }
 
-                                label="star"
+                                label={
+                                    "star"
+                                }
 
-                                tone="yellow"
+                                tone={
+                                    "yellow"
+                                }
                             />
 
 
@@ -2572,9 +2926,13 @@ const ProjectDetail = () => {
                                         .toLocaleString()
                                 }
 
-                                label="ko‘rish"
+                                label={
+                                    "ko‘rish"
+                                }
 
-                                tone="cyan"
+                                tone={
+                                    "cyan"
+                                }
                             />
 
 
@@ -2588,15 +2946,21 @@ const ProjectDetail = () => {
                                         .toLocaleString()
                                 }
 
-                                label="sharh"
+                                label={
+                                    "sharh"
+                                }
 
-                                tone="indigo"
+                                tone={
+                                    "indigo"
+                                }
                             />
 
                         </div>
 
 
-                        {/* GALLERY IS NOW SEPARATE */}
+                        {/* =========================================
+                            GALLERY
+                        ========================================== */}
 
                         <ProjectGallery
                             images={
@@ -2611,7 +2975,9 @@ const ProjectDetail = () => {
                     </header>
 
 
-                    {/* CONTENT */}
+                    {/* =============================================
+                        CONTENT
+                    ============================================== */}
 
                     <div
                         className="
@@ -2621,7 +2987,9 @@ const ProjectDetail = () => {
                         "
                     >
 
-                        {/* LEFT */}
+                        {/* =========================================
+                            LEFT
+                        ========================================== */}
 
                         <section
                             className="
@@ -2660,9 +3028,14 @@ const ProjectDetail = () => {
                                         sm:text-base
                                     "
                                 >
-                                    {projectData?.description
-                                    ||
-                                    "Ushbu loyiha uchun hali to‘liq tavsif kiritilmagan."}
+                                    {
+                                        projectData
+                                            ?.description
+
+                                        ||
+
+                                        "Ushbu loyiha uchun hali to‘liq tavsif kiritilmagan."
+                                    }
                                 </div>
 
 
@@ -2686,7 +3059,10 @@ const ProjectDetail = () => {
                                     >
 
                                         <Sparkles
-                                            size={24}
+                                            size={
+                                                24
+                                            }
+
                                             className="
                                                 text-indigo-300
                                             "
@@ -2710,9 +3086,14 @@ const ProjectDetail = () => {
                                             sm:text-base
                                         "
                                     >
-                                        {projectData?.description
-                                        ||
-                                        "Loyiha haqida to‘liqroq ma’lumotlar tez orada kiritiladi."}
+                                        {
+                                            projectData
+                                                ?.description
+
+                                            ||
+
+                                            "Loyiha haqida to‘liqroq ma’lumotlar tez orada kiritiladi."
+                                        }
                                     </p>
 
                                 </div>
@@ -2721,7 +3102,7 @@ const ProjectDetail = () => {
                                 {/* FEATURES */}
 
                                 {featuresList.length >
-                                    0 && (
+                                0 && (
 
                                     <div
                                         className="
@@ -2743,7 +3124,10 @@ const ProjectDetail = () => {
                                         >
 
                                             <ShieldCheck
-                                                size={21}
+                                                size={
+                                                    21
+                                                }
+
                                                 className="
                                                     text-emerald-300
                                                 "
@@ -2815,13 +3199,15 @@ const ProjectDetail = () => {
                                                                 text-indigo-300
                                                             "
                                                         >
-                                                            {String(
-                                                                index +
-                                                                1
-                                                            ).padStart(
-                                                                2,
-                                                                "0"
-                                                            )}
+                                                            {
+                                                                String(
+                                                                    index +
+                                                                    1
+                                                                ).padStart(
+                                                                    2,
+                                                                    "0"
+                                                                )
+                                                            }
                                                         </span>
 
 
@@ -2841,17 +3227,20 @@ const ProjectDetail = () => {
                             </article>
 
 
-                            {/* COLLABORATION */}
+                            {/* =====================================
+                                COLLABORATION
+                            ====================================== */}
 
                             <ProjectCollaboration
-
                                 currentCollaborators={
                                     Array.isArray(
                                         projectData
                                             ?.collaborations
                                     )
+
                                         ? projectData
                                             .collaborations
+
                                         : []
                                 }
 
@@ -2883,7 +3272,9 @@ const ProjectDetail = () => {
                         </section>
 
 
-                        {/* SIDEBAR */}
+                        {/* =========================================
+                            SIDEBAR
+                        ========================================== */}
 
                         <aside
                             className="
@@ -2905,22 +3296,19 @@ const ProjectDetail = () => {
                                 "
                             >
 
-                                {/* BOOST */}
+                                {/* =================================
+                                    OWNER PROMOTION PANEL
+                                ================================== */}
 
                                 {isOwner && (
 
                                     <div
                                         className="
                                             min-w-0
-                                            overflow-hidden
-                                            rounded-3xl
-
-                                            [&>div]:mb-0
-                                            [&>div]:w-full
                                         "
                                     >
 
-                                        <ProjectBoost
+                                        <ProjectPromotion
                                             projectId={
                                                 projectData.id
                                             }
@@ -2931,8 +3319,13 @@ const ProjectDetail = () => {
 
                                             userCoins={
                                                 safeNumber(
-                                                    user?.coins
+                                                    user
+                                                        ?.coins
                                                 )
+                                            }
+
+                                            onPromotionChange={
+                                                getProjectDetail
                                             }
                                         />
 
@@ -2940,7 +3333,9 @@ const ProjectDetail = () => {
                                 )}
 
 
-                                {/* AUTHOR */}
+                                {/* =================================
+                                    AUTHOR
+                                ================================== */}
 
                                 <section
                                     className="
@@ -2979,7 +3374,9 @@ const ProjectDetail = () => {
                                         >
 
                                             <UserRound
-                                                size={17}
+                                                size={
+                                                    17
+                                                }
                                             />
 
                                         </div>
@@ -3046,8 +3443,11 @@ const ProjectDetail = () => {
                                                 }
 
                                                 alt={
-                                                    author?.username
+                                                    author
+                                                        ?.username
+
                                                     ||
+
                                                     "Project owner"
                                                 }
 
@@ -3097,9 +3497,11 @@ const ProjectDetail = () => {
                                                         group-hover:text-indigo-300
                                                     "
                                                 >
-                                                    {getAuthorName(
-                                                        author
-                                                    )}
+                                                    {
+                                                        getAuthorName(
+                                                            author
+                                                        )
+                                                    }
                                                 </p>
 
 
@@ -3126,9 +3528,14 @@ const ProjectDetail = () => {
                                                         text-indigo-300
                                                     "
                                                 >
-                                                    {author?.skill_level
-                                                    ||
-                                                    "Aniqlanmagan"}
+                                                    {
+                                                        author
+                                                            ?.skill_level
+
+                                                        ||
+
+                                                        "Aniqlanmagan"
+                                                    }
                                                 </p>
 
                                             </div>
@@ -3155,7 +3562,9 @@ const ProjectDetail = () => {
                                 </section>
 
 
-                                {/* PROJECT STACK */}
+                                {/* =================================
+                                    PROJECT STACK
+                                ================================== */}
 
                                 <section
                                     className="
@@ -3194,7 +3603,9 @@ const ProjectDetail = () => {
                                         >
 
                                             <Code2
-                                                size={17}
+                                                size={
+                                                    17
+                                                }
                                             />
 
                                         </div>
@@ -3240,7 +3651,7 @@ const ProjectDetail = () => {
                                         >
 
                                             {projectLanguages.length >
-                                                0 && (
+                                            0 && (
 
                                                 <div>
 
@@ -3281,7 +3692,10 @@ const ProjectDetail = () => {
                                                                 text-gray-600
                                                             "
                                                         >
-                                                            {projectLanguages.length}
+                                                            {
+                                                                projectLanguages
+                                                                    .length
+                                                            }
                                                         </span>
 
                                                     </div>
@@ -3319,7 +3733,7 @@ const ProjectDetail = () => {
 
 
                                             {projectTechnologies.length >
-                                                0 && (
+                                            0 && (
 
                                                 <div>
 
@@ -3360,7 +3774,10 @@ const ProjectDetail = () => {
                                                                 text-gray-600
                                                             "
                                                         >
-                                                            {projectTechnologies.length}
+                                                            {
+                                                                projectTechnologies
+                                                                    .length
+                                                            }
                                                         </span>
 
                                                     </div>
@@ -3416,12 +3833,18 @@ const ProjectDetail = () => {
                                 </section>
 
 
-                                {/* LINKS */}
+                                {/* =================================
+                                    LINKS
+                                ================================== */}
 
                                 {(
-                                    projectData?.github_url
+                                    projectData
+                                        ?.github_url
+
                                     ||
-                                    projectData?.website_url
+
+                                    projectData
+                                        ?.website_url
                                 ) && (
 
                                     <section
@@ -3430,7 +3853,8 @@ const ProjectDetail = () => {
                                         "
                                     >
 
-                                        {projectData?.github_url && (
+                                        {projectData
+                                            ?.github_url && (
 
                                             <a
                                                 href={
@@ -3477,7 +3901,9 @@ const ProjectDetail = () => {
                                                 >
 
                                                     <Github
-                                                        size={18}
+                                                        size={
+                                                            18
+                                                        }
                                                     />
 
                                                     GitHub
@@ -3486,7 +3912,10 @@ const ProjectDetail = () => {
 
 
                                                 <ExternalLink
-                                                    size={14}
+                                                    size={
+                                                        14
+                                                    }
+
                                                     className="
                                                         text-gray-700
                                                         transition
@@ -3499,7 +3928,8 @@ const ProjectDetail = () => {
                                         )}
 
 
-                                        {projectData?.website_url && (
+                                        {projectData
+                                            ?.website_url && (
 
                                             <a
                                                 href={
@@ -3546,7 +3976,9 @@ const ProjectDetail = () => {
                                                 >
 
                                                     <ExternalLink
-                                                        size={18}
+                                                        size={
+                                                            18
+                                                        }
                                                     />
 
                                                     Live Demo
@@ -3555,7 +3987,10 @@ const ProjectDetail = () => {
 
 
                                                 <ExternalLink
-                                                    size={14}
+                                                    size={
+                                                        14
+                                                    }
+
                                                     className="
                                                         text-indigo-500
                                                         transition-transform
@@ -3578,7 +4013,9 @@ const ProjectDetail = () => {
                     </div>
 
 
-                    {/* DISCUSSION */}
+                    {/* =============================================
+                        DISCUSSION
+                    ============================================== */}
 
                     <ProjectDiscussion
                         projectId={
@@ -3591,7 +4028,9 @@ const ProjectDetail = () => {
             </main>
 
 
-            {/* EDIT */}
+            {/* =================================================
+                EDIT MODAL
+            ================================================== */}
 
             {isOwner && (
 
@@ -3619,7 +4058,9 @@ const ProjectDetail = () => {
             )}
 
 
-            {/* DELETE */}
+            {/* =================================================
+                DELETE MODAL
+            ================================================== */}
 
             {isOwner && (
 

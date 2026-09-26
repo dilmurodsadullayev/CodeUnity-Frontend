@@ -1,3 +1,5 @@
+// src/components/HomeSidebar.jsx
+
 import React, {
     useCallback,
     useEffect,
@@ -32,6 +34,8 @@ import {
     handleUserImageError,
 } from "../utils/imageUtils";
 
+import HomePromotionSpotlight from "./promotions/HomePromotionSpotlight";
+
 
 // =========================================================
 // HOME SIDEBAR
@@ -41,6 +45,7 @@ const HomeSidebar = ({
     isLoggedIn,
     user,
 }) => {
+
     const dispatch =
         useDispatch();
 
@@ -55,7 +60,9 @@ const HomeSidebar = ({
         birthdayUsersError,
         birthdayUsersCount,
     } = useSelector(
-        (state) =>
+        (
+            state
+        ) =>
             state.user
     );
 
@@ -67,20 +74,27 @@ const HomeSidebar = ({
     const fetchBirthdayUsers =
         useCallback(
             async () => {
+
                 dispatch(
                     getBirthdayUsersStart()
                 );
 
 
                 try {
+
                     const response =
                         await UserService
                             .getMonthlyBirthdayUsers({
-                                limit: 5,
 
-                                excludeMe: true,
+                                limit:
+                                    5,
 
-                                upcomingOnly: false,
+                                excludeMe:
+                                    true,
+
+                                upcomingOnly:
+                                    false,
+
                             });
 
 
@@ -90,16 +104,27 @@ const HomeSidebar = ({
                         )
                     );
 
+
                 } catch (
                     error
                 ) {
+
                     dispatch(
                         getBirthdayUsersFailure(
-                            error?.response
+
+                            error
+                                ?.response
                                 ?.data
-                                ?.detail ||
-                            error?.message ||
+                                ?.detail
+
+                            ||
+
+                            error?.message
+
+                            ||
+
                             "Tug‘ilgan kunlarni yuklashda xatolik yuz berdi."
+
                         )
                     );
                 }
@@ -116,7 +141,9 @@ const HomeSidebar = ({
 
     useEffect(
         () => {
+
             fetchBirthdayUsers();
+
         },
         [
             fetchBirthdayUsers,
@@ -131,14 +158,26 @@ const HomeSidebar = ({
     const getFullName = (
         item
     ) => {
+
         const fullName =
-            item?.full_name ||
-            `${item?.first_name || ""} ${item?.last_name || ""}`.trim();
+            item?.full_name
+            ||
+            `${
+                item?.first_name
+                ||
+                ""
+            } ${
+                item?.last_name
+                ||
+                ""
+            }`.trim();
 
 
         return (
-            fullName ||
-            item?.username ||
+            fullName
+            ||
+            item?.username
+            ||
             "FSociety user"
         );
     };
@@ -151,9 +190,12 @@ const HomeSidebar = ({
     const getBirthdayBadgeClass = (
         daysLeft
     ) => {
+
         if (
-            daysLeft === 0
+            daysLeft ===
+            0
         ) {
+
             return (
                 "border-pink-400/30 bg-pink-500/10 text-pink-300"
             );
@@ -161,8 +203,10 @@ const HomeSidebar = ({
 
 
         if (
-            daysLeft === 1
+            daysLeft ===
+            1
         ) {
+
             return (
                 "border-yellow-400/30 bg-yellow-500/10 text-yellow-300"
             );
@@ -170,8 +214,10 @@ const HomeSidebar = ({
 
 
         if (
-            daysLeft > 1
+            daysLeft >
+            1
         ) {
+
             return (
                 "border-cyan-400/30 bg-cyan-500/10 text-cyan-300"
             );
@@ -197,8 +243,10 @@ const HomeSidebar = ({
 
 
     const totalBirthdayUsers =
-        birthdayUsersCount ||
-        safeBirthdayUsers.length ||
+        birthdayUsersCount
+        ||
+        safeBirthdayUsers.length
+        ||
         0;
 
 
@@ -207,6 +255,7 @@ const HomeSidebar = ({
     // =====================================================
 
     return (
+
         <aside
             className="
                 w-full
@@ -230,9 +279,7 @@ const HomeSidebar = ({
                 <div
                     className="
                         relative
-
                         overflow-hidden
-
                         rounded-3xl
 
                         border
@@ -252,7 +299,6 @@ const HomeSidebar = ({
                     <div
                         className="
                             pointer-events-none
-
                             absolute
                             -right-16
                             -top-16
@@ -313,6 +359,7 @@ const HomeSidebar = ({
                                 md:text-2xl
                             "
                         >
+
                             Salom, xush kelibsiz{" "}
 
                             <span
@@ -322,9 +369,12 @@ const HomeSidebar = ({
                             >
                                 @
                                 {
-                                    isLoggedIn &&
+                                    isLoggedIn
+                                    &&
                                     user?.username
+
                                         ? user.username
+
                                         : "guest"
                                 }
                             </span>
@@ -371,6 +421,7 @@ const HomeSidebar = ({
                             {/* LEVEL */}
 
                             <span>
+
                                 Level:{" "}
 
                                 <span
@@ -380,11 +431,17 @@ const HomeSidebar = ({
                                 >
                                     {
                                         isLoggedIn
-                                            ? user?.skill_level ||
-                                              "developer"
+
+                                            ? (
+                                                user?.skill_level
+                                                ||
+                                                "developer"
+                                            )
+
                                             : "guest"
                                     }
                                 </span>
+
                             </span>
 
 
@@ -400,6 +457,7 @@ const HomeSidebar = ({
                             {/* FCOIN */}
 
                             <span>
+
                                 FCoin:{" "}
 
                                 <span
@@ -409,11 +467,17 @@ const HomeSidebar = ({
                                 >
                                     {
                                         isLoggedIn
-                                            ? user?.coins ??
-                                              0
+
+                                            ? (
+                                                user?.coins
+                                                ??
+                                                0
+                                            )
+
                                             : 0
                                     }
                                 </span>
+
                             </span>
 
                         </div>
@@ -478,10 +542,26 @@ const HomeSidebar = ({
                             Tizimga kirish
 
                         </Link>
-
                     )}
 
                 </div>
+
+
+                {/* =================================================
+                    HOME PROMOTION SPOTLIGHT
+
+                    Katta card emas.
+
+                    Compact:
+                    - thumbnail
+                    - project name
+                    - stack
+                    - username
+                    - stars
+                    - views
+                ================================================== */}
+
+                <HomePromotionSpotlight />
 
 
                 {/* =================================================
@@ -640,9 +720,7 @@ const HomeSidebar = ({
                                     text-cyan-300
                                 "
                             >
-                                {
-                                    totalBirthdayUsers
-                                } ta
+                                {totalBirthdayUsers} ta
                             </span>
 
                         </div>
@@ -678,100 +756,67 @@ const HomeSidebar = ({
                                         index
                                     ) => (
 
-                                    <div
-                                        key={
-                                            index
-                                        }
-
-                                        className="
-                                            animate-pulse
-
-                                            rounded-2xl
-
-                                            border
-                                            border-white/10
-
-                                            bg-white/[0.035]
-
-                                            p-3
-                                        "
-                                    >
-
                                         <div
-                                            className="
-                                                flex
-                                                items-center
+                                            key={
+                                                index
+                                            }
 
-                                                gap-3
+                                            className="
+                                                animate-pulse
+
+                                                rounded-2xl
+
+                                                border
+                                                border-white/10
+
+                                                bg-white/[0.035]
+
+                                                p-3
                                             "
                                         >
 
-                                            {/* AVATAR SKELETON */}
-
                                             <div
                                                 className="
-                                                    h-12
-                                                    w-12
+                                                    flex
+                                                    items-center
 
-                                                    shrink-0
-
-                                                    rounded-2xl
-
-                                                    bg-gray-700/60
-                                                "
-                                            />
-
-
-                                            {/* CONTENT */}
-
-                                            <div
-                                                className="
-                                                    min-w-0
-                                                    flex-1
+                                                    gap-3
                                                 "
                                             >
 
+                                                {/* AVATAR SKELETON */}
+
                                                 <div
                                                     className="
-                                                        mb-2
+                                                        h-12
+                                                        w-12
 
-                                                        h-4
-                                                        w-28
+                                                        shrink-0
 
-                                                        rounded
+                                                        rounded-2xl
 
                                                         bg-gray-700/60
                                                     "
                                                 />
 
 
-                                                <div
-                                                    className="
-                                                        h-3
-                                                        w-20
-
-                                                        rounded
-
-                                                        bg-gray-700/60
-                                                    "
-                                                />
-
+                                                {/* CONTENT */}
 
                                                 <div
                                                     className="
-                                                        mt-3
-
-                                                        flex
-                                                        gap-2
+                                                        min-w-0
+                                                        flex-1
                                                     "
                                                 >
 
                                                     <div
                                                         className="
-                                                            h-5
-                                                            w-20
+                                                            mb-2
 
-                                                            rounded-full
+                                                            h-4
+                                                            w-28
+
+                                                            rounded
 
                                                             bg-gray-700/60
                                                         "
@@ -780,24 +825,57 @@ const HomeSidebar = ({
 
                                                     <div
                                                         className="
-                                                            h-5
-                                                            w-14
+                                                            h-3
+                                                            w-20
 
-                                                            rounded-full
+                                                            rounded
 
                                                             bg-gray-700/60
                                                         "
                                                     />
+
+
+                                                    <div
+                                                        className="
+                                                            mt-3
+
+                                                            flex
+                                                            gap-2
+                                                        "
+                                                    >
+
+                                                        <div
+                                                            className="
+                                                                h-5
+                                                                w-20
+
+                                                                rounded-full
+
+                                                                bg-gray-700/60
+                                                            "
+                                                        />
+
+
+                                                        <div
+                                                            className="
+                                                                h-5
+                                                                w-14
+
+                                                                rounded-full
+
+                                                                bg-gray-700/60
+                                                            "
+                                                        />
+
+                                                    </div>
 
                                                 </div>
 
                                             </div>
 
                                         </div>
-
-                                    </div>
-
-                                ))}
+                                    )
+                                )}
 
                             </div>
 
@@ -876,9 +954,7 @@ const HomeSidebar = ({
                                         text-red-200/80
                                     "
                                 >
-                                    {
-                                        birthdayUsersError
-                                    }
+                                    {birthdayUsersError}
                                 </p>
 
 
@@ -953,250 +1029,217 @@ const HomeSidebar = ({
                                         item
                                     ) => {
 
-                                    const imageSrc =
-                                        getUserAvatarUrl(
-                                            item
-                                        );
+                                        const imageSrc =
+                                            getUserAvatarUrl(
+                                                item
+                                            );
 
 
-                                    return (
+                                        return (
 
-                                        <Link
-                                            key={
-                                                item.id
-                                            }
+                                            <Link
+                                                key={
+                                                    item.id
+                                                }
 
-                                            to={`/${item.username}/profile`}
+                                                to={
+                                                    `/${item.username}/profile`
+                                                }
 
-                                            className="
-                                                group
-
-                                                block
-
-                                                rounded-2xl
-
-                                                border
-                                                border-white/10
-
-                                                bg-white/[0.035]
-
-                                                p-3
-
-                                                transition-all
-                                                duration-200
-
-                                                hover:-translate-y-0.5
-                                                hover:border-cyan-400/30
-                                                hover:bg-cyan-400/10
-                                            "
-                                        >
-
-                                            <div
                                                 className="
-                                                    flex
-                                                    items-center
+                                                    group
 
-                                                    gap-3
+                                                    block
+
+                                                    rounded-2xl
+
+                                                    border
+                                                    border-white/10
+
+                                                    bg-white/[0.035]
+
+                                                    p-3
+
+                                                    transition-all
+                                                    duration-200
+
+                                                    hover:-translate-y-0.5
+                                                    hover:border-cyan-400/30
+                                                    hover:bg-cyan-400/10
                                                 "
                                             >
 
-                                                {/* =====================
-                                                    USER AVATAR
-
-                                                    image bor:
-                                                    real image
-
-                                                    image yo'q:
-                                                    default userImage.jpeg
-
-                                                    URL 404:
-                                                    onError -> default
-                                                ====================== */}
-
-                                                <img
-                                                    src={
-                                                        imageSrc
-                                                    }
-
-                                                    alt={
-                                                        item?.username
-                                                            ? `${item.username} avatar`
-                                                            : "User avatar"
-                                                    }
-
-                                                    onError={
-                                                        handleUserImageError
-                                                    }
-
-                                                    className="
-                                                        h-12
-                                                        w-12
-
-                                                        shrink-0
-
-                                                        rounded-2xl
-
-                                                        border
-                                                        border-cyan-400/20
-
-                                                        bg-[#161b22]
-
-                                                        object-cover
-
-                                                        transition-all
-                                                        duration-200
-
-                                                        group-hover:border-cyan-400/50
-                                                    "
-                                                />
-
-
-                                                {/* =====================
-                                                    USER INFO
-                                                ====================== */}
-
                                                 <div
                                                     className="
-                                                        min-w-0
-                                                        flex-1
+                                                        flex
+                                                        items-center
+
+                                                        gap-3
                                                     "
                                                 >
 
-                                                    {/* TOP */}
+                                                    {/* =====================
+                                                        USER AVATAR
+                                                    ====================== */}
+
+                                                    <img
+                                                        src={
+                                                            imageSrc
+                                                        }
+
+                                                        alt={
+                                                            item?.username
+
+                                                                ? `${item.username} avatar`
+
+                                                                : "User avatar"
+                                                        }
+
+                                                        onError={
+                                                            handleUserImageError
+                                                        }
+
+                                                        className="
+                                                            h-12
+                                                            w-12
+
+                                                            shrink-0
+
+                                                            rounded-2xl
+
+                                                            border
+                                                            border-cyan-400/20
+
+                                                            bg-[#161b22]
+
+                                                            object-cover
+
+                                                            transition-all
+                                                            duration-200
+
+                                                            group-hover:border-cyan-400/50
+                                                        "
+                                                    />
+
+
+                                                    {/* =====================
+                                                        USER INFO
+                                                    ====================== */}
 
                                                     <div
                                                         className="
-                                                            flex
-                                                            items-center
-                                                            justify-between
-
-                                                            gap-2
+                                                            min-w-0
+                                                            flex-1
                                                         "
                                                     >
 
-                                                        <h4
+                                                        {/* TOP */}
+
+                                                        <div
                                                             className="
+                                                                flex
+                                                                items-center
+                                                                justify-between
+
+                                                                gap-2
+                                                            "
+                                                        >
+
+                                                            <h4
+                                                                className="
+                                                                    truncate
+
+                                                                    text-sm
+                                                                    font-black
+
+                                                                    text-white
+
+                                                                    transition-colors
+
+                                                                    group-hover:text-cyan-300
+                                                                "
+                                                            >
+                                                                {
+                                                                    getFullName(
+                                                                        item
+                                                                    )
+                                                                }
+                                                            </h4>
+
+
+                                                            {/* BIRTHDAY LABEL */}
+
+                                                            <span
+                                                                className={`
+                                                                    shrink-0
+
+                                                                    rounded-full
+
+                                                                    border
+
+                                                                    px-2
+                                                                    py-1
+
+                                                                    text-[10px]
+                                                                    font-black
+
+                                                                    ${getBirthdayBadgeClass(
+                                                                        item.days_left
+                                                                    )}
+                                                                `}
+                                                            >
+                                                                {
+                                                                    item
+                                                                        .birthday_label
+
+                                                                    ||
+
+                                                                    "Bu oy"
+                                                                }
+                                                            </span>
+
+                                                        </div>
+
+
+                                                        {/* USERNAME */}
+
+                                                        <p
+                                                            className="
+                                                                mt-0.5
+
                                                                 truncate
 
-                                                                text-sm
-                                                                font-black
-
-                                                                text-white
-
-                                                                transition-colors
-
-                                                                group-hover:text-cyan-300
-                                                            "
-                                                        >
-                                                            {
-                                                                getFullName(
-                                                                    item
-                                                                )
-                                                            }
-                                                        </h4>
-
-
-                                                        {/* BIRTHDAY LABEL */}
-
-                                                        <span
-                                                            className={`
-                                                                shrink-0
-
-                                                                rounded-full
-
-                                                                border
-
-                                                                px-2
-                                                                py-1
-
-                                                                text-[10px]
-                                                                font-black
-
-                                                                ${getBirthdayBadgeClass(
-                                                                    item.days_left
-                                                                )}
-                                                            `}
-                                                        >
-                                                            {
-                                                                item
-                                                                    .birthday_label ||
-                                                                "Bu oy"
-                                                            }
-                                                        </span>
-
-                                                    </div>
-
-
-                                                    {/* USERNAME */}
-
-                                                    <p
-                                                        className="
-                                                            mt-0.5
-
-                                                            truncate
-
-                                                            text-xs
-                                                            font-bold
-
-                                                            text-gray-500
-                                                        "
-                                                    >
-                                                        @
-                                                        {
-                                                            item.username
-                                                        }
-                                                    </p>
-
-
-                                                    {/* META */}
-
-                                                    <div
-                                                        className="
-                                                            mt-2
-
-                                                            flex
-                                                            flex-wrap
-                                                            items-center
-
-                                                            gap-2
-                                                        "
-                                                    >
-
-                                                        {/* LEVEL */}
-
-                                                        <span
-                                                            className="
-                                                                rounded-full
-
-                                                                bg-cyan-500/10
-
-                                                                px-2
-                                                                py-0.5
-
-                                                                text-[10px]
+                                                                text-xs
                                                                 font-bold
 
-                                                                text-cyan-300
+                                                                text-gray-500
                                                             "
                                                         >
-                                                            {
-                                                                item
-                                                                    .skill_level ||
-                                                                "Developer"
-                                                            }
-                                                        </span>
+                                                            @{item.username}
+                                                        </p>
 
 
-                                                        {/* DAY */}
+                                                        {/* META */}
 
-                                                        {item
-                                                            .birthday_day && (
+                                                        <div
+                                                            className="
+                                                                mt-2
+
+                                                                flex
+                                                                flex-wrap
+                                                                items-center
+
+                                                                gap-2
+                                                            "
+                                                        >
+
+                                                            {/* LEVEL */}
 
                                                             <span
                                                                 className="
                                                                     rounded-full
 
-                                                                    bg-pink-500/10
+                                                                    bg-cyan-500/10
 
                                                                     px-2
                                                                     py-0.5
@@ -1204,52 +1247,83 @@ const HomeSidebar = ({
                                                                     text-[10px]
                                                                     font-bold
 
-                                                                    text-pink-300
+                                                                    text-cyan-300
                                                                 "
                                                             >
                                                                 {
                                                                     item
-                                                                        .birthday_day
+                                                                        .skill_level
+
+                                                                    ||
+
+                                                                    "Developer"
                                                                 }
-                                                                -kun
                                                             </span>
 
-                                                        )}
+
+                                                            {/* DAY */}
+
+                                                            {item
+                                                                .birthday_day && (
+
+                                                                <span
+                                                                    className="
+                                                                        rounded-full
+
+                                                                        bg-pink-500/10
+
+                                                                        px-2
+                                                                        py-0.5
+
+                                                                        text-[10px]
+                                                                        font-bold
+
+                                                                        text-pink-300
+                                                                    "
+                                                                >
+                                                                    {
+                                                                        item
+                                                                            .birthday_day
+                                                                    }
+                                                                    -kun
+                                                                </span>
+                                                            )}
 
 
-                                                        {/* FCOIN */}
+                                                            {/* FCOIN */}
 
-                                                        <span
-                                                            className="
-                                                                rounded-full
+                                                            <span
+                                                                className="
+                                                                    rounded-full
 
-                                                                bg-yellow-500/10
+                                                                    bg-yellow-500/10
 
-                                                                px-2
-                                                                py-0.5
+                                                                    px-2
+                                                                    py-0.5
 
-                                                                text-[10px]
-                                                                font-bold
+                                                                    text-[10px]
+                                                                    font-bold
 
-                                                                text-yellow-300
-                                                            "
-                                                        >
-                                                            {
-                                                                item?.coins ??
-                                                                0
-                                                            } FCoin
-                                                        </span>
+                                                                    text-yellow-300
+                                                                "
+                                                            >
+                                                                {
+                                                                    item?.coins
+                                                                    ??
+                                                                    0
+                                                                } FCoin
+                                                            </span>
+
+                                                        </div>
 
                                                     </div>
 
                                                 </div>
 
-                                            </div>
-
-                                        </Link>
-
-                                    );
-                                })}
+                                            </Link>
+                                        );
+                                    }
+                                )}
 
                             </div>
 
@@ -1329,14 +1403,11 @@ const HomeSidebar = ({
                                         text-gray-500
                                     "
                                 >
-                                    Userlar profilida
-                                    tug‘ilgan sana
-                                    kiritilganda shu
-                                    yerda ko‘rinadi.
+                                    Userlar profilida tug‘ilgan sana
+                                    kiritilganda shu yerda ko‘rinadi.
                                 </p>
 
                             </div>
-
                         )}
 
                     </div>
