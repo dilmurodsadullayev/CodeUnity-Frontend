@@ -1,8 +1,6 @@
 // src/components/projects/ProjectsPagination.jsx
 
-import React, {
-    useMemo,
-} from "react";
+import React from "react";
 
 import {
     ChevronLeft,
@@ -10,151 +8,19 @@ import {
 } from "lucide-react";
 
 
-// =========================================================
-// PAGINATION ITEMS
-// =========================================================
-
-const getPaginationItems = (
-    currentPage,
-    totalPages
-) => {
-
-    if (
-        totalPages <=
-        7
-    ) {
-
-        return Array.from(
-            {
-                length:
-                    totalPages,
-            },
-            (
-                _,
-                index
-            ) =>
-            index +
-            1
-        );
-    }
-
-
-    const items = [
-        1,
-    ];
-
-
-    if (
-        currentPage >
-        4
-    ) {
-
-        items.push(
-            "ellipsis-left"
-        );
-    }
-
-
-    const startPage =
-        Math.max(
-            2,
-            currentPage -
-            1
-        );
-
-
-    const endPage =
-        Math.min(
-            totalPages -
-            1,
-            currentPage +
-            1
-        );
-
-
-    for (
-        let page = startPage;
-        page <= endPage;
-        page += 1
-    ) {
-
-        items.push(
-            page
-        );
-    }
-
-
-    if (
-        currentPage <
-        totalPages -
-        3
-    ) {
-
-        items.push(
-            "ellipsis-right"
-        );
-    }
-
-
-    items.push(
-        totalPages
-    );
-
-
-    return items;
-};
-
-
-// =========================================================
-// PROJECTS PAGINATION
-// =========================================================
-
 const ProjectsPagination = ({
-
     currentPage,
 
     totalPages,
 
-    count,
-
-    rangeStart,
-
-    rangeEnd,
-
-    hasPrevious,
-
-    hasNext,
+    items,
 
     isLoading,
 
-    hasError,
-
     onPageChange,
-
 }) => {
 
-    const pageItems =
-        useMemo(
-            () => {
-
-                return getPaginationItems(
-                    currentPage,
-                    totalPages
-                );
-
-            },
-            [
-                currentPage,
-                totalPages,
-            ]
-        );
-
-
     if (
-        isLoading
-        ||
-        hasError
-        ||
         totalPages <=
         1
     ) {
@@ -167,32 +33,72 @@ const ProjectsPagination = ({
 
         <div
             className="
-                mt-12
+                mt-8
+
                 flex
                 flex-col
                 items-center
+                justify-between
+
                 gap-4
+
+                rounded-2xl
+
+                border
+                border-white/[0.06]
+
+                bg-[#0d1117]
+
+                px-4
+                py-3
+
+                sm:flex-row
             "
         >
 
-            {/* =================================================
-                PAGINATION PANEL
-            ================================================== */}
+            <p
+                className="
+                    font-mono
+
+                    text-[8px]
+                    font-bold
+
+                    uppercase
+                    tracking-[0.12em]
+
+                    text-gray-700
+                "
+            >
+                page://
+
+                <span
+                    className="
+                        ml-1
+
+                        text-gray-400
+                    "
+                >
+                    {currentPage}
+                </span>
+
+                <span
+                    className="
+                        mx-1
+                    "
+                >
+                    /
+                </span>
+
+                {totalPages}
+            </p>
+
 
             <div
                 className="
                     flex
-                    flex-wrap
                     items-center
-                    justify-center
-                    gap-1.5
-                    rounded-2xl
-                    border
-                    border-white/[0.06]
-                    bg-[#0b0f15]/90
-                    p-2
-                    shadow-[0_18px_50px_rgba(0,0,0,0.25)]
-                    backdrop-blur-xl
+
+                    gap-1
                 "
             >
 
@@ -201,39 +107,41 @@ const ProjectsPagination = ({
                 <button
                     type="button"
 
-                    onClick={
-                        () =>
-                        onPageChange(
-                            currentPage -
-                            1
-                        )
-                    }
-
                     disabled={
-                        !hasPrevious
-                        ||
                         currentPage <=
                         1
+                        ||
+                        isLoading
+                    }
+
+                    onClick={
+                        () => {
+
+                            onPageChange(
+                                currentPage -
+                                1
+                            );
+                        }
                     }
 
                     className="
-                        inline-flex
-                        h-10
-                        items-center
-                        justify-center
-                        gap-1.5
-                        rounded-xl
-                        border
-                        border-transparent
-                        px-3
-                        text-xs
-                        font-black
-                        text-gray-500
-                        transition
+                        grid
+                        h-8
+                        w-8
+                        place-items-center
 
-                        hover:border-white/[0.07]
-                        hover:bg-white/[0.04]
-                        hover:text-white
+                        rounded-lg
+
+                        border
+                        border-white/[0.06]
+
+                        text-gray-500
+
+                        transition-all
+
+                        hover:border-cyan-400/20
+                        hover:bg-cyan-500/[0.04]
+                        hover:text-cyan-300
 
                         disabled:cursor-not-allowed
                         disabled:opacity-25
@@ -241,25 +149,15 @@ const ProjectsPagination = ({
                 >
 
                     <ChevronLeft
-                        size={16}
+                        size={13}
                     />
-
-                    <span
-                        className="
-                            hidden
-
-                            sm:inline
-                        "
-                    >
-                        Oldingi
-                    </span>
 
                 </button>
 
 
                 {/* PAGES */}
 
-                {pageItems.map(
+                {items.map(
                     (
                         item
                     ) => {
@@ -278,16 +176,16 @@ const ProjectsPagination = ({
 
                                     className="
                                         grid
-                                        h-10
-                                        w-8
+                                        h-8
+                                        w-7
                                         place-items-center
-                                        font-mono
-                                        text-xs
-                                        font-black
+
+                                        text-[10px]
+
                                         text-gray-700
                                     "
                                 >
-                                    …
+                                    ...
                                 </span>
                             );
                         }
@@ -307,61 +205,61 @@ const ProjectsPagination = ({
 
                                 type="button"
 
-                                onClick={
-                                    () =>
-                                    onPageChange(
-                                        item
-                                    )
+                                disabled={
+                                    isLoading
                                 }
 
-                                aria-current={
-                                    active
+                                onClick={
+                                    () => {
 
-                                        ? "page"
-
-                                        : undefined
+                                        onPageChange(
+                                            item
+                                        );
+                                    }
                                 }
 
                                 className={`
                                     grid
-                                    h-10
-                                    min-w-10
+                                    h-8
+                                    min-w-8
                                     place-items-center
-                                    rounded-xl
+
+                                    rounded-lg
+
                                     border
-                                    px-3
+
+                                    px-2
+
                                     font-mono
-                                    text-xs
+
+                                    text-[9px]
                                     font-black
+
                                     transition-all
 
                                     ${
                                         active
 
                                             ? (
-                                                "border-indigo-400/30 "
+                                                "border-cyan-400/25 "
                                                 +
-                                                "bg-indigo-600 "
+                                                "bg-cyan-500/[0.08] "
                                                 +
-                                                "text-white "
-                                                +
-                                                "shadow-lg "
-                                                +
-                                                "shadow-indigo-600/20"
+                                                "text-cyan-300"
                                             )
 
                                             : (
-                                                "border-transparent "
+                                                "border-white/[0.06] "
                                                 +
-                                                "text-gray-500 "
+                                                "text-gray-600 "
                                                 +
-                                                "hover:border-white/[0.07] "
+                                                "hover:border-white/[0.12] "
                                                 +
-                                                "hover:bg-white/[0.04] "
-                                                +
-                                                "hover:text-white"
+                                                "hover:text-gray-300"
                                             )
                                     }
+
+                                    disabled:cursor-not-allowed
                                 `}
                             >
                                 {item}
@@ -376,77 +274,54 @@ const ProjectsPagination = ({
                 <button
                     type="button"
 
-                    onClick={
-                        () =>
-                        onPageChange(
-                            currentPage +
-                            1
-                        )
-                    }
-
                     disabled={
-                        !hasNext
-                        ||
                         currentPage >=
                         totalPages
+                        ||
+                        isLoading
+                    }
+
+                    onClick={
+                        () => {
+
+                            onPageChange(
+                                currentPage +
+                                1
+                            );
+                        }
                     }
 
                     className="
-                        inline-flex
-                        h-10
-                        items-center
-                        justify-center
-                        gap-1.5
-                        rounded-xl
-                        border
-                        border-transparent
-                        px-3
-                        text-xs
-                        font-black
-                        text-gray-500
-                        transition
+                        grid
+                        h-8
+                        w-8
+                        place-items-center
 
-                        hover:border-white/[0.07]
-                        hover:bg-white/[0.04]
-                        hover:text-white
+                        rounded-lg
+
+                        border
+                        border-white/[0.06]
+
+                        text-gray-500
+
+                        transition-all
+
+                        hover:border-cyan-400/20
+                        hover:bg-cyan-500/[0.04]
+                        hover:text-cyan-300
 
                         disabled:cursor-not-allowed
                         disabled:opacity-25
                     "
                 >
 
-                    <span
-                        className="
-                            hidden
-
-                            sm:inline
-                        "
-                    >
-                        Keyingi
-                    </span>
-
-
                     <ChevronRight
-                        size={16}
+                        size={13}
                     />
 
                 </button>
 
             </div>
-
-
-            {/* INFO */}
-
-            <p
-                className="
-                    font-mono
-                    text-[9px]
-                    font-semibold
-                    text-gray-700
-                "
-            >
-                showing {rangeStart}–{rangeEnd} / {count}
-            </p>
 
         </div>
     );
