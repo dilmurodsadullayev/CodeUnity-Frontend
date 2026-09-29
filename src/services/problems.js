@@ -4,6 +4,59 @@ import axios from "./api";
 
 
 // =========================================================
+// ORDERING CONSTANTS
+// =========================================================
+
+export const PROBLEM_ORDERING = Object.freeze({
+
+    NEWEST:
+        "newest",
+
+    OLDEST:
+        "oldest",
+
+    MOST_VIEWED:
+        "most_viewed",
+
+    MOST_STARRED:
+        "most_starred",
+
+    MOST_ANSWERED:
+        "most_answered",
+
+    HIGHEST_BOUNTY:
+        "highest_bounty",
+
+    DEADLINE:
+        "deadline",
+
+    URGENT_FIRST:
+        "urgent_first",
+});
+
+
+// =========================================================
+// REQUEST CANCEL HELPER
+// =========================================================
+
+export const isProblemRequestCanceled = (
+    error
+) => {
+
+    return (
+        error?.name ===
+            "CanceledError"
+        ||
+        error?.name ===
+            "AbortError"
+        ||
+        error?.code ===
+            "ERR_CANCELED"
+    );
+};
+
+
+// =========================================================
 // ERROR LOGGER
 // =========================================================
 
@@ -11,14 +64,26 @@ const logApiError = (
     title,
     error
 ) => {
+
+    if (
+        isProblemRequestCanceled(
+            error
+        )
+    ) {
+        return;
+    }
+
+
     if (
         error?.response
     ) {
+
         console.error(
             `❌ ${title}:`,
             error.response.data,
             error.response.status
         );
+
 
         return;
     }
@@ -27,10 +92,11 @@ const logApiError = (
     if (
         error?.request
     ) {
+
         console.error(
-            `❌ ${title}: server javob bermadi`,
-            error.request
+            `❌ ${title}: server javob bermadi`
         );
+
 
         return;
     }
@@ -38,8 +104,370 @@ const logApiError = (
 
     console.error(
         `❌ ${title}:`,
-        error?.message || error
+        error?.message
+        ||
+        error
     );
+};
+
+
+// =========================================================
+// POSITIVE INTEGER
+// =========================================================
+
+const toPositiveInteger = (
+    value,
+    fallback = 1
+) => {
+
+    const number =
+        Number(
+            value
+        );
+
+
+    if (
+        !Number.isInteger(
+            number
+        )
+        ||
+        number < 1
+    ) {
+        return fallback;
+    }
+
+
+    return number;
+};
+
+
+// =========================================================
+// CLEAN TEXT
+// =========================================================
+
+const cleanText = (
+    value
+) => {
+
+    if (
+        value === null
+        ||
+        value === undefined
+    ) {
+        return "";
+    }
+
+
+    return String(
+        value
+    ).trim();
+};
+
+
+// =========================================================
+// NORMALIZE BOOLEAN
+// =========================================================
+
+const normalizeBooleanParam = (
+    value
+) => {
+
+    if (
+        value === true
+        ||
+        value === false
+    ) {
+        return value;
+    }
+
+
+    if (
+        value === "true"
+        ||
+        value === "1"
+        ||
+        value === 1
+    ) {
+        return true;
+    }
+
+
+    if (
+        value === "false"
+        ||
+        value === "0"
+        ||
+        value === 0
+    ) {
+        return false;
+    }
+
+
+    return undefined;
+};
+
+
+// =========================================================
+// NORMALIZE OPTIONS
+// =========================================================
+
+const normalizeListOptions = (
+    pageOrOptions = 1,
+    extraOptions = {}
+) => {
+
+    if (
+        pageOrOptions
+        &&
+        typeof pageOrOptions === "object"
+        &&
+        !Array.isArray(
+            pageOrOptions
+        )
+    ) {
+
+        return {
+            ...pageOrOptions,
+            ...extraOptions,
+        };
+    }
+
+
+    return {
+
+        ...extraOptions,
+
+        page:
+            toPositiveInteger(
+                pageOrOptions,
+                1
+            ),
+    };
+};
+
+
+// =========================================================
+// BUILD LIST PARAMS
+// =========================================================
+
+const buildProblemListParams = (
+    options = {}
+) => {
+
+    const params = {};
+
+
+    // =====================================================
+    // PAGE
+    // =====================================================
+
+    params.page =
+        toPositiveInteger(
+            options.page,
+            1
+        );
+
+
+    // =====================================================
+    // PAGE SIZE
+    // =====================================================
+
+    if (
+        options.pageSize !== undefined
+        ||
+        options.page_size !== undefined
+    ) {
+
+        params.page_size =
+            toPositiveInteger(
+                options.pageSize
+                ??
+                options.page_size,
+                6
+            );
+    }
+
+
+    // =====================================================
+    // SEARCH
+    // =====================================================
+
+    const search =
+        cleanText(
+            options.search
+            ??
+            options.q
+        );
+
+
+    if (
+        search
+    ) {
+
+        params.search =
+            search;
+    }
+
+
+    // =====================================================
+    // STATUS
+    // =====================================================
+
+    const status =
+        cleanText(
+            options.status
+        );
+
+
+    if (
+        status
+        &&
+        status !== "all"
+    ) {
+
+        params.status =
+            status;
+    }
+
+
+    // =====================================================
+    // URGENT
+    // =====================================================
+
+    const urgent =
+        normalizeBooleanParam(
+            options.urgent
+            ??
+            options.is_urgent
+        );
+
+
+    if (
+        urgent !== undefined
+    ) {
+
+        params.urgent =
+            urgent;
+    }
+
+
+    // =====================================================
+    // SOLVED
+    // =====================================================
+
+    const solved =
+        normalizeBooleanParam(
+            options.solved
+            ??
+            options.is_solved
+        );
+
+
+    if (
+        solved !== undefined
+    ) {
+
+        params.solved =
+            solved;
+    }
+
+
+    // =====================================================
+    // LANGUAGE
+    // =====================================================
+
+    const language =
+        cleanText(
+            options.language
+        );
+
+
+    if (
+        language
+    ) {
+
+        params.language =
+            language;
+    }
+
+
+    // =====================================================
+    // TECHNOLOGY
+    // =====================================================
+
+    const technology =
+        cleanText(
+            options.technology
+        );
+
+
+    if (
+        technology
+    ) {
+
+        params.technology =
+            technology;
+    }
+
+
+    // =====================================================
+    // ORDERING
+    // =====================================================
+
+    const ordering =
+        cleanText(
+            options.ordering
+        );
+
+
+    if (
+        ordering
+    ) {
+
+        params.ordering =
+            ordering;
+    }
+
+
+    return params;
+};
+
+
+// =========================================================
+// REQUEST CONFIG
+// =========================================================
+
+const buildRequestConfig = ({
+    params = undefined,
+    signal = undefined,
+} = {}) => {
+
+    const config = {
+
+        withCredentials:
+            true,
+    };
+
+
+    if (
+        params
+    ) {
+
+        config.params =
+            params;
+    }
+
+
+    if (
+        signal
+    ) {
+
+        config.signal =
+            signal;
+    }
+
+
+    return config;
 };
 
 
@@ -53,24 +481,40 @@ const ProblemService = {
     // POPULAR PROBLEMS
     // =====================================================
 
-    async getPopularProblemsList() {
+    async getPopularProblemsList(
+        options = {}
+    ) {
+
         try {
+
             const {
                 data,
             } = await axios.get(
+
                 "/problems/popular-problems/",
-                {
-                    withCredentials: true,
-                }
+
+                buildRequestConfig({
+                    signal:
+                        options?.signal,
+                })
             );
 
-            return data;
 
-        } catch (error) {
+            return Array.isArray(
+                data
+            )
+                ? data
+                : [];
+
+        } catch (
+            error
+        ) {
+
             logApiError(
                 "Popular problemlarni olishda xato",
                 error
             );
+
 
             throw error;
         }
@@ -82,29 +526,49 @@ const ProblemService = {
     // =====================================================
 
     async getProblemsList(
-        page = 1
+        pageOrOptions = 1,
+        extraOptions = {}
     ) {
+
+        const options =
+            normalizeListOptions(
+                pageOrOptions,
+                extraOptions
+            );
+
+
         try {
+
             const {
                 data,
             } = await axios.get(
-                "/problems/",
-                {
-                    params: {
-                        page,
-                    },
 
-                    withCredentials: true,
-                }
+                "/problems/",
+
+                buildRequestConfig({
+
+                    params:
+                        buildProblemListParams(
+                            options
+                        ),
+
+                    signal:
+                        options.signal,
+                })
             );
+
 
             return data;
 
-        } catch (error) {
+        } catch (
+            error
+        ) {
+
             logApiError(
                 "Problemlarni olishda xato",
                 error
             );
+
 
             throw error;
         }
@@ -115,26 +579,40 @@ const ProblemService = {
     // LANGUAGES
     // =====================================================
 
-    async getLanguagesList() {
+    async getLanguagesList(
+        options = {}
+    ) {
+
         try {
+
             const {
                 data,
             } = await axios.get(
+
                 "/problems/languages/",
-                {
-                    withCredentials: true,
-                }
+
+                buildRequestConfig({
+                    signal:
+                        options?.signal,
+                })
             );
 
-            return Array.isArray(data)
+
+            return Array.isArray(
+                data
+            )
                 ? data
                 : [];
 
-        } catch (error) {
+        } catch (
+            error
+        ) {
+
             logApiError(
                 "Dasturlash tillarini olishda xato",
                 error
             );
+
 
             throw error;
         }
@@ -145,26 +623,40 @@ const ProblemService = {
     // TECHNOLOGIES
     // =====================================================
 
-    async getTechnologiesList() {
+    async getTechnologiesList(
+        options = {}
+    ) {
+
         try {
+
             const {
                 data,
             } = await axios.get(
+
                 "/problems/technologies/",
-                {
-                    withCredentials: true,
-                }
+
+                buildRequestConfig({
+                    signal:
+                        options?.signal,
+                })
             );
 
-            return Array.isArray(data)
+
+            return Array.isArray(
+                data
+            )
                 ? data
                 : [];
 
-        } catch (error) {
+        } catch (
+            error
+        ) {
+
             logApiError(
                 "Texnologiyalarni olishda xato",
                 error
             );
+
 
             throw error;
         }
@@ -176,29 +668,49 @@ const ProblemService = {
     // =====================================================
 
     async getMyProblemsList(
-        page = 1
+        pageOrOptions = 1,
+        extraOptions = {}
     ) {
+
+        const options =
+            normalizeListOptions(
+                pageOrOptions,
+                extraOptions
+            );
+
+
         try {
+
             const {
                 data,
             } = await axios.get(
-                "/problems/my-problems/",
-                {
-                    params: {
-                        page,
-                    },
 
-                    withCredentials: true,
-                }
+                "/problems/my-problems/",
+
+                buildRequestConfig({
+
+                    params:
+                        buildProblemListParams(
+                            options
+                        ),
+
+                    signal:
+                        options.signal,
+                })
             );
+
 
             return data;
 
-        } catch (error) {
+        } catch (
+            error
+        ) {
+
             logApiError(
                 "Mening problemlarni olishda xato",
                 error
             );
+
 
             throw error;
         }
@@ -207,47 +719,40 @@ const ProblemService = {
 
     // =====================================================
     // CREATE PROBLEM
-    //
-    // YANGI PAYLOAD:
-    //
-    // {
-    //     problem: "...",
-    //     description: "...",
-    //     code: "...",
-    //     languages: [1, 2],
-    //     technologies: [3, 5],
-    //     is_urgent: false,
-    //     deadline: null,
-    //     offered_coins: 0
-    // }
     // =====================================================
 
     async postProblem(
         problemData
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.post(
+
                 "/problems/",
+
                 problemData,
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
-            console.log(
-                "✅ Problem yaratildi:",
-                data
-            );
 
             return data;
 
-        } catch (error) {
+        } catch (
+            error
+        ) {
+
             logApiError(
                 "Problem yaratishda xato",
                 error
             );
+
 
             throw error;
         }
@@ -259,25 +764,36 @@ const ProblemService = {
     // =====================================================
 
     async getProblemDetail(
-        id
+        id,
+        options = {}
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.get(
+
                 `/problems/problem/${id}`,
-                {
-                    withCredentials: true,
-                }
+
+                buildRequestConfig({
+                    signal:
+                        options?.signal,
+                })
             );
+
 
             return data;
 
-        } catch (error) {
+        } catch (
+            error
+        ) {
+
             logApiError(
                 "Problem detailni olishda xato",
                 error
             );
+
 
             throw error;
         }
@@ -285,36 +801,85 @@ const ProblemService = {
 
 
     // =====================================================
-    // UPDATE PROBLEM
+    // UPDATE PROBLEM — PUT
     // =====================================================
 
     async putProblem(
         id,
         problemData
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.put(
+
                 `/problems/problem/${id}`,
+
                 problemData,
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
-            console.log(
-                "✅ Problem yangilandi:",
-                data
-            );
 
             return data;
 
-        } catch (error) {
+        } catch (
+            error
+        ) {
+
             logApiError(
                 "Problemni yangilashda xato",
                 error
             );
+
+
+            throw error;
+        }
+    },
+
+
+    // =====================================================
+    // UPDATE PROBLEM — PATCH
+    // =====================================================
+
+    async patchProblem(
+        id,
+        problemData
+    ) {
+
+        try {
+
+            const {
+                data,
+            } = await axios.patch(
+
+                `/problems/problem/${id}`,
+
+                problemData,
+
+                {
+                    withCredentials:
+                        true,
+                }
+            );
+
+
+            return data;
+
+        } catch (
+            error
+        ) {
+
+            logApiError(
+                "Problemni qisman yangilashda xato",
+                error
+            );
+
 
             throw error;
         }
@@ -328,23 +893,33 @@ const ProblemService = {
     async deleteProblem(
         id
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.delete(
+
                 `/problems/problem/${id}`,
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
+
             return data;
 
-        } catch (error) {
+        } catch (
+            error
+        ) {
+
             logApiError(
                 "Problemni o‘chirishda xato",
                 error
             );
+
 
             throw error;
         }
@@ -358,24 +933,84 @@ const ProblemService = {
     async addStar(
         problemId
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.post(
+
                 `/problems/problem/${problemId}/star/`,
+
                 {},
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
-            return data;
 
-        } catch (error) {
+            return {
+                ...data,
+                problem_id:
+                    problemId,
+            };
+
+        } catch (
+            error
+        ) {
+
             logApiError(
                 "Problemga star qo‘yishda xato",
                 error
             );
+
+
+            throw error;
+        }
+    },
+
+
+    // =====================================================
+    // GET PROBLEM STAR COUNT
+    // =====================================================
+
+    async getStarCount(
+        problemId,
+        options = {}
+    ) {
+
+        try {
+
+            const {
+                data,
+            } = await axios.get(
+
+                `/problems/problem/${problemId}/star/`,
+
+                buildRequestConfig({
+                    signal:
+                        options?.signal,
+                })
+            );
+
+
+            return {
+                ...data,
+                problem_id:
+                    problemId,
+            };
+
+        } catch (
+            error
+        ) {
+
+            logApiError(
+                "Problem star sonini olishda xato",
+                error
+            );
+
 
             throw error;
         }
@@ -389,125 +1024,91 @@ const ProblemService = {
     async removeStar(
         problemId
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.delete(
+
                 `/problems/problem/${problemId}/star/`,
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
-            return data;
 
-        } catch (error) {
+            return {
+                ...data,
+                problem_id:
+                    problemId,
+            };
+
+        } catch (
+            error
+        ) {
+
             logApiError(
                 "Problemdan star olib tashlashda xato",
                 error
             );
 
+
             throw error;
         }
     },
 
 
     // =====================================================
-    // SEARCH
+    // LEGACY SEARCH
     //
-    // Backend endi:
-    //
-    // problem
-    // description
-    // username
-    // languages__name
-    // technologies__name
-    //
-    // bo‘yicha qidiradi.
+    // /problems/search/ endpoint ishlatilmaydi.
+    // Unified /problems/?search=... ishlaydi.
     // =====================================================
 
     async getProblemSearch(
         search = "",
-        page = 1
+        page = 1,
+        options = {}
     ) {
-        try {
-            const {
-                data,
-            } = await axios.get(
-                "/problems/search/",
-                {
-                    params: {
-                        page,
 
-                        ...(search.trim()
-                            ? {
-                                q: search.trim(),
-                            }
-                            : {}),
-                    },
+        return this.getProblemsList({
 
-                    withCredentials: true,
-                }
-            );
+            ...options,
 
-            return data;
+            page,
 
-        } catch (error) {
-            logApiError(
-                "Problem qidirishda xato",
-                error
-            );
-
-            throw error;
-        }
+            search:
+                cleanText(
+                    search
+                ),
+        });
     },
 
 
     // =====================================================
-    // MY PROBLEM SEARCH
-    //
-    // Hozircha MyProblemsAPI alohida search endpointga
-    // ega emas.
-    //
-    // Frontend buzilib ketmasligi uchun method qoldi,
-    // lekin backendda q paramni MyProblemsAPI ga
-    // qo‘shganimizdan keyin shu URL ishlaydi.
+    // MY PROBLEM SEARCH — LEGACY
     // =====================================================
 
     async getMyProblemSearch(
         search = "",
-        page = 1
+        page = 1,
+        options = {}
     ) {
-        try {
-            const {
-                data,
-            } = await axios.get(
-                "/problems/my-problems/",
-                {
-                    params: {
-                        page,
 
-                        ...(search.trim()
-                            ? {
-                                q: search.trim(),
-                            }
-                            : {}),
-                    },
+        return this.getMyProblemsList({
 
-                    withCredentials: true,
-                }
-            );
+            ...options,
 
-            return data;
+            page,
 
-        } catch (error) {
-            logApiError(
-                "Mening problemlarni qidirishda xato",
-                error
-            );
-
-            throw error;
-        }
+            search:
+                cleanText(
+                    search
+                ),
+        });
     },
 
 
@@ -519,32 +1120,47 @@ const ProblemService = {
         problemId,
         solutionId
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.post(
+
                 `/problems/problem/${problemId}/accept-solution/`,
+
                 {
                     solution_id:
                         solutionId,
                 },
+
                 {
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
+
             return {
+
                 ...data,
+
+                problem_id:
+                    problemId,
 
                 solution_id:
                     solutionId,
             };
 
-        } catch (error) {
+        } catch (
+            error
+        ) {
+
             logApiError(
                 "Yechimni qabul qilishda xato",
                 error
             );
+
 
             throw error;
         }
@@ -556,27 +1172,40 @@ const ProblemService = {
     // =====================================================
 
     async getSimilarProblems(
-        problemId
+        problemId,
+        options = {}
     ) {
+
         try {
+
             const {
                 data,
             } = await axios.get(
+
                 `/problems/problem/${problemId}/similar/`,
-                {
-                    withCredentials: true,
-                }
+
+                buildRequestConfig({
+                    signal:
+                        options?.signal,
+                })
             );
 
-            return Array.isArray(data)
+
+            return Array.isArray(
+                data
+            )
                 ? data
                 : [];
 
-        } catch (error) {
+        } catch (
+            error
+        ) {
+
             logApiError(
                 "O‘xshash problemlarni olishda xato",
                 error
             );
+
 
             throw error;
         }
