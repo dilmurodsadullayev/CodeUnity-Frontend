@@ -16,10 +16,6 @@ import {
     useSelector,
 } from "react-redux";
 
-import {
-    Loader2,
-} from "lucide-react";
-
 
 import ProblemCard
     from "./ProblemCard";
@@ -29,6 +25,9 @@ import ProblemsHeader
 
 import ProblemsToolbar
     from "./problems-page/ProblemsToolbar";
+
+import ProblemsResultsHeader
+    from "./problems-page/ProblemsResultsHeader";
 
 import ProblemCardSkeleton
     from "./problems-page/ProblemCardSkeleton";
@@ -86,6 +85,97 @@ import {
 
 
 // =========================================================
+// SAFE COUNT
+// =========================================================
+
+const getSafeCount = (
+    value
+) => {
+
+    const number =
+        Number(
+            value
+        );
+
+
+    if (
+        !Number.isFinite(
+            number
+        )
+        ||
+        number < 0
+    ) {
+        return 0;
+    }
+
+
+    return number;
+};
+
+
+// =========================================================
+// INVALID DRF PAGE
+// =========================================================
+
+const isInvalidPaginationError = (
+    error
+) => {
+
+    const status =
+        error?.response?.status
+        ??
+        error?.status
+        ??
+        null;
+
+
+    if (
+        status !== 404
+    ) {
+        return false;
+    }
+
+
+    const data =
+        error?.serverData
+        ??
+        error?.response?.data;
+
+
+    const detail =
+        typeof data ===
+            "string"
+            ? data
+            : data?.detail;
+
+
+    if (
+        typeof detail !==
+        "string"
+    ) {
+        return false;
+    }
+
+
+    const normalized =
+        detail
+            .trim()
+            .toLowerCase();
+
+
+    return (
+        normalized.includes(
+            "invalid page"
+        )
+        ||
+        normalized.includes(
+            "page contains no results"
+        )
+    );
+};
+
+
+// =========================================================
 // PROBLEMS
 // =========================================================
 
@@ -101,6 +191,7 @@ const Problems = () => {
 
     const {
         problems = [],
+
         count = 0,
 
         listIsLoading,
@@ -122,7 +213,7 @@ const Problems = () => {
 
 
     // =====================================================
-    // LOADING
+    // SAFE REDUX STATE
     // =====================================================
 
     const loading =
@@ -134,14 +225,28 @@ const Problems = () => {
             );
 
 
-    // =====================================================
-    // LIST ERROR
-    // =====================================================
-
     const currentError =
         listError
         ||
         null;
+
+
+    const problemList =
+        Array.isArray(
+            problems
+        )
+            ? problems
+            : [];
+
+
+    const problemCount =
+        getSafeCount(
+            count
+        );
+
+
+    const hasProblemData =
+        problemList.length > 0;
 
 
     // =====================================================
@@ -155,7 +260,7 @@ const Problems = () => {
 
 
     // =====================================================
-    // QUERY STATE
+    // NORMALIZED QUERY STATE
     // =====================================================
 
     const queryState =
@@ -197,6 +302,57 @@ const Problems = () => {
 
 
     // =====================================================
+    // CURRENT QUERY KEY
+    //
+    // Muhim:
+    //
+    // Oldingi hasLoadedProblemList boolean faqat
+    // "biror request success bo‘lganmi?"ni bilardi.
+    //
+    // Lekin qaysi query success bo‘lganini bilmasdi.
+    //
+    // Misol:
+    //
+    // old query:
+    // ?page=2
+    //
+    // keyin:
+    // ?page=999
+    //
+    // Eski success state yangi query bilan aralashishi
+    // mumkin edi.
+    //
+    // Endi har query unique keyga ega.
+    // =====================================================
+
+    const currentQueryKey =
+        useMemo(
+            () => {
+
+                return JSON.stringify([
+                    currentPage,
+                    debouncedSearchTerm,
+                    statusFilter,
+                    urgentFilter,
+                    languageFilter,
+                    technologyFilter,
+                    ordering,
+                ]);
+
+            },
+            [
+                currentPage,
+                debouncedSearchTerm,
+                languageFilter,
+                ordering,
+                statusFilter,
+                technologyFilter,
+                urgentFilter,
+            ]
+        );
+
+
+    // =====================================================
     // SEARCH INPUT
     // =====================================================
 
@@ -221,15 +377,26 @@ const Problems = () => {
 
 
     // =====================================================
-    // SUCCESSFUL LIST LOAD
+    // LAST SUCCESSFUL QUERY
+    //
+    // Faqat API success bo‘lganda update bo‘ladi.
     // =====================================================
 
     const [
-        hasLoadedProblemList,
-        setHasLoadedProblemList,
+        lastSuccessfulQueryKey,
+        setLastSuccessfulQueryKey,
     ] = useState(
-        false
+        null
     );
+
+
+    // =====================================================
+    // CURRENT QUERY RESOLVED?
+    // =====================================================
+
+    const isCurrentQueryResolved =
+        lastSuccessfulQueryKey ===
+        currentQueryKey;
 
 
     // =====================================================
@@ -270,7 +437,7 @@ const Problems = () => {
     // =====================================================
     // URL -> SEARCH INPUT
     //
-    // Refresh / Browser Back / Browser Forward
+    // Refresh / Back / Forward.
     // =====================================================
 
     useEffect(
@@ -319,6 +486,8 @@ const Problems = () => {
                                     1,
                             },
                             {
+                                // Input har harfda browser history
+                                // yaratib yubormasin.
                                 replace:
                                     true,
                             }
@@ -346,7 +515,14 @@ const Problems = () => {
 
 
     // =====================================================
-    // NORMALIZE QUERY
+    // NORMALIZE INVALID QUERY
+    //
+    // Masalan:
+    //
+    // ?page=-5
+    // ?status=hello
+    // ?urgent=test
+    // ?ordering=random
     // =====================================================
 
     useEffect(
@@ -385,6 +561,8 @@ const Problems = () => {
 
     // =====================================================
     // LOAD LANGUAGES + TECHNOLOGIES
+    //
+    // Parallel requests.
     // =====================================================
 
     useEffect(
@@ -401,10 +579,6 @@ const Problems = () => {
             const loadCatalog =
                 async () => {
 
-                    // =====================================
-                    // START
-                    // =====================================
-
                     dispatch(
                         getLanguagesStart()
                     );
@@ -414,10 +588,6 @@ const Problems = () => {
                         getTechnologiesStart()
                     );
 
-
-                    // =====================================
-                    // PARALLEL
-                    // =====================================
 
                     const [
                         languagesResult,
@@ -437,10 +607,6 @@ const Problems = () => {
                             }),
                     ]);
 
-
-                    // =====================================
-                    // UNMOUNT / CANCEL
-                    // =====================================
 
                     if (
                         !mounted
@@ -585,15 +751,6 @@ const Problems = () => {
                 signal
             ) => {
 
-                // =========================================
-                // CURRENT QUERY IS LOADING
-                // =========================================
-
-                setHasLoadedProblemList(
-                    false
-                );
-
-
                 dispatch(
                     getProblemStart()
                 );
@@ -618,7 +775,8 @@ const Problems = () => {
                                     statusFilter,
 
                                 urgent:
-                                    urgentFilter === "all"
+                                    urgentFilter ===
+                                        "all"
                                         ? undefined
                                         : urgentFilter,
 
@@ -635,7 +793,7 @@ const Problems = () => {
 
 
                     // =====================================
-                    // CANCELED AFTER RESPONSE
+                    // REQUEST CANCELED
                     // =====================================
 
                     if (
@@ -653,11 +811,13 @@ const Problems = () => {
 
 
                     // =====================================
-                    // SUCCESS
+                    // IMPORTANT
+                    //
+                    // Faqat aynan shu query success bo‘ldi.
                     // =====================================
 
-                    setHasLoadedProblemList(
-                        true
+                    setLastSuccessfulQueryKey(
+                        currentQueryKey
                     );
 
                 } catch (
@@ -665,7 +825,7 @@ const Problems = () => {
                 ) {
 
                     // =====================================
-                    // CANCEL IS NORMAL
+                    // ABORT NORMAL FLOW
                     // =====================================
 
                     if (
@@ -679,6 +839,45 @@ const Problems = () => {
                     }
 
 
+                    // =====================================
+                    // INVALID DRF PAGE
+                    //
+                    // /problems?page=999
+                    //
+                    // DRF:
+                    // 404 Invalid page.
+                    //
+                    // Generic error ko‘rsatmaymiz.
+                    // =====================================
+
+                    if (
+                        currentPage > 1
+                        &&
+                        isInvalidPaginationError(
+                            requestError
+                        )
+                    ) {
+
+                        updateQueryParams(
+                            {
+                                page:
+                                    1,
+                            },
+                            {
+                                replace:
+                                    true,
+                            }
+                        );
+
+
+                        return;
+                    }
+
+
+                    // =====================================
+                    // REAL API ERROR
+                    // =====================================
+
                     const message =
                         getProblemErrorMessage(
                             requestError,
@@ -691,21 +890,19 @@ const Problems = () => {
                             message
                         )
                     );
-
-
-                    // Inline ProblemsErrorState
-                    // xatoni ko‘rsatadi.
                 }
 
             },
             [
                 currentPage,
+                currentQueryKey,
                 debouncedSearchTerm,
                 dispatch,
                 languageFilter,
                 ordering,
                 statusFilter,
                 technologyFilter,
+                updateQueryParams,
                 urgentFilter,
             ]
         );
@@ -741,26 +938,6 @@ const Problems = () => {
 
 
     // =====================================================
-    // SAFE PROBLEM LIST
-    // =====================================================
-
-    const problemList =
-        Array.isArray(
-            problems
-        )
-            ? problems
-            : [];
-
-
-    // =====================================================
-    // HAS DATA
-    // =====================================================
-
-    const hasProblemData =
-        problemList.length > 0;
-
-
-    // =====================================================
     // TOTAL PAGES
     // =====================================================
 
@@ -769,7 +946,8 @@ const Problems = () => {
             () => {
 
                 return getProblemTotalPages({
-                    count,
+                    count:
+                        problemCount,
 
                     pageSize:
                         PROBLEMS_PAGE_SIZE,
@@ -777,22 +955,33 @@ const Problems = () => {
 
             },
             [
-                count,
+                problemCount,
             ]
         );
 
 
     // =====================================================
-    // INVALID PAGE FIX
+    // INVALID PAGE AFTER SUCCESS
     //
-    // Faqat successful response kelgandan keyin.
+    // Bu fallback himoya.
+    //
+    // Agar backend kelajakda invalid page uchun
+    // 404 emas:
+    //
+    // 200 + empty list
+    //
+    // qaytaradigan bo‘lsa ham ishlaydi.
+    //
+    // Muhim:
+    // faqat currentQueryKey muvaffaqiyatli resolve
+    // bo‘lgan bo‘lsa correction qilinadi.
     // =====================================================
 
     useEffect(
         () => {
 
             if (
-                !hasLoadedProblemList
+                !isCurrentQueryResolved
                 ||
                 loading
                 ||
@@ -823,9 +1012,9 @@ const Problems = () => {
 
         },
         [
-            currentPage,
             currentError,
-            hasLoadedProblemList,
+            currentPage,
+            isCurrentQueryResolved,
             loading,
             totalPages,
             updateQueryParams,
@@ -847,7 +1036,8 @@ const Problems = () => {
         () => {
 
             return getProblemResultRange({
-                count,
+                count:
+                    problemCount,
 
                 page:
                     currentPage,
@@ -858,8 +1048,8 @@ const Problems = () => {
 
         },
         [
-            count,
             currentPage,
+            problemCount,
         ]
     );
 
@@ -903,15 +1093,13 @@ const Problems = () => {
                 );
 
 
-                updateQueryParams(
-                    {
-                        search:
-                            "",
+                updateQueryParams({
+                    search:
+                        "",
 
-                        page:
-                            1,
-                    }
-                );
+                    page:
+                        1,
+                });
 
             },
             [
@@ -921,7 +1109,7 @@ const Problems = () => {
 
 
     // =====================================================
-    // RESET ALL FILTERS
+    // RESET ALL
     // =====================================================
 
     const handleResetFilters =
@@ -981,7 +1169,44 @@ const Problems = () => {
 
 
     // =====================================================
-    // STATUS
+    // GENERIC FILTER UPDATE
+    //
+    // Old code:
+    //
+    // handleStatusChange
+    // handleUrgentChange
+    // handleLanguageChange
+    // ...
+    //
+    // har biri bir xil query update kodi edi.
+    //
+    // Endi core logic bitta joyda.
+    // =====================================================
+
+    const updateFilter =
+        useCallback(
+            (
+                key,
+                value
+            ) => {
+
+                updateQueryParams({
+                    [key]:
+                        value,
+
+                    page:
+                        1,
+                });
+
+            },
+            [
+                updateQueryParams,
+            ]
+        );
+
+
+    // =====================================================
+    // FILTER HANDLERS
     // =====================================================
 
     const handleStatusChange =
@@ -990,26 +1215,17 @@ const Problems = () => {
                 value
             ) => {
 
-                updateQueryParams(
-                    {
-                        status:
-                            value,
-
-                        page:
-                            1,
-                    }
+                updateFilter(
+                    "status",
+                    value
                 );
 
             },
             [
-                updateQueryParams,
+                updateFilter,
             ]
         );
 
-
-    // =====================================================
-    // URGENT
-    // =====================================================
 
     const handleUrgentChange =
         useCallback(
@@ -1017,26 +1233,17 @@ const Problems = () => {
                 value
             ) => {
 
-                updateQueryParams(
-                    {
-                        urgent:
-                            value,
-
-                        page:
-                            1,
-                    }
+                updateFilter(
+                    "urgent",
+                    value
                 );
 
             },
             [
-                updateQueryParams,
+                updateFilter,
             ]
         );
 
-
-    // =====================================================
-    // LANGUAGE
-    // =====================================================
 
     const handleLanguageChange =
         useCallback(
@@ -1044,26 +1251,17 @@ const Problems = () => {
                 value
             ) => {
 
-                updateQueryParams(
-                    {
-                        language:
-                            value,
-
-                        page:
-                            1,
-                    }
+                updateFilter(
+                    "language",
+                    value
                 );
 
             },
             [
-                updateQueryParams,
+                updateFilter,
             ]
         );
 
-
-    // =====================================================
-    // TECHNOLOGY
-    // =====================================================
 
     const handleTechnologyChange =
         useCallback(
@@ -1071,26 +1269,17 @@ const Problems = () => {
                 value
             ) => {
 
-                updateQueryParams(
-                    {
-                        technology:
-                            value,
-
-                        page:
-                            1,
-                    }
+                updateFilter(
+                    "technology",
+                    value
                 );
 
             },
             [
-                updateQueryParams,
+                updateFilter,
             ]
         );
 
-
-    // =====================================================
-    // ORDERING
-    // =====================================================
 
     const handleOrderingChange =
         useCallback(
@@ -1098,19 +1287,14 @@ const Problems = () => {
                 value
             ) => {
 
-                updateQueryParams(
-                    {
-                        ordering:
-                            value,
-
-                        page:
-                            1,
-                    }
+                updateFilter(
+                    "ordering",
+                    value
                 );
 
             },
             [
-                updateQueryParams,
+                updateFilter,
             ]
         );
 
@@ -1138,15 +1322,14 @@ const Problems = () => {
                 }
 
 
-                updateQueryParams(
-                    {
-                        page,
-                    }
-                );
+                updateQueryParams({
+                    page,
+                });
 
 
                 window.scrollTo({
                     top: 0,
+
                     behavior:
                         "smooth",
                 });
@@ -1162,27 +1345,26 @@ const Problems = () => {
 
 
     // =====================================================
-    // INITIAL SKELETON
+    // UI STATES
     // =====================================================
 
+    // Initial load yoki yangi queryda eski data yo‘q.
     const showInitialSkeleton =
         !currentError
         &&
         !hasProblemData
         &&
         (
-            !hasLoadedProblemList
+            !isCurrentQueryResolved
             ||
             loading
         );
 
 
-    // =====================================================
-    // EMPTY STATE
-    // =====================================================
-
+    // Empty state faqat aynan hozirgi query
+    // muvaffaqiyatli tugaganidan keyin.
     const showEmptyState =
-        hasLoadedProblemList
+        isCurrentQueryResolved
         &&
         !loading
         &&
@@ -1191,18 +1373,14 @@ const Problems = () => {
         !hasProblemData;
 
 
-    // =====================================================
-    // PAGINATION AREA
-    // =====================================================
-
     const showPaginationArea =
-        hasLoadedProblemList
+        isCurrentQueryResolved
         &&
         !loading
         &&
         !currentError
         &&
-        count > 0;
+        problemCount > 0;
 
 
     // =====================================================
@@ -1264,7 +1442,7 @@ const Problems = () => {
                         Boolean(
                             loading
                             &&
-                            searchTerm.trim()
+                            debouncedSearchTerm
                         )
                     }
 
@@ -1342,110 +1520,31 @@ const Problems = () => {
                     RESULT HEADER
                 ========================================== */}
 
-                <div
-                    className="
-                        mb-6
+                <ProblemsResultsHeader
+                    count={
+                        problemCount
+                    }
 
-                        flex
-                        flex-col
-                        gap-3
+                    start={
+                        resultStart
+                    }
 
-                        sm:flex-row
-                        sm:items-end
-                        sm:justify-between
-                    "
-                >
+                    end={
+                        resultEnd
+                    }
 
-                    <div>
+                    isLoading={
+                        loading
+                    }
 
-                        <p
-                            className="
-                                font-mono
-                                text-[10px]
-                                font-black
-                                uppercase
-                                tracking-[0.18em]
-                                text-cyan-400/70
-                            "
-                        >
-                            problem.registry
-                        </p>
-
-
-                        <h2
-                            className="
-                                mt-1
-
-                                text-xl
-                                font-black
-                                text-white
-                            "
-                        >
-                            Muammolar
-                        </h2>
-
-                    </div>
-
-
-                    <div
-                        className="
-                            flex
-                            items-center
-                            gap-3
-
-                            text-xs
-                            font-bold
-                            text-gray-600
-                        "
-                    >
-
-                        {hasLoadedProblemList &&
-                            count > 0 && (
-
-                            <span>
-                                {resultStart}
-                                {" — "}
-                                {resultEnd}
-                                {" / "}
-                                {count}
-                            </span>
-                        )}
-
-
-                        {loading && (
-
-                            <span
-                                role="status"
-
-                                className="
-                                    inline-flex
-                                    items-center
-                                    gap-1.5
-
-                                    text-cyan-400
-                                "
-                            >
-
-                                <Loader2
-                                    size={13}
-
-                                    className="
-                                        animate-spin
-                                    "
-                                />
-
-                                yangilanmoqda
-
-                            </span>
-                        )}
-
-                    </div>
-
-                </div>
+                    isResolved={
+                        isCurrentQueryResolved
+                    }
+                />
 
 
                 {/* =========================================
-                    ERROR
+                    ERROR STATE
                 ========================================== */}
 
                 {currentError &&
@@ -1472,7 +1571,7 @@ const Problems = () => {
 
 
                 {/* =========================================
-                    GRID
+                    PROBLEMS GRID
                 ========================================== */}
 
                 <div
@@ -1491,11 +1590,10 @@ const Problems = () => {
                 >
 
                     {/* =====================================
-                        INITIAL SKELETON
+                        SKELETON
                     ====================================== */}
 
-                    {showInitialSkeleton && (
-
+                    {showInitialSkeleton &&
                         Array
                             .from({
                                 length:
@@ -1514,122 +1612,29 @@ const Problems = () => {
                                     />
                                 )
                             )
-                    )}
+                    }
 
 
                     {/* =====================================
-                        PROBLEM CARDS
+                        CARDS
                     ====================================== */}
 
                     {!showInitialSkeleton &&
                         problemList.map(
                             (
-                                problem
+                                problem,
+                                index
                             ) => (
 
                                 <ProblemCard
                                     key={
-                                        problem.id
-                                    }
-
-                                    id={
-                                        problem.id
-                                    }
-
-                                    username={
-                                        problem
-                                            .user
-                                            ?.username
-                                    }
-
-                                    firstName={
-                                        problem
-                                            .user
-                                            ?.first_name
-                                    }
-
-                                    lastName={
-                                        problem
-                                            .user
-                                            ?.last_name
-                                    }
-
-                                    image={
-                                        problem
-                                            .user
-                                            ?.image
-                                    }
-
-                                    name={
-                                        problem
-                                            .problem
-                                    }
-
-                                    views={
-                                        problem
-                                            .total_views
+                                        problem?.id
                                         ??
-                                        0
+                                        `problem-${index}`
                                     }
 
-                                    languages={
+                                    problem={
                                         problem
-                                            .language_data
-                                        ??
-                                        []
-                                    }
-
-                                    technologies={
-                                        problem
-                                            .technology_data
-                                        ??
-                                        []
-                                    }
-
-                                    createdAt={
-                                        problem
-                                            .created_at
-                                    }
-
-                                    star={
-                                        problem
-                                            .star
-                                        ??
-                                        0
-                                    }
-
-                                    responseCount={
-                                        problem
-                                            .response_count
-                                        ??
-                                        0
-                                    }
-
-                                    isSolved={
-                                        problem
-                                            .is_solved
-                                    }
-
-                                    status={
-                                        problem
-                                            .status
-                                    }
-
-                                    isUrgent={
-                                        problem
-                                            .is_urgent
-                                    }
-
-                                    deadline={
-                                        problem
-                                            .deadline
-                                    }
-
-                                    offeredCoins={
-                                        problem
-                                            .offered_coins
-                                        ??
-                                        0
                                     }
                                 />
                             )
@@ -1638,7 +1643,7 @@ const Problems = () => {
 
 
                     {/* =====================================
-                        EMPTY STATE
+                        EMPTY
                     ====================================== */}
 
                     {showEmptyState && (
@@ -1673,7 +1678,7 @@ const Problems = () => {
                         }
 
                         count={
-                            count
+                            problemCount
                         }
 
                         onPageChange={

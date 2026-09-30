@@ -1,14 +1,7 @@
 // src/components/ProblemCard.jsx
 
-import React, {
-    memo,
-    useMemo,
-} from "react";
-
-import {
-    Link,
-} from "react-router-dom";
-
+import React, { memo, useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
     ArrowRight,
     Bug,
@@ -25,413 +18,259 @@ import {
 } from "lucide-react";
 
 import UserImage from "../assests/userImage.jpeg";
-
-import {
-    limitText,
-} from "../utils/limitText";
-
+import { limitText } from "../utils/limitText";
 import timeAgo from "../utils/timeAgo";
 
+const BACKEND_URL = (
+    process.env.REACT_APP_BACKEND_URL || "http://127.0.0.1:8000"
+).replace(/\/+$/, "");
 
-// =========================================================
-// BACKEND
-// =========================================================
+const DEFAULT_STACK_COLOR = "#64748B";
+const MAX_LANGUAGES = 2;
+const MAX_TECHNOLOGIES = 3;
 
-const BACKEND_URL =
-    (
-        process.env.REACT_APP_BACKEND_URL
-        ||
-        "http://127.0.0.1:8000"
-    ).replace(
-        /\/+$/,
-        ""
-    );
-
-
-// =========================================================
-// CONFIG
-// =========================================================
-
-const DEFAULT_STACK_COLOR =
-    "#64748B";
-
-
-const MAX_LANGUAGES =
-    2;
-
-
-const MAX_TECHNOLOGIES =
-    3;
-
-
-// =========================================================
-// SAFE NUMBER
-// =========================================================
-
-const safeNumber = (
-    value
-) => {
-
-    const number =
-        Number(
-            value
-        );
-
-
-    if (
-        !Number.isFinite(
-            number
-        )
-    ) {
-        return 0;
-    }
-
-
-    return Math.max(
-        0,
-        number
-    );
+const safeNumber = (value) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.max(0, number) : 0;
 };
 
+const toBoolean = (value) => {
+    if (typeof value === "boolean") return value;
 
-// =========================================================
-// IMAGE URL
-// =========================================================
+    if (typeof value === "string") {
+        const normalized = value.trim().toLowerCase();
 
-const getImageUrl = (
-    image
-) => {
-
-    if (
-        !image
-    ) {
-        return UserImage;
+        if (["true", "1", "yes", "on"].includes(normalized)) return true;
+        if (["false", "0", "no", "off", ""].includes(normalized)) return false;
     }
 
+    return Boolean(value);
+};
 
-    const value =
-        String(
-            image
-        ).trim();
+const cleanText = (value, fallback = "") => {
+    if (value === null || value === undefined) return fallback;
 
+    return String(value).trim() || fallback;
+};
+
+const getImageUrl = (image) => {
+    const value = cleanText(image);
+
+    if (!value) return UserImage;
 
     if (
-        !value
+        value.startsWith("http://") ||
+        value.startsWith("https://") ||
+        value.startsWith("blob:") ||
+        value.startsWith("data:")
     ) {
-        return UserImage;
-    }
-
-
-    if (
-        value.startsWith(
-            "http://"
-        )
-        ||
-        value.startsWith(
-            "https://"
-        )
-        ||
-        value.startsWith(
-            "blob:"
-        )
-        ||
-        value.startsWith(
-            "data:"
-        )
-    ) {
-
         return value;
     }
 
-
-    return (
-        `${BACKEND_URL}${
-            value.startsWith("/")
-                ? value
-                : `/${value}`
-        }`
-    );
+    return `${BACKEND_URL}${value.startsWith("/") ? value : `/${value}`}`;
 };
 
+const normalizeHexColor = (value) => {
+    if (typeof value !== "string") return DEFAULT_STACK_COLOR;
 
-// =========================================================
-// STACK COLOR
-// =========================================================
+    const color = value.trim();
 
-const getStackColor = (
-    item
-) => {
-
-    const color =
-        item?.color;
-
-
-    if (
-        typeof color ===
-            "string"
-        &&
-        /^#[0-9A-Fa-f]{6}$/.test(
-            color
-        )
-    ) {
-
+    if (/^#[0-9A-Fa-f]{6}$/.test(color)) {
         return color;
     }
 
+    if (/^#[0-9A-Fa-f]{3}$/.test(color)) {
+        const [r, g, b] = color.slice(1).split("");
+
+        return `#${r}${r}${g}${g}${b}${b}`;
+    }
 
     return DEFAULT_STACK_COLOR;
 };
 
+const withAlpha = (color, alpha) => {
+    const safeColor = normalizeHexColor(color);
 
-// =========================================================
-// HEX WITH ALPHA
-// =========================================================
+    const safeAlpha = /^[0-9A-Fa-f]{2}$/.test(String(alpha))
+        ? String(alpha)
+        : "FF";
 
-const withAlpha = (
-    color,
-    alpha
-) => {
-
-    const safeColor =
-        (
-            typeof color ===
-                "string"
-            &&
-            /^#[0-9A-Fa-f]{6}$/.test(
-                color
-            )
-        )
-            ? color
-            : DEFAULT_STACK_COLOR;
-
-
-    return `${safeColor}${alpha}`;
+    return `${safeColor}${safeAlpha}`;
 };
 
-
-// =========================================================
-// NORMALIZE STACK
-// =========================================================
-
-const normalizeStack = (
-    items
-) => {
-
-    if (
-        !Array.isArray(
-            items
-        )
-    ) {
-
+const normalizeStack = (items) => {
+    if (!Array.isArray(items)) {
         return [];
     }
 
+    const normalized = items
+        .map((item, index) => {
+            if (typeof item === "string") {
+                const name = cleanText(item);
 
-    return items
-        .filter(
-            Boolean
-        )
-        .map(
-            (
-                item,
-                index
-            ) => {
-
-                if (
-                    typeof item ===
-                    "string"
-                ) {
-
-                    return {
-                        id:
-                            `${item}-${index}`,
-
-                        name:
-                            item,
-
-                        color:
-                            DEFAULT_STACK_COLOR,
-                    };
+                if (!name) {
+                    return null;
                 }
 
-
                 return {
-                    ...item,
-
-                    id:
-                        item.id
-                        ??
-                        `${item.name || "stack"}-${index}`,
-
-                    name:
-                        item.name
-                        ||
-                        item.title
-                        ||
-                        "Unknown",
-
-                    color:
-                        getStackColor(
-                            item
-                        ),
+                    id: `string-${name}-${index}`,
+                    name,
+                    color: DEFAULT_STACK_COLOR,
+                    iconKey: "",
                 };
             }
-        );
+
+            if (!item || typeof item !== "object") {
+                return null;
+            }
+
+            const name = cleanText(
+                item.name ??
+                item.title
+            );
+
+            if (!name) {
+                return null;
+            }
+
+            return {
+                ...item,
+
+                id:
+                    item.id ??
+                    `${name}-${index}`,
+
+                name,
+
+                color:
+                    normalizeHexColor(
+                        item.color
+                    ),
+
+                iconKey:
+                    cleanText(
+                        item.icon_key
+                    ),
+            };
+        })
+        .filter(Boolean);
+
+    const seen = new Set();
+
+    return normalized.filter((item) => {
+        const key =
+            item.id !== undefined &&
+            item.id !== null
+                ? `id:${item.id}`
+                : `name:${item.name.toLowerCase()}`;
+
+        if (seen.has(key)) {
+            return false;
+        }
+
+        seen.add(key);
+
+        return true;
+    });
 };
 
+const getTimeAgoLabel = (value) => {
+    if (!value) {
+        return "Sana noma’lum";
+    }
 
-// =========================================================
-// DEADLINE
-// =========================================================
+    const date = new Date(value);
 
-const getDeadlineData = (
-    deadline
-) => {
+    if (Number.isNaN(date.getTime())) {
+        return "Sana noma’lum";
+    }
 
-    if (
-        !deadline
-    ) {
+    return timeAgo(value);
+};
+
+const getDeadlineData = (deadline) => {
+    if (!deadline) {
         return null;
     }
 
+    const target = new Date(deadline);
 
-    const target =
-        new Date(
-            deadline
-        );
-
-
-    if (
-        Number.isNaN(
-            target.getTime()
-        )
-    ) {
+    if (Number.isNaN(target.getTime())) {
         return null;
     }
-
 
     const diff =
-        target.getTime()
-        -
+        target.getTime() -
         Date.now();
 
-
-    if (
-        diff <= 0
-    ) {
-
+    if (diff <= 0) {
         return {
-            text:
-                "Muddati tugagan",
-
-            expired:
-                true,
+            text: "Muddati tugagan",
+            expired: true,
         };
     }
 
-
-    const totalMinutes =
+    const totalMinutes = Math.max(
+        1,
         Math.ceil(
-            diff
-            /
+            diff /
             (
-                1000
-                *
+                1000 *
                 60
             )
-        );
+        )
+    );
 
+    const days = Math.floor(
+        totalMinutes /
+        (
+            60 *
+            24
+        )
+    );
 
-    const days =
-        Math.floor(
-            totalMinutes
-            /
-            (
-                60
-                *
-                24
-            )
-        );
-
-
-    if (
-        days > 0
-    ) {
-
+    if (days > 0) {
         return {
-            text:
-                `${days} kun qoldi`,
-
-            expired:
-                false,
+            text: `${days} kun qoldi`,
+            expired: false,
         };
     }
 
+    const hours = Math.floor(
+        totalMinutes /
+        60
+    );
 
-    const hours =
-        Math.floor(
-            totalMinutes
-            /
-            60
-        );
-
-
-    if (
-        hours > 0
-    ) {
-
+    if (hours > 0) {
         return {
-            text:
-                `${hours} soat qoldi`,
-
-            expired:
-                false,
+            text: `${hours} soat qoldi`,
+            expired: false,
         };
     }
-
 
     return {
-        text:
-            `${Math.max(
-                1,
-                totalMinutes
-            )} daqiqa qoldi`,
-
-        expired:
-            false,
+        text: `${totalMinutes} daqiqa qoldi`,
+        expired: false,
     };
 };
-
-
-// =========================================================
-// STACK BADGE
-// =========================================================
 
 const StackBadge = ({
     item,
     type = "language",
 }) => {
-
     const color =
-        getStackColor(
-            item
+        normalizeHexColor(
+            item?.color
         );
 
-
     const Icon =
-        type ===
-        "language"
+        type === "language"
             ? Code2
             : Tags;
 
-
     return (
         <span
-            title={
-                item?.name
-                ||
-                ""
-            }
+            title={item?.name || ""}
             className="
                 inline-flex
                 max-w-full
@@ -439,16 +278,12 @@ const StackBadge = ({
                 gap-1.5
                 rounded-full
                 border
-
                 px-2.5
                 py-1
-
                 text-[10px]
                 font-black
-
                 transition-all
                 duration-300
-
                 hover:-translate-y-[1px]
             "
             style={{
@@ -477,61 +312,42 @@ const StackBadge = ({
         >
             <Icon
                 size={11}
+                aria-hidden="true"
                 className="
                     shrink-0
                     opacity-80
                 "
             />
 
-            <span
-                className="
-                    truncate
-                "
-            >
+            <span className="truncate">
                 {item?.name}
             </span>
         </span>
     );
 };
 
-
-// =========================================================
-// MORE BADGE
-// =========================================================
-
 const MoreBadge = ({
     items = [],
 }) => {
-
     if (
-        items.length <=
-        0
+        !Array.isArray(items) ||
+        items.length === 0
     ) {
         return null;
     }
 
-
-    const names =
-        items
-            .map(
-                (
-                    item
-                ) =>
-                    item?.name
-            )
-            .filter(
-                Boolean
-            )
-            .join(
-                ", "
-            );
-
+    const names = items
+        .map(
+            (item) =>
+                item?.name
+        )
+        .filter(Boolean)
+        .join(", ");
 
     return (
         <span
             title={
-                names
-                ||
+                names ||
                 `${items.length} ta qo‘shimcha`
             }
             className="
@@ -539,21 +355,15 @@ const MoreBadge = ({
                 items-center
                 justify-center
                 rounded-full
-
                 border
                 border-white/10
-
                 bg-white/[0.04]
-
                 px-2.5
                 py-1
-
                 text-[10px]
                 font-black
                 text-gray-500
-
                 transition-all
-
                 hover:border-white/20
                 hover:bg-white/[0.07]
                 hover:text-white
@@ -564,33 +374,30 @@ const MoreBadge = ({
     );
 };
 
-
-// =========================================================
-// STAT
-// =========================================================
-
 const StatBadge = ({
     icon: Icon,
     value,
     iconClass,
+    label,
 }) => {
+    const safeValue =
+        safeNumber(
+            value
+        );
 
     return (
         <span
+            title={`${label}: ${safeValue}`}
             className="
                 inline-flex
                 items-center
                 gap-1.5
                 rounded-full
-
                 border
                 border-white/10
-
                 bg-white/[0.04]
-
                 px-3
                 py-1.5
-
                 text-xs
                 font-semibold
                 text-gray-400
@@ -598,26 +405,23 @@ const StatBadge = ({
         >
             <Icon
                 size={13}
+                aria-hidden="true"
                 className={
                     iconClass
                 }
             />
 
-            {safeNumber(
-                value
-            )}
+            {safeValue}
         </span>
     );
 };
 
-
-// =========================================================
-// PROBLEM CARD
-// =========================================================
-
 const ProblemCard = ({
-    id,
+    problem = null,
 
+    // Legacy props.
+    // Boshqa eski usage bo‘lsa buzilmasligi uchun.
+    id,
     username,
     firstName,
     lastName,
@@ -644,26 +448,134 @@ const ProblemCard = ({
 }) => {
 
     // =====================================================
+    // BACKEND + LEGACY CONTRACT
+    // =====================================================
+
+    const problemUser =
+        problem?.user &&
+        typeof problem.user ===
+            "object"
+            ? problem.user
+            : {};
+
+    const resolvedId =
+        problem?.id ??
+        id;
+
+    const resolvedUsername =
+        cleanText(
+            problemUser.username ??
+            username,
+            "unknown"
+        );
+
+    const resolvedFirstName =
+        cleanText(
+            problemUser.first_name ??
+            problemUser.firstName ??
+            firstName
+        );
+
+    const resolvedLastName =
+        cleanText(
+            problemUser.last_name ??
+            problemUser.lastName ??
+            lastName
+        );
+
+    const resolvedImage =
+        problemUser.image ??
+        image;
+
+    const resolvedName =
+        cleanText(
+            problem?.problem ??
+            problem?.name ??
+            name,
+            "Nomsiz muammo"
+        );
+
+    const resolvedViews =
+        problem?.total_views ??
+        problem?.views ??
+        views ??
+        0;
+
+    const resolvedLanguages =
+        problem?.language_data ??
+        problem?.languages ??
+        languages;
+
+    const resolvedTechnologies =
+        problem?.technology_data ??
+        problem?.technologies ??
+        technologies;
+
+    const resolvedCreatedAt =
+        problem?.created_at ??
+        problem?.createdAt ??
+        createdAt;
+
+    const resolvedStar =
+        problem?.star ??
+        star ??
+        0;
+
+    const resolvedResponseCount =
+        problem?.response_count ??
+        problem?.responseCount ??
+        responseCount ??
+        0;
+
+    const resolvedStatus =
+        cleanText(
+            problem?.status ??
+            status,
+            "pending"
+        ).toLowerCase();
+
+    const resolvedIsSolved =
+        problem?.is_solved ??
+        problem?.isSolved ??
+        isSolved;
+
+    const resolvedIsUrgent =
+        problem?.is_urgent ??
+        problem?.isUrgent ??
+        isUrgent;
+
+    const resolvedDeadline =
+        problem?.deadline ??
+        deadline;
+
+    const resolvedOfferedCoins =
+        problem?.offered_coins ??
+        problem?.offeredCoins ??
+        offeredCoins ??
+        0;
+
+
+    // =====================================================
     // USER
     // =====================================================
 
     const fullName =
-        (
-            firstName
-            ||
-            lastName
-        )
-            ? `${firstName || ""} ${
-                lastName || ""
-            }`.trim()
-            : username
-            ||
-            "Anonymous";
-
+        resolvedFirstName ||
+        resolvedLastName
+            ? `${resolvedFirstName} ${resolvedLastName}`.trim()
+            : resolvedUsername !==
+                "unknown"
+                ? resolvedUsername
+                : "Anonymous";
 
     const avatar =
         getImageUrl(
-            image
+            resolvedImage
+        );
+
+    const createdLabel =
+        getTimeAgoLabel(
+            resolvedCreatedAt
         );
 
 
@@ -675,25 +587,23 @@ const ProblemCard = ({
         useMemo(
             () =>
                 normalizeStack(
-                    languages
+                    resolvedLanguages
                 ),
             [
-                languages,
+                resolvedLanguages,
             ]
         );
-
 
     const normalizedTechnologies =
         useMemo(
             () =>
                 normalizeStack(
-                    technologies
+                    resolvedTechnologies
                 ),
             [
-                technologies,
+                resolvedTechnologies,
             ]
         );
-
 
     const visibleLanguages =
         normalizedLanguages.slice(
@@ -701,19 +611,16 @@ const ProblemCard = ({
             MAX_LANGUAGES
         );
 
-
     const hiddenLanguages =
         normalizedLanguages.slice(
             MAX_LANGUAGES
         );
-
 
     const visibleTechnologies =
         normalizedTechnologies.slice(
             0,
             MAX_TECHNOLOGIES
         );
-
 
     const hiddenTechnologies =
         normalizedTechnologies.slice(
@@ -725,27 +632,17 @@ const ProblemCard = ({
     // STATUS
     // =====================================================
 
-    const normalizedStatus =
-        String(
-            status
-            ||
-            ""
-        ).toLowerCase();
-
-
     const solved =
-        Boolean(
-            isSolved
+        toBoolean(
+            resolvedIsSolved
         )
         ||
-        normalizedStatus ===
+        resolvedStatus ===
             "solved";
 
-
     const rejected =
-        normalizedStatus ===
+        resolvedStatus ===
         "rejected";
-
 
     const statusData =
         rejected
@@ -767,6 +664,9 @@ const ProblemCard = ({
 
                 line:
                     "from-gray-500 via-red-400/60 to-transparent",
+
+                dot:
+                    "bg-gray-500",
             }
 
             : solved
@@ -788,11 +688,14 @@ const ProblemCard = ({
 
                     line:
                         "from-emerald-400 via-cyan-400 to-transparent",
+
+                    dot:
+                        "bg-emerald-400",
                 }
 
                 : {
                     text:
-                        "YECHILMAGAN",
+                        "JARAYONDA",
 
                     Icon:
                         Clock3,
@@ -808,35 +711,92 @@ const ProblemCard = ({
 
                     line:
                         "from-red-400 via-orange-400 to-transparent",
-                };
 
+                    dot:
+                        "bg-red-400",
+                };
 
     const StatusIcon =
         statusData.Icon;
 
 
     // =====================================================
-    // DEADLINE
+    // PRIORITY META
     // =====================================================
 
     const deadlineData =
         getDeadlineData(
-            deadline
+            resolvedDeadline
         );
-
-
-    // =====================================================
-    // BOUNTY
-    // =====================================================
 
     const bounty =
         safeNumber(
-            offeredCoins
+            resolvedOfferedCoins
+        );
+
+    const urgent =
+        toBoolean(
+            resolvedIsUrgent
+        );
+
+    const hasPriorityMeta =
+        bounty > 0 ||
+        Boolean(
+            deadlineData
         );
 
 
     // =====================================================
-    // RENDER
+    // ROUTE
+    // =====================================================
+
+    const hasValidId =
+        resolvedId !== null &&
+        resolvedId !== undefined &&
+        cleanText(
+            resolvedId
+        ) !== "";
+
+    const detailPath =
+        hasValidId
+            ? `/problem/${resolvedId}/detail`
+            : null;
+
+    const CardRoot =
+        hasValidId
+            ? Link
+            : "div";
+
+    const cardRootProps =
+        hasValidId
+            ? {
+                to:
+                    detailPath,
+
+                "aria-label":
+                    `${resolvedName} muammosi tafsilotlarini ko‘rish`,
+            }
+
+            : {
+                "aria-disabled":
+                    true,
+            };
+
+
+    // =====================================================
+    // CTA
+    // =====================================================
+
+    const ctaText =
+        rejected
+            ? "Tafsilotni ko‘rish"
+            : solved
+                ? "Yechimni ko‘rish"
+                : "Muammoni ko‘rish";
+
+
+    // =====================================================
+    // JSX
     // =====================================================
 
     return (
@@ -846,10 +806,9 @@ const ProblemCard = ({
                 h-full
             "
         >
-            <Link
-                to={
-                    `/problem/${id}/detail`
-                }
+            <CardRoot
+                {...cardRootProps}
+
                 className={`
                     group
                     relative
@@ -869,10 +828,27 @@ const ProblemCard = ({
                     transition-all
                     duration-300
 
-                    hover:-translate-y-1.5
-                    hover:shadow-cyan-500/10
-
                     ${statusData.border}
+
+                    ${
+                        hasValidId
+
+                            ? `
+                                hover:-translate-y-1.5
+                                hover:shadow-cyan-500/10
+
+                                focus-visible:outline-none
+                                focus-visible:ring-2
+                                focus-visible:ring-cyan-400/40
+                                focus-visible:ring-offset-2
+                                focus-visible:ring-offset-black
+                            `
+
+                            : `
+                                cursor-default
+                                opacity-80
+                            `
+                    }
                 `}
             >
 
@@ -886,10 +862,14 @@ const ProblemCard = ({
                         absolute
                         -left-24
                         -top-24
+
                         h-52
                         w-52
+
                         rounded-full
+
                         bg-cyan-500/10
+
                         blur-3xl
 
                         transition-all
@@ -899,17 +879,20 @@ const ProblemCard = ({
                     "
                 />
 
-
                 <div
                     className="
                         pointer-events-none
                         absolute
                         -bottom-24
                         -right-24
+
                         h-52
                         w-52
+
                         rounded-full
+
                         bg-indigo-500/10
+
                         blur-3xl
 
                         transition-all
@@ -929,8 +912,10 @@ const ProblemCard = ({
                         absolute
                         left-0
                         top-0
+
                         h-[2px]
                         w-full
+
                         bg-gradient-to-r
 
                         ${statusData.line}
@@ -938,9 +923,14 @@ const ProblemCard = ({
                 />
 
 
+                {/* =========================================
+                    CARD BODY
+                ========================================== */}
+
                 <div
                     className="
                         relative
+
                         flex
                         h-full
                         flex-col
@@ -963,6 +953,7 @@ const ProblemCard = ({
                     <div
                         className="
                             mb-5
+
                             flex
                             items-start
                             justify-between
@@ -989,10 +980,12 @@ const ProblemCard = ({
                                     }
 
                                     alt={
-                                        username
-                                        ||
-                                        "user"
+                                        `${fullName} avatar`
                                     }
+
+                                    loading="lazy"
+
+                                    decoding="async"
 
                                     onError={(
                                         event
@@ -1008,38 +1001,46 @@ const ProblemCard = ({
                                     className={`
                                         h-11
                                         w-11
+
                                         rounded-2xl
+
                                         border
+
                                         object-cover
+
                                         shadow-lg
 
                                         ${
                                             solved
+
                                                 ? "border-emerald-400/40"
-                                                : "border-cyan-400/25"
+
+                                                : rejected
+
+                                                    ? "border-gray-500/30"
+
+                                                    : "border-cyan-400/25"
                                         }
                                     `}
                                 />
 
-
                                 <span
+                                    aria-hidden="true"
+
                                     className={`
                                         absolute
                                         -right-1
                                         -top-1
+
                                         h-3.5
                                         w-3.5
+
                                         rounded-full
+
                                         border-2
                                         border-[#0b1020]
 
-                                        ${
-                                            solved
-                                                ? "bg-emerald-400"
-                                                : rejected
-                                                    ? "bg-gray-500"
-                                                    : "bg-red-400"
-                                        }
+                                        ${statusData.dot}
                                     `}
                                 />
                             </div>
@@ -1051,8 +1052,13 @@ const ProblemCard = ({
                                 "
                             >
                                 <h4
+                                    title={
+                                        fullName
+                                    }
+
                                     className="
                                         truncate
+
                                         text-sm
                                         font-black
                                         text-white
@@ -1061,10 +1067,10 @@ const ProblemCard = ({
                                     {fullName}
                                 </h4>
 
-
                                 <div
                                     className="
                                         mt-1
+
                                         flex
                                         min-w-0
                                         items-center
@@ -1081,14 +1087,14 @@ const ProblemCard = ({
                                             font-mono
                                         "
                                     >
-                                        @{username || "unknown"}
+                                        @{resolvedUsername}
                                     </span>
 
-
-                                    <span>
+                                    <span
+                                        aria-hidden="true"
+                                    >
                                         •
                                     </span>
-
 
                                     <span
                                         className="
@@ -1100,11 +1106,10 @@ const ProblemCard = ({
                                     >
                                         <Clock3
                                             size={11}
+                                            aria-hidden="true"
                                         />
 
-                                        {timeAgo(
-                                            createdAt
-                                        )}
+                                        {createdLabel}
                                     </span>
                                 </div>
                             </div>
@@ -1117,8 +1122,11 @@ const ProblemCard = ({
                                 shrink-0
                                 items-center
                                 gap-1.5
+
                                 rounded-full
+
                                 border
+
                                 px-2.5
                                 py-1.5
 
@@ -1134,6 +1142,7 @@ const ProblemCard = ({
                         >
                             <StatusIcon
                                 size={11}
+                                aria-hidden="true"
                             />
 
                             <span
@@ -1157,6 +1166,7 @@ const ProblemCard = ({
                     <div
                         className="
                             mb-3
+
                             flex
                             flex-wrap
                             items-center
@@ -1177,10 +1187,14 @@ const ProblemCard = ({
                                     inline-flex
                                     items-center
                                     gap-2
+
                                     rounded-full
+
                                     border
                                     border-cyan-400/20
+
                                     bg-cyan-400/10
+
                                     px-3
                                     py-1
 
@@ -1193,23 +1207,26 @@ const ProblemCard = ({
                             >
                                 <Bug
                                     size={11}
+                                    aria-hidden="true"
                                 />
 
                                 problem ticket
                             </span>
 
-
-                            {isUrgent && (
-
+                            {urgent && (
                                 <span
                                     className="
                                         inline-flex
                                         items-center
                                         gap-1.5
+
                                         rounded-full
+
                                         border
                                         border-orange-400/25
+
                                         bg-orange-500/10
+
                                         px-2.5
                                         py-1
 
@@ -1222,6 +1239,7 @@ const ProblemCard = ({
                                 >
                                     <Zap
                                         size={11}
+                                        aria-hidden="true"
                                     />
 
                                     Tezkor
@@ -1230,16 +1248,18 @@ const ProblemCard = ({
                         </div>
 
 
-                        <span
-                            className="
-                                font-mono
-                                text-xs
-                                font-black
-                                text-gray-700
-                            "
-                        >
-                            #{id}
-                        </span>
+                        {hasValidId && (
+                            <span
+                                className="
+                                    font-mono
+                                    text-xs
+                                    font-black
+                                    text-gray-700
+                                "
+                            >
+                                #{resolvedId}
+                            </span>
+                        )}
                     </div>
 
 
@@ -1248,8 +1268,13 @@ const ProblemCard = ({
                     ====================================== */}
 
                     <h3
+                        title={
+                            resolvedName
+                        }
+
                         className="
                             mb-4
+
                             text-xl
                             font-black
                             leading-snug
@@ -1262,19 +1287,17 @@ const ProblemCard = ({
                         "
                     >
                         {limitText(
-                            name
-                            ||
-                            "Nomsiz muammo",
+                            resolvedName,
                             80
                         )}
                     </h3>
 
 
                     {/* =====================================
-                        URGENT META
+                        PRIORITY META
                     ====================================== */}
 
-                    {isUrgent && (
+                    {hasPriorityMeta && (
                         <div
                             className="
                                 mb-5
@@ -1284,16 +1307,19 @@ const ProblemCard = ({
                             "
                         >
                             {bounty > 0 && (
-
                                 <span
                                     className="
                                         inline-flex
                                         items-center
                                         gap-1.5
+
                                         rounded-xl
+
                                         border
                                         border-yellow-400/20
+
                                         bg-yellow-500/[0.08]
+
                                         px-2.5
                                         py-1.5
 
@@ -1304,22 +1330,24 @@ const ProblemCard = ({
                                 >
                                     <Coins
                                         size={12}
+                                        aria-hidden="true"
                                     />
 
                                     {bounty} FCoin
                                 </span>
                             )}
 
-
                             {deadlineData && (
-
                                 <span
                                     className={`
                                         inline-flex
                                         items-center
                                         gap-1.5
+
                                         rounded-xl
+
                                         border
+
                                         px-2.5
                                         py-1.5
 
@@ -1345,6 +1373,7 @@ const ProblemCard = ({
                                 >
                                     <Clock3
                                         size={12}
+                                        aria-hidden="true"
                                     />
 
                                     {
@@ -1373,6 +1402,7 @@ const ProblemCard = ({
                             <div
                                 className="
                                     mb-2
+
                                     flex
                                     items-center
                                     gap-2
@@ -1387,6 +1417,8 @@ const ProblemCard = ({
                             >
                                 <Code2
                                     size={11}
+                                    aria-hidden="true"
+
                                     className="
                                         text-cyan-500
                                     "
@@ -1394,7 +1426,6 @@ const ProblemCard = ({
 
                                 Til
                             </div>
-
 
                             <div
                                 className="
@@ -1405,27 +1436,25 @@ const ProblemCard = ({
                                     gap-1.5
                                 "
                             >
-                                {visibleLanguages.length >
-                                    0 ? (
-
+                                {visibleLanguages.length > 0 ? (
                                     <>
                                         {visibleLanguages.map(
                                             (
                                                 language
                                             ) => (
-
                                                 <StackBadge
                                                     key={
                                                         `language-${language.id}`
                                                     }
+
                                                     item={
                                                         language
                                                     }
+
                                                     type="language"
                                                 />
                                             )
                                         )}
-
 
                                         <MoreBadge
                                             items={
@@ -1433,15 +1462,16 @@ const ProblemCard = ({
                                             }
                                         />
                                     </>
-
                                 ) : (
-
                                     <span
                                         className="
                                             rounded-full
+
                                             border
                                             border-white/10
+
                                             bg-white/[0.04]
+
                                             px-3
                                             py-1
 
@@ -1463,6 +1493,7 @@ const ProblemCard = ({
                             <div
                                 className="
                                     mb-2
+
                                     flex
                                     items-center
                                     justify-between
@@ -1485,6 +1516,8 @@ const ProblemCard = ({
                                 >
                                     <Tags
                                         size={11}
+                                        aria-hidden="true"
+
                                         className="
                                             text-indigo-400
                                         "
@@ -1493,10 +1526,7 @@ const ProblemCard = ({
                                     Taglar
                                 </div>
 
-
-                                {normalizedTechnologies.length >
-                                    0 && (
-
+                                {normalizedTechnologies.length > 0 && (
                                     <span
                                         className="
                                             font-mono
@@ -1512,7 +1542,6 @@ const ProblemCard = ({
                                 )}
                             </div>
 
-
                             <div
                                 className="
                                     flex
@@ -1522,27 +1551,25 @@ const ProblemCard = ({
                                     gap-1.5
                                 "
                             >
-                                {visibleTechnologies.length >
-                                    0 ? (
-
+                                {visibleTechnologies.length > 0 ? (
                                     <>
                                         {visibleTechnologies.map(
                                             (
                                                 technology
                                             ) => (
-
                                                 <StackBadge
                                                     key={
                                                         `technology-${technology.id}`
                                                     }
+
                                                     item={
                                                         technology
                                                     }
+
                                                     type="technology"
                                                 />
                                             )
                                         )}
-
 
                                         <MoreBadge
                                             items={
@@ -1550,15 +1577,16 @@ const ProblemCard = ({
                                             }
                                         />
                                     </>
-
                                 ) : (
-
                                     <span
                                         className="
                                             rounded-full
+
                                             border
                                             border-white/10
+
                                             bg-white/[0.04]
+
                                             px-3
                                             py-1
 
@@ -1575,19 +1603,13 @@ const ProblemCard = ({
                     </div>
 
 
-                    {/* =====================================
-                        PUSH BOTTOM
-                    ====================================== */}
+                    {/* PUSH FOOTER */}
 
-                    <div
-                        className="
-                            flex-1
-                        "
-                    />
+                    <div className="flex-1" />
 
 
                     {/* =====================================
-                        BOTTOM
+                        FOOTER
                     ====================================== */}
 
                     <div
@@ -1623,35 +1645,45 @@ const ProblemCard = ({
                                     icon={
                                         Eye
                                     }
+
                                     value={
-                                        views
+                                        resolvedViews
                                     }
+
+                                    label="Ko‘rishlar"
+
                                     iconClass="
                                         text-cyan-300
                                     "
                                 />
 
-
                                 <StatBadge
                                     icon={
                                         MessageCircle
                                     }
+
                                     value={
-                                        responseCount
+                                        resolvedResponseCount
                                     }
+
+                                    label="Yechimlar"
+
                                     iconClass="
                                         text-indigo-300
                                     "
                                 />
 
-
                                 <StatBadge
                                     icon={
                                         Star
                                     }
+
                                     value={
-                                        star
+                                        resolvedStar
                                     }
+
+                                    label="Star"
+
                                     iconClass="
                                         text-yellow-300
                                     "
@@ -1667,7 +1699,9 @@ const ProblemCard = ({
                                     items-center
                                     justify-center
                                     gap-2
+
                                     rounded-2xl
+
                                     border
 
                                     px-4
@@ -1681,45 +1715,63 @@ const ProblemCard = ({
                                     transition-all
                                     duration-300
 
-                                    group-hover:translate-x-1
+                                    ${
+                                        hasValidId
+                                            ? "group-hover:translate-x-1"
+                                            : ""
+                                    }
 
                                     ${
-                                        solved
+                                        rejected
 
                                             ? `
-                                                border-emerald-400/20
-                                                bg-emerald-400/10
-                                                text-emerald-300
-
-                                                group-hover:bg-emerald-400
-                                                group-hover:text-[#050816]
+                                                border-gray-400/20
+                                                bg-gray-400/[0.07]
+                                                text-gray-400
                                             `
 
-                                            : `
-                                                border-cyan-400/20
-                                                bg-cyan-400/10
-                                                text-cyan-300
+                                            : solved
 
-                                                group-hover:bg-cyan-400
-                                                group-hover:text-[#050816]
-                                            `
+                                                ? `
+                                                    border-emerald-400/20
+                                                    bg-emerald-400/10
+                                                    text-emerald-300
+
+                                                    group-hover:bg-emerald-400
+                                                    group-hover:text-[#050816]
+                                                `
+
+                                                : `
+                                                    border-cyan-400/20
+                                                    bg-cyan-400/10
+                                                    text-cyan-300
+
+                                                    group-hover:bg-cyan-400
+                                                    group-hover:text-[#050816]
+                                                `
                                     }
                                 `}
                             >
-                                Yechimni ko‘rish
+                                {
+                                    hasValidId
+                                        ? ctaText
+                                        : "ID mavjud emas"
+                                }
 
-                                <ArrowRight
-                                    size={14}
-                                />
+                                {hasValidId && (
+                                    <ArrowRight
+                                        size={14}
+                                        aria-hidden="true"
+                                    />
+                                )}
                             </span>
                         </div>
                     </div>
                 </div>
-            </Link>
+            </CardRoot>
         </article>
     );
 };
-
 
 export default memo(
     ProblemCard
