@@ -4,39 +4,36 @@ import axios from "./api";
 
 
 // =========================================================
-// ORDERING CONSTANTS
+// CONSTANTS
 // =========================================================
 
 export const PROBLEM_ORDERING = Object.freeze({
-
-    NEWEST:
-        "newest",
-
-    OLDEST:
-        "oldest",
-
-    MOST_VIEWED:
-        "most_viewed",
-
-    MOST_STARRED:
-        "most_starred",
-
-    MOST_ANSWERED:
-        "most_answered",
-
-    HIGHEST_BOUNTY:
-        "highest_bounty",
-
-    DEADLINE:
-        "deadline",
-
-    URGENT_FIRST:
-        "urgent_first",
+    NEWEST: "newest",
+    OLDEST: "oldest",
+    MOST_VIEWED: "most_viewed",
+    MOST_STARRED: "most_starred",
+    MOST_ANSWERED: "most_answered",
+    HIGHEST_BOUNTY: "highest_bounty",
+    DEADLINE: "deadline",
+    URGENT_FIRST: "urgent_first",
 });
 
 
+const PROBLEM_ORDERING_VALUES =
+    new Set(
+        Object.values(
+            PROBLEM_ORDERING
+        )
+    );
+
+
+const DEFAULT_PAGE_SIZE = 6;
+
+const MAX_PAGE_SIZE = 24;
+
+
 // =========================================================
-// REQUEST CANCEL HELPER
+// REQUEST CANCEL
 // =========================================================
 
 export const isProblemRequestCanceled = (
@@ -46,10 +43,14 @@ export const isProblemRequestCanceled = (
     return (
         error?.name ===
             "CanceledError"
+
         ||
+
         error?.name ===
             "AbortError"
+
         ||
+
         error?.code ===
             "ERR_CANCELED"
     );
@@ -84,7 +85,6 @@ const logApiError = (
             error.response.status
         );
 
-
         return;
     }
 
@@ -97,7 +97,6 @@ const logApiError = (
             `❌ ${title}: server javob bermadi`
         );
 
-
         return;
     }
 
@@ -108,36 +107,6 @@ const logApiError = (
         ||
         error
     );
-};
-
-
-// =========================================================
-// POSITIVE INTEGER
-// =========================================================
-
-const toPositiveInteger = (
-    value,
-    fallback = 1
-) => {
-
-    const number =
-        Number(
-            value
-        );
-
-
-    if (
-        !Number.isInteger(
-            number
-        )
-        ||
-        number < 1
-    ) {
-        return fallback;
-    }
-
-
-    return number;
 };
 
 
@@ -165,7 +134,41 @@ const cleanText = (
 
 
 // =========================================================
-// NORMALIZE BOOLEAN
+// POSITIVE INTEGER
+// =========================================================
+
+const toPositiveInteger = (
+    value,
+    fallback = 1,
+    max = Number.MAX_SAFE_INTEGER
+) => {
+
+    const number =
+        Number(
+            value
+        );
+
+
+    if (
+        !Number.isInteger(
+            number
+        )
+        ||
+        number < 1
+    ) {
+        return fallback;
+    }
+
+
+    return Math.min(
+        number,
+        max
+    );
+};
+
+
+// =========================================================
+// BOOLEAN PARAM
 // =========================================================
 
 const normalizeBooleanParam = (
@@ -182,10 +185,44 @@ const normalizeBooleanParam = (
 
 
     if (
-        value === "true"
-        ||
-        value === "1"
-        ||
+        typeof value ===
+        "string"
+    ) {
+
+        const normalized =
+            value
+                .trim()
+                .toLowerCase();
+
+
+        if (
+            normalized === "true"
+            ||
+            normalized === "1"
+            ||
+            normalized === "yes"
+            ||
+            normalized === "on"
+        ) {
+            return true;
+        }
+
+
+        if (
+            normalized === "false"
+            ||
+            normalized === "0"
+            ||
+            normalized === "no"
+            ||
+            normalized === "off"
+        ) {
+            return false;
+        }
+    }
+
+
+    if (
         value === 1
     ) {
         return true;
@@ -193,10 +230,6 @@ const normalizeBooleanParam = (
 
 
     if (
-        value === "false"
-        ||
-        value === "0"
-        ||
         value === 0
     ) {
         return false;
@@ -208,7 +241,7 @@ const normalizeBooleanParam = (
 
 
 // =========================================================
-// NORMALIZE OPTIONS
+// NORMALIZE LIST OPTIONS
 // =========================================================
 
 const normalizeListOptions = (
@@ -219,7 +252,8 @@ const normalizeListOptions = (
     if (
         pageOrOptions
         &&
-        typeof pageOrOptions === "object"
+        typeof pageOrOptions ===
+            "object"
         &&
         !Array.isArray(
             pageOrOptions
@@ -234,7 +268,6 @@ const normalizeListOptions = (
 
 
     return {
-
         ...extraOptions,
 
         page:
@@ -247,25 +280,104 @@ const normalizeListOptions = (
 
 
 // =========================================================
-// BUILD LIST PARAMS
+// NORMALIZE GENERIC OPTIONS
+// =========================================================
+
+const normalizeOptions = (
+    options
+) => {
+
+    if (
+        options
+        &&
+        typeof options ===
+            "object"
+        &&
+        !Array.isArray(
+            options
+        )
+    ) {
+        return options;
+    }
+
+
+    return {};
+};
+
+
+// =========================================================
+// RESOURCE ID
+// =========================================================
+
+const getResourceId = (
+    value,
+    label = "ID"
+) => {
+
+    const id =
+        cleanText(
+            value
+        );
+
+
+    if (
+        !id
+    ) {
+
+        throw new TypeError(
+            `${label} mavjud emas.`
+        );
+    }
+
+
+    return encodeURIComponent(
+        id
+    );
+};
+
+
+// =========================================================
+// SAFE OBJECT
+// =========================================================
+
+const toObject = (
+    value
+) => {
+
+    if (
+        value
+        &&
+        typeof value ===
+            "object"
+        &&
+        !Array.isArray(
+            value
+        )
+    ) {
+        return value;
+    }
+
+
+    return {};
+};
+
+
+// =========================================================
+// BUILD PROBLEM LIST PARAMS
 // =========================================================
 
 const buildProblemListParams = (
     options = {}
 ) => {
 
-    const params = {};
+    const params = {
 
-
-    // =====================================================
-    // PAGE
-    // =====================================================
-
-    params.page =
-        toPositiveInteger(
-            options.page,
-            1
-        );
+        page:
+            toPositiveInteger(
+                options.page,
+                1
+            ),
+    };
 
 
     // =====================================================
@@ -273,9 +385,11 @@ const buildProblemListParams = (
     // =====================================================
 
     if (
-        options.pageSize !== undefined
+        options.pageSize !==
+            undefined
         ||
-        options.page_size !== undefined
+        options.page_size !==
+            undefined
     ) {
 
         params.page_size =
@@ -283,7 +397,10 @@ const buildProblemListParams = (
                 options.pageSize
                 ??
                 options.page_size,
-                6
+
+                DEFAULT_PAGE_SIZE,
+
+                MAX_PAGE_SIZE
             );
     }
 
@@ -322,7 +439,8 @@ const buildProblemListParams = (
     if (
         status
         &&
-        status !== "all"
+        status !==
+            "all"
     ) {
 
         params.status =
@@ -343,7 +461,8 @@ const buildProblemListParams = (
 
 
     if (
-        urgent !== undefined
+        urgent !==
+            undefined
     ) {
 
         params.urgent =
@@ -364,7 +483,8 @@ const buildProblemListParams = (
 
 
     if (
-        solved !== undefined
+        solved !==
+            undefined
     ) {
 
         params.solved =
@@ -422,6 +542,11 @@ const buildProblemListParams = (
 
     if (
         ordering
+        &&
+        PROBLEM_ORDERING_VALUES
+            .has(
+                ordering
+            )
     ) {
 
         params.ordering =
@@ -485,6 +610,12 @@ const ProblemService = {
         options = {}
     ) {
 
+        const safeOptions =
+            normalizeOptions(
+                options
+            );
+
+
         try {
 
             const {
@@ -494,8 +625,9 @@ const ProblemService = {
                 "/problems/popular-problems/",
 
                 buildRequestConfig({
+
                     signal:
-                        options?.signal,
+                        safeOptions.signal,
                 })
             );
 
@@ -583,6 +715,12 @@ const ProblemService = {
         options = {}
     ) {
 
+        const safeOptions =
+            normalizeOptions(
+                options
+            );
+
+
         try {
 
             const {
@@ -592,8 +730,9 @@ const ProblemService = {
                 "/problems/languages/",
 
                 buildRequestConfig({
+
                     signal:
-                        options?.signal,
+                        safeOptions.signal,
                 })
             );
 
@@ -627,6 +766,12 @@ const ProblemService = {
         options = {}
     ) {
 
+        const safeOptions =
+            normalizeOptions(
+                options
+            );
+
+
         try {
 
             const {
@@ -636,8 +781,9 @@ const ProblemService = {
                 "/problems/technologies/",
 
                 buildRequestConfig({
+
                     signal:
-                        options?.signal,
+                        safeOptions.signal,
                 })
             );
 
@@ -722,8 +868,15 @@ const ProblemService = {
     // =====================================================
 
     async postProblem(
-        problemData
+        problemData,
+        options = {}
     ) {
+
+        const safeOptions =
+            normalizeOptions(
+                options
+            );
+
 
         try {
 
@@ -735,10 +888,11 @@ const ProblemService = {
 
                 problemData,
 
-                {
-                    withCredentials:
-                        true,
-                }
+                buildRequestConfig({
+
+                    signal:
+                        safeOptions.signal,
+                })
             );
 
 
@@ -768,17 +922,31 @@ const ProblemService = {
         options = {}
     ) {
 
+        const safeId =
+            getResourceId(
+                id,
+                "Problem ID"
+            );
+
+
+        const safeOptions =
+            normalizeOptions(
+                options
+            );
+
+
         try {
 
             const {
                 data,
             } = await axios.get(
 
-                `/problems/problem/${id}`,
+                `/problems/problem/${safeId}`,
 
                 buildRequestConfig({
+
                     signal:
-                        options?.signal,
+                        safeOptions.signal,
                 })
             );
 
@@ -806,8 +974,22 @@ const ProblemService = {
 
     async putProblem(
         id,
-        problemData
+        problemData,
+        options = {}
     ) {
+
+        const safeId =
+            getResourceId(
+                id,
+                "Problem ID"
+            );
+
+
+        const safeOptions =
+            normalizeOptions(
+                options
+            );
+
 
         try {
 
@@ -815,14 +997,15 @@ const ProblemService = {
                 data,
             } = await axios.put(
 
-                `/problems/problem/${id}`,
+                `/problems/problem/${safeId}`,
 
                 problemData,
 
-                {
-                    withCredentials:
-                        true,
-                }
+                buildRequestConfig({
+
+                    signal:
+                        safeOptions.signal,
+                })
             );
 
 
@@ -849,8 +1032,22 @@ const ProblemService = {
 
     async patchProblem(
         id,
-        problemData
+        problemData,
+        options = {}
     ) {
+
+        const safeId =
+            getResourceId(
+                id,
+                "Problem ID"
+            );
+
+
+        const safeOptions =
+            normalizeOptions(
+                options
+            );
+
 
         try {
 
@@ -858,14 +1055,15 @@ const ProblemService = {
                 data,
             } = await axios.patch(
 
-                `/problems/problem/${id}`,
+                `/problems/problem/${safeId}`,
 
                 problemData,
 
-                {
-                    withCredentials:
-                        true,
-                }
+                buildRequestConfig({
+
+                    signal:
+                        safeOptions.signal,
+                })
             );
 
 
@@ -891,8 +1089,22 @@ const ProblemService = {
     // =====================================================
 
     async deleteProblem(
-        id
+        id,
+        options = {}
     ) {
+
+        const safeId =
+            getResourceId(
+                id,
+                "Problem ID"
+            );
+
+
+        const safeOptions =
+            normalizeOptions(
+                options
+            );
+
 
         try {
 
@@ -900,12 +1112,13 @@ const ProblemService = {
                 data,
             } = await axios.delete(
 
-                `/problems/problem/${id}`,
+                `/problems/problem/${safeId}`,
 
-                {
-                    withCredentials:
-                        true,
-                }
+                buildRequestConfig({
+
+                    signal:
+                        safeOptions.signal,
+                })
             );
 
 
@@ -927,12 +1140,26 @@ const ProblemService = {
 
 
     // =====================================================
-    // PROBLEM STAR
+    // ADD STAR
     // =====================================================
 
     async addStar(
-        problemId
+        problemId,
+        options = {}
     ) {
+
+        const safeId =
+            getResourceId(
+                problemId,
+                "Problem ID"
+            );
+
+
+        const safeOptions =
+            normalizeOptions(
+                options
+            );
+
 
         try {
 
@@ -940,19 +1167,24 @@ const ProblemService = {
                 data,
             } = await axios.post(
 
-                `/problems/problem/${problemId}/star/`,
+                `/problems/problem/${safeId}/star/`,
 
                 {},
 
-                {
-                    withCredentials:
-                        true,
-                }
+                buildRequestConfig({
+
+                    signal:
+                        safeOptions.signal,
+                })
             );
 
 
             return {
-                ...data,
+
+                ...toObject(
+                    data
+                ),
+
                 problem_id:
                     problemId,
             };
@@ -973,7 +1205,7 @@ const ProblemService = {
 
 
     // =====================================================
-    // GET PROBLEM STAR COUNT
+    // GET STAR COUNT
     // =====================================================
 
     async getStarCount(
@@ -981,23 +1213,41 @@ const ProblemService = {
         options = {}
     ) {
 
+        const safeId =
+            getResourceId(
+                problemId,
+                "Problem ID"
+            );
+
+
+        const safeOptions =
+            normalizeOptions(
+                options
+            );
+
+
         try {
 
             const {
                 data,
             } = await axios.get(
 
-                `/problems/problem/${problemId}/star/`,
+                `/problems/problem/${safeId}/star/`,
 
                 buildRequestConfig({
+
                     signal:
-                        options?.signal,
+                        safeOptions.signal,
                 })
             );
 
 
             return {
-                ...data,
+
+                ...toObject(
+                    data
+                ),
+
                 problem_id:
                     problemId,
             };
@@ -1018,12 +1268,26 @@ const ProblemService = {
 
 
     // =====================================================
-    // REMOVE PROBLEM STAR
+    // REMOVE STAR
     // =====================================================
 
     async removeStar(
-        problemId
+        problemId,
+        options = {}
     ) {
+
+        const safeId =
+            getResourceId(
+                problemId,
+                "Problem ID"
+            );
+
+
+        const safeOptions =
+            normalizeOptions(
+                options
+            );
+
 
         try {
 
@@ -1031,17 +1295,22 @@ const ProblemService = {
                 data,
             } = await axios.delete(
 
-                `/problems/problem/${problemId}/star/`,
+                `/problems/problem/${safeId}/star/`,
 
-                {
-                    withCredentials:
-                        true,
-                }
+                buildRequestConfig({
+
+                    signal:
+                        safeOptions.signal,
+                })
             );
 
 
             return {
-                ...data,
+
+                ...toObject(
+                    data
+                ),
+
                 problem_id:
                     problemId,
             };
@@ -1065,7 +1334,9 @@ const ProblemService = {
     // LEGACY SEARCH
     //
     // /problems/search/ endpoint ishlatilmaydi.
-    // Unified /problems/?search=... ishlaydi.
+    //
+    // Unified:
+    // /problems/?search=...
     // =====================================================
 
     async getProblemSearch(
@@ -1076,9 +1347,15 @@ const ProblemService = {
 
         return this.getProblemsList({
 
-            ...options,
+            ...normalizeOptions(
+                options
+            ),
 
-            page,
+            page:
+                toPositiveInteger(
+                    page,
+                    1
+                ),
 
             search:
                 cleanText(
@@ -1100,9 +1377,15 @@ const ProblemService = {
 
         return this.getMyProblemsList({
 
-            ...options,
+            ...normalizeOptions(
+                options
+            ),
 
-            page,
+            page:
+                toPositiveInteger(
+                    page,
+                    1
+                ),
 
             search:
                 cleanText(
@@ -1118,8 +1401,38 @@ const ProblemService = {
 
     async acceptSolution(
         problemId,
-        solutionId
+        solutionId,
+        options = {}
     ) {
+
+        const safeProblemId =
+            getResourceId(
+                problemId,
+                "Problem ID"
+            );
+
+
+        const safeSolutionId =
+            cleanText(
+                solutionId
+            );
+
+
+        if (
+            !safeSolutionId
+        ) {
+
+            throw new TypeError(
+                "Solution ID mavjud emas."
+            );
+        }
+
+
+        const safeOptions =
+            normalizeOptions(
+                options
+            );
+
 
         try {
 
@@ -1127,23 +1440,26 @@ const ProblemService = {
                 data,
             } = await axios.post(
 
-                `/problems/problem/${problemId}/accept-solution/`,
+                `/problems/problem/${safeProblemId}/accept-solution/`,
 
                 {
                     solution_id:
                         solutionId,
                 },
 
-                {
-                    withCredentials:
-                        true,
-                }
+                buildRequestConfig({
+
+                    signal:
+                        safeOptions.signal,
+                })
             );
 
 
             return {
 
-                ...data,
+                ...toObject(
+                    data
+                ),
 
                 problem_id:
                     problemId,
@@ -1176,17 +1492,31 @@ const ProblemService = {
         options = {}
     ) {
 
+        const safeId =
+            getResourceId(
+                problemId,
+                "Problem ID"
+            );
+
+
+        const safeOptions =
+            normalizeOptions(
+                options
+            );
+
+
         try {
 
             const {
                 data,
             } = await axios.get(
 
-                `/problems/problem/${problemId}/similar/`,
+                `/problems/problem/${safeId}/similar/`,
 
                 buildRequestConfig({
+
                     signal:
-                        options?.signal,
+                        safeOptions.signal,
                 })
             );
 

@@ -6,118 +6,162 @@ import {
 
 
 // =========================================================
-// INITIAL STATE
+// INITIAL STATE FACTORY
 // =========================================================
 
-const initialState = {
+const createInitialState = () => ({
 
     // =====================================================
     // LEGACY GLOBAL LOADING
     //
-    // Eski componentlar hali:
+    // Eski componentlar uchun compatibility.
     //
-    // state.problem.isLoading
+    // pendingRequests endi haqiqiy HTTP request counter
+    // emas.
     //
-    // ishlatgani uchun saqlanadi.
+    // Active loading categorylar soni.
+    //
+    // Bu AbortController cancellation sabab counter
+    // abadiy +1 bo‘lib qolish muammosini kamaytiradi.
     // =====================================================
 
-    isLoading: false,
+    isLoading:
+        false,
 
-    pendingRequests: 0,
+    pendingRequests:
+        0,
 
 
     // =====================================================
-    // SEPARATE LOADING STATES
+    // SEPARATE LOADING
     // =====================================================
 
-    listIsLoading: false,
+    listIsLoading:
+        false,
 
-    myProblemsIsLoading: false,
+    myProblemsIsLoading:
+        false,
 
-    popularIsLoading: false,
+    popularIsLoading:
+        false,
 
-    detailIsLoading: false,
+    detailIsLoading:
+        false,
 
-    createIsLoading: false,
+    createIsLoading:
+        false,
 
-    languagesIsLoading: false,
+    languagesIsLoading:
+        false,
 
-    technologiesIsLoading: false,
+    technologiesIsLoading:
+        false,
 
-    starIsLoading: false,
+    starIsLoading:
+        false,
 
-    acceptSolutionIsLoading: false,
+    acceptSolutionIsLoading:
+        false,
 
-    similarIsLoading: false,
+    similarIsLoading:
+        false,
 
 
     // =====================================================
     // DATA
     // =====================================================
 
-    popularProblems: [],
+    popularProblems:
+        [],
 
-    problems: [],
+    problems:
+        [],
 
-    myProblems: [],
+    myProblems:
+        [],
 
-    similarProblems: [],
+    similarProblems:
+        [],
 
-    languages: [],
+    languages:
+        [],
 
-    technologies: [],
+    technologies:
+        [],
 
-    problemDetail: null,
+    problemDetail:
+        null,
 
 
     // =====================================================
-    // GLOBAL PROBLEM PAGINATION
+    // GLOBAL PAGINATION
     // =====================================================
 
-    count: 0,
+    count:
+        0,
 
-    next: null,
+    next:
+        null,
 
-    previous: null,
+    previous:
+        null,
 
 
     // =====================================================
     // MY PROBLEM PAGINATION
     // =====================================================
 
-    myProblemsCount: 0,
+    myProblemsCount:
+        0,
 
-    myProblemsNext: null,
+    myProblemsNext:
+        null,
 
-    myProblemsPrevious: null,
+    myProblemsPrevious:
+        null,
 
 
     // =====================================================
     // ERRORS
     // =====================================================
 
-    error: null,
+    error:
+        null,
 
-    listError: null,
+    listError:
+        null,
 
-    myProblemsError: null,
+    myProblemsError:
+        null,
 
-    popularError: null,
+    popularError:
+        null,
 
-    detailError: null,
+    detailError:
+        null,
 
-    createError: null,
+    createError:
+        null,
 
-    languagesError: null,
+    languagesError:
+        null,
 
-    technologiesError: null,
+    technologiesError:
+        null,
 
-    starError: null,
+    starError:
+        null,
 
-    acceptSolutionError: null,
+    acceptSolutionError:
+        null,
 
-    similarError: null,
-};
+    similarError:
+        null,
+});
+
+
+const initialState =
+    createInitialState();
 
 
 // =========================================================
@@ -151,26 +195,155 @@ const safeNumber = (
         );
 
 
-    if (
-        !Number.isFinite(
-            number
-        )
-    ) {
-        return fallback;
-    }
-
-
-    return number;
+    return Number.isFinite(
+        number
+    )
+        ? number
+        : fallback;
 };
 
 
 // =========================================================
-// NORMALIZE PAGINATED RESPONSE
+// NON NEGATIVE NUMBER
+// =========================================================
+
+const nonNegativeNumber = (
+    value,
+    fallback = 0
+) => {
+
+    return Math.max(
+
+        0,
+
+        safeNumber(
+            value,
+            fallback
+        )
+    );
+};
+
+
+// =========================================================
+// NORMALIZE ERROR
+// =========================================================
+
+const normalizeError = (
+    payload,
+    fallback = "Xatolik yuz berdi."
+) => {
+
+    // =====================================================
+    // STRING
+    // =====================================================
+
+    if (
+        typeof payload ===
+            "string"
+        &&
+        payload.trim()
+    ) {
+
+        return payload.trim();
+    }
+
+
+    if (
+        !payload
+    ) {
+
+        return fallback;
+    }
+
+
+    // =====================================================
+    // COMMON DRF KEYS
+    // =====================================================
+
+    const direct =
+        payload?.detail
+        ??
+        payload?.message
+        ??
+        payload?.error;
+
+
+    if (
+        typeof direct ===
+            "string"
+        &&
+        direct.trim()
+    ) {
+
+        return direct.trim();
+    }
+
+
+    // =====================================================
+    // FIELD ERRORS
+    // =====================================================
+
+    if (
+        typeof payload ===
+            "object"
+        &&
+        !Array.isArray(
+            payload
+        )
+    ) {
+
+        for (
+            const value
+            of Object.values(
+                payload
+            )
+        ) {
+
+            if (
+                typeof value ===
+                    "string"
+                &&
+                value.trim()
+            ) {
+
+                return value.trim();
+            }
+
+
+            if (
+                Array.isArray(
+                    value
+                )
+                &&
+                value.length > 0
+                &&
+                typeof value[0] ===
+                    "string"
+                &&
+                value[0].trim()
+            ) {
+
+                return value[0].trim();
+            }
+        }
+    }
+
+
+    return fallback;
+};
+
+
+// =========================================================
+// NORMALIZE PAGINATION
 // =========================================================
 
 const normalizePaginatedPayload = (
     payload
 ) => {
+
+    // =====================================================
+    // LEGACY ARRAY RESPONSE
+    // =====================================================
 
     if (
         Array.isArray(
@@ -179,6 +352,7 @@ const normalizePaginatedPayload = (
     ) {
 
         return {
+
             results:
                 payload,
 
@@ -194,6 +368,10 @@ const normalizePaginatedPayload = (
     }
 
 
+    // =====================================================
+    // INVALID PAYLOAD
+    // =====================================================
+
     if (
         !payload
         ||
@@ -202,25 +380,36 @@ const normalizePaginatedPayload = (
     ) {
 
         return {
-            results: [],
-            count: 0,
-            next: null,
-            previous: null,
+
+            results:
+                [],
+
+            count:
+                0,
+
+            next:
+                null,
+
+            previous:
+                null,
         };
     }
 
 
+    const results =
+        safeArray(
+            payload.results
+        );
+
+
     return {
 
-        results:
-            safeArray(
-                payload.results
-            ),
+        results,
 
         count:
-            safeNumber(
+            nonNegativeNumber(
                 payload.count,
-                0
+                results.length
             ),
 
         next:
@@ -237,132 +426,127 @@ const normalizePaginatedPayload = (
 
 
 // =========================================================
-// REQUEST COUNTER
+// SAME ID
 // =========================================================
 
-const startRequest = (
-    state
+const sameId = (
+    left,
+    right
 ) => {
 
-    state.pendingRequests =
-        Math.max(
-            0,
-            safeNumber(
-                state.pendingRequests
-            )
+    return (
+
+        left !== null
+        &&
+        left !== undefined
+        &&
+        right !== null
+        &&
+        right !== undefined
+        &&
+        String(
+            left
+        ) ===
+        String(
+            right
         )
-        +
-        1;
-
-
-    state.isLoading =
-        true;
+    );
 };
 
 
-const finishRequest = (
+// =========================================================
+// LEGACY GLOBAL LOADING SYNC
+//
+// Old implementation:
+//
+// pendingRequests += 1
+//
+// Abort bo‘lsa Success/Failure kelmasligi mumkin edi.
+// Natijada counter leak bo‘lardi.
+//
+// Endi active loading CATEGORY lar sanaladi.
+// =========================================================
+
+const GLOBAL_LOADING_KEYS = [
+
+    "listIsLoading",
+
+    "myProblemsIsLoading",
+
+    "popularIsLoading",
+
+    "detailIsLoading",
+
+    "createIsLoading",
+
+    "languagesIsLoading",
+
+    "technologiesIsLoading",
+
+    "starIsLoading",
+
+    "acceptSolutionIsLoading",
+];
+
+
+const syncLegacyLoading = (
     state
 ) => {
 
-    state.pendingRequests =
-        Math.max(
-            0,
+    const activeCount =
+        GLOBAL_LOADING_KEYS
+            .reduce(
+                (
+                    total,
+                    key
+                ) => {
 
-            safeNumber(
-                state.pendingRequests
-            )
-            -
-            1
-        );
+                    return (
+
+                        total
+
+                        +
+
+                        (
+                            state[key]
+                                ? 1
+                                : 0
+                        )
+                    );
+                },
+
+                0
+            );
+
+
+    state.pendingRequests =
+        activeCount;
 
 
     state.isLoading =
-        state.pendingRequests > 0;
+        activeCount > 0;
 };
 
 
 // =========================================================
-// GET ERROR MESSAGE
+// SET LOADING
 // =========================================================
 
-const normalizeError = (
-    payload,
-    fallback = "Xatolik yuz berdi."
+const setLoading = (
+    state,
+    key,
+    value
 ) => {
 
-    if (
-        typeof payload ===
-            "string"
-        &&
-        payload.trim()
-    ) {
-        return payload;
-    }
-
-
-    if (
-        payload?.detail
-    ) {
-        return String(
-            payload.detail
+    state[key] =
+        Boolean(
+            value
         );
-    }
 
 
-    if (
-        payload?.message
-    ) {
-        return String(
-            payload.message
-        );
-    }
-
-
-    if (
-        payload?.error
-    ) {
-        return String(
-            payload.error
-        );
-    }
-
-
-    if (
-        payload
-        &&
-        typeof payload ===
-            "object"
-    ) {
-
-        const firstValue =
-            Object.values(
-                payload
-            )[0];
-
-
-        if (
-            Array.isArray(
-                firstValue
-            )
-            &&
-            firstValue.length > 0
-        ) {
-            return String(
-                firstValue[0]
-            );
-        }
-
-
-        if (
-            typeof firstValue ===
-                "string"
-        ) {
-            return firstValue;
-        }
-    }
-
-
-    return fallback;
+    syncLegacyLoading(
+        state
+    );
 };
 
 
@@ -373,7 +557,7 @@ const normalizeError = (
 const updateProblemInArray = (
     collection,
     problemId,
-    patch
+    patchOrUpdater
 ) => {
 
     if (
@@ -381,9 +565,12 @@ const updateProblemInArray = (
             collection
         )
         ||
-        problemId == null
+        problemId === null
+        ||
+        problemId === undefined
     ) {
-        return;
+
+        return false;
     }
 
 
@@ -391,29 +578,57 @@ const updateProblemInArray = (
         collection.findIndex(
             (
                 item
-            ) =>
-                String(
-                    item?.id
-                )
-                ===
-                String(
+            ) => {
+
+                return sameId(
+                    item?.id,
                     problemId
-                )
+                );
+            }
         );
 
 
     if (
-        index ===
-        -1
+        index === -1
     ) {
-        return;
+
+        return false;
+    }
+
+
+    const current =
+        collection[index];
+
+
+    const patch =
+        typeof patchOrUpdater ===
+            "function"
+            ? patchOrUpdater(
+                current
+            )
+            : patchOrUpdater;
+
+
+    if (
+        !patch
+        ||
+        typeof patch !==
+            "object"
+    ) {
+
+        return false;
     }
 
 
     collection[index] = {
-        ...collection[index],
+
+        ...current,
+
         ...patch,
     };
+
+
+    return true;
 };
 
 
@@ -424,13 +639,15 @@ const updateProblemInArray = (
 const updateProblemEverywhere = (
     state,
     problemId,
-    patch
+    patchOrUpdater
 ) => {
 
     if (
-        problemId ==
-        null
+        problemId === null
+        ||
+        problemId === undefined
     ) {
+
         return;
     }
 
@@ -438,53 +655,109 @@ const updateProblemEverywhere = (
     updateProblemInArray(
         state.problems,
         problemId,
-        patch
+        patchOrUpdater
     );
 
 
     updateProblemInArray(
         state.myProblems,
         problemId,
-        patch
+        patchOrUpdater
     );
 
 
     updateProblemInArray(
         state.popularProblems,
         problemId,
-        patch
+        patchOrUpdater
     );
 
 
     updateProblemInArray(
         state.similarProblems,
         problemId,
-        patch
+        patchOrUpdater
     );
 
+
+    // =====================================================
+    // DETAIL
+    // =====================================================
 
     if (
         state.problemDetail
         &&
-        String(
-            state.problemDetail.id
-        )
-        ===
-        String(
+        sameId(
+            state.problemDetail.id,
             problemId
         )
     ) {
 
-        state.problemDetail = {
-            ...state.problemDetail,
-            ...patch,
-        };
+        const patch =
+            typeof patchOrUpdater ===
+                "function"
+                ? patchOrUpdater(
+                    state.problemDetail
+                )
+                : patchOrUpdater;
+
+
+        if (
+            patch
+            &&
+            typeof patch ===
+                "object"
+        ) {
+
+            state.problemDetail = {
+
+                ...state.problemDetail,
+
+                ...patch,
+            };
+        }
     }
 };
 
 
 // =========================================================
-// GET TOTAL STAR COUNT FROM RESPONSE
+// PROBLEM ID FROM PAYLOAD
+// =========================================================
+
+const getProblemIdFromPayload = (
+    payload,
+    state
+) => {
+
+    return (
+
+        payload?.problem_id
+
+        ??
+
+        payload?.problem?.id
+
+        ??
+
+        payload?.problem
+
+        ??
+
+        payload?.id
+
+        ??
+
+        state.problemDetail?.id
+
+        ??
+
+        null
+    );
+};
+
+
+// =========================================================
+// STAR COUNT FROM SERVER
 // =========================================================
 
 const getTotalStarsFromPayload = (
@@ -492,6 +765,8 @@ const getTotalStarsFromPayload = (
 ) => {
 
     const candidates = [
+
+        payload?.star,
 
         payload?.stars,
 
@@ -505,8 +780,7 @@ const getTotalStarsFromPayload = (
 
     for (
         const value
-        of
-        candidates
+        of candidates
     ) {
 
         const number =
@@ -520,6 +794,7 @@ const getTotalStarsFromPayload = (
                 number
             )
         ) {
+
             return Math.max(
                 0,
                 number
@@ -546,6 +821,7 @@ export const problemSlice =
 
         reducers: {
 
+
             // =================================================
             // POPULAR PROBLEMS
             // =================================================
@@ -554,15 +830,18 @@ export const problemSlice =
                 state
             ) => {
 
-                startRequest(
-                    state
+                setLoading(
+                    state,
+                    "popularIsLoading",
+                    true
                 );
 
 
-                state.popularIsLoading =
-                    true;
-
                 state.popularError =
+                    null;
+
+
+                state.error =
                     null;
             },
 
@@ -572,13 +851,11 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "popularIsLoading",
+                    false
                 );
-
-
-                state.popularIsLoading =
-                    false;
 
 
                 state.popularProblems =
@@ -597,41 +874,50 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "popularIsLoading",
+                    false
                 );
 
 
-                state.popularIsLoading =
-                    false;
-
-
-                state.popularError =
+                const error =
                     normalizeError(
                         action.payload,
                         "Mashhur muammolarni yuklashda xato yuz berdi."
                     );
+
+
+                state.popularError =
+                    error;
+
+
+                state.error =
+                    error;
+
+
+                // Old data saqlanadi.
             },
 
 
             // =================================================
-            // PROBLEMS LIST
+            // PROBLEM LIST
             // =================================================
 
             getProblemStart: (
                 state
             ) => {
 
-                startRequest(
-                    state
+                setLoading(
+                    state,
+                    "listIsLoading",
+                    true
                 );
 
 
-                state.listIsLoading =
-                    true;
-
                 state.listError =
                     null;
+
 
                 state.error =
                     null;
@@ -643,29 +929,30 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
-                );
-
-
                 const payload =
                     normalizePaginatedPayload(
                         action.payload
                     );
 
 
-                state.listIsLoading =
-                    false;
+                setLoading(
+                    state,
+                    "listIsLoading",
+                    false
+                );
 
 
                 state.problems =
                     payload.results;
 
+
                 state.count =
                     payload.count;
 
+
                 state.next =
                     payload.next;
+
 
                 state.previous =
                     payload.previous;
@@ -673,6 +960,7 @@ export const problemSlice =
 
                 state.listError =
                     null;
+
 
                 state.error =
                     null;
@@ -684,8 +972,10 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "listIsLoading",
+                    false
                 );
 
 
@@ -696,28 +986,25 @@ export const problemSlice =
                     );
 
 
-                state.listIsLoading =
-                    false;
-
-
                 state.listError =
                     error;
+
 
                 state.error =
                     error;
 
 
-                state.problems =
-                    [];
-
-                state.count =
-                    0;
-
-                state.next =
-                    null;
-
-                state.previous =
-                    null;
+                // =========================================
+                // MUHIM
+                //
+                // Oldingi valid listni o‘chirmaymiz.
+                //
+                // Shunda refresh/filter request yiqilsa:
+                //
+                // eski cardlar + compact error
+                //
+                // ko‘rinishi mumkin.
+                // =========================================
             },
 
 
@@ -729,15 +1016,18 @@ export const problemSlice =
                 state
             ) => {
 
-                startRequest(
-                    state
+                setLoading(
+                    state,
+                    "myProblemsIsLoading",
+                    true
                 );
 
 
-                state.myProblemsIsLoading =
-                    true;
-
                 state.myProblemsError =
+                    null;
+
+
+                state.error =
                     null;
             },
 
@@ -747,35 +1037,40 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
-                );
-
-
                 const payload =
                     normalizePaginatedPayload(
                         action.payload
                     );
 
 
-                state.myProblemsIsLoading =
-                    false;
+                setLoading(
+                    state,
+                    "myProblemsIsLoading",
+                    false
+                );
 
 
                 state.myProblems =
                     payload.results;
 
+
                 state.myProblemsCount =
                     payload.count;
 
+
                 state.myProblemsNext =
                     payload.next;
+
 
                 state.myProblemsPrevious =
                     payload.previous;
 
 
                 state.myProblemsError =
+                    null;
+
+
+                state.error =
                     null;
             },
 
@@ -785,33 +1080,29 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "myProblemsIsLoading",
+                    false
                 );
 
 
-                state.myProblemsIsLoading =
-                    false;
-
-
-                state.myProblemsError =
+                const error =
                     normalizeError(
                         action.payload,
                         "Muammolaringizni yuklashda xato yuz berdi."
                     );
 
 
-                state.myProblems =
-                    [];
+                state.myProblemsError =
+                    error;
 
-                state.myProblemsCount =
-                    0;
 
-                state.myProblemsNext =
-                    null;
+                state.error =
+                    error;
 
-                state.myProblemsPrevious =
-                    null;
+
+                // Old list saqlanadi.
             },
 
 
@@ -823,13 +1114,12 @@ export const problemSlice =
                 state
             ) => {
 
-                startRequest(
-                    state
+                setLoading(
+                    state,
+                    "languagesIsLoading",
+                    true
                 );
 
-
-                state.languagesIsLoading =
-                    true;
 
                 state.languagesError =
                     null;
@@ -841,13 +1131,11 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "languagesIsLoading",
+                    false
                 );
-
-
-                state.languagesIsLoading =
-                    false;
 
 
                 state.languages =
@@ -866,13 +1154,11 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "languagesIsLoading",
+                    false
                 );
-
-
-                state.languagesIsLoading =
-                    false;
 
 
                 state.languagesError =
@@ -880,6 +1166,9 @@ export const problemSlice =
                         action.payload,
                         "Dasturlash tillarini yuklashda xato yuz berdi."
                     );
+
+
+                // Old catalog saqlanadi.
             },
 
 
@@ -891,13 +1180,12 @@ export const problemSlice =
                 state
             ) => {
 
-                startRequest(
-                    state
+                setLoading(
+                    state,
+                    "technologiesIsLoading",
+                    true
                 );
 
-
-                state.technologiesIsLoading =
-                    true;
 
                 state.technologiesError =
                     null;
@@ -909,13 +1197,11 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "technologiesIsLoading",
+                    false
                 );
-
-
-                state.technologiesIsLoading =
-                    false;
 
 
                 state.technologies =
@@ -934,13 +1220,11 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "technologiesIsLoading",
+                    false
                 );
-
-
-                state.technologiesIsLoading =
-                    false;
 
 
                 state.technologiesError =
@@ -948,6 +1232,9 @@ export const problemSlice =
                         action.payload,
                         "Texnologiyalarni yuklashda xato yuz berdi."
                     );
+
+
+                // Old catalog saqlanadi.
             },
 
 
@@ -959,16 +1246,16 @@ export const problemSlice =
                 state
             ) => {
 
-                startRequest(
-                    state
+                setLoading(
+                    state,
+                    "createIsLoading",
+                    true
                 );
 
 
-                state.createIsLoading =
-                    true;
-
                 state.createError =
                     null;
+
 
                 state.error =
                     null;
@@ -980,16 +1267,16 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "createIsLoading",
+                    false
                 );
 
 
-                state.createIsLoading =
-                    false;
-
                 state.createError =
                     null;
+
 
                 state.error =
                     null;
@@ -999,44 +1286,35 @@ export const problemSlice =
                     action.payload;
 
 
+                // =========================================
+                // Active paginated/filterlangan listga
+                // ko‘r-ko‘rona unshift qilmaymiz.
+                //
+                // Aks holda:
+                //
+                // status=solved
+                //
+                // filter ichiga yangi pending problem
+                // tushib qolishi mumkin.
+                //
+                // Detail cache sifatida saqlash xavfsiz.
+                // =========================================
+
                 if (
-                    problem?.id
+                    problem
+                    &&
+                    typeof problem ===
+                        "object"
+                    &&
+                    problem.id !==
+                        null
+                    &&
+                    problem.id !==
+                        undefined
                 ) {
 
-                    const alreadyExists =
-                        state.problems.some(
-                            (
-                                item
-                            ) =>
-                                String(
-                                    item?.id
-                                )
-                                ===
-                                String(
-                                    problem.id
-                                )
-                        );
-
-
-                    if (
-                        !alreadyExists
-                    ) {
-
-                        state.problems.unshift(
-                            problem
-                        );
-
-
-                        state.count =
-                            Math.max(
-                                0,
-                                safeNumber(
-                                    state.count
-                                )
-                            )
-                            +
-                            1;
-                    }
+                    state.problemDetail =
+                        problem;
                 }
             },
 
@@ -1046,8 +1324,10 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "createIsLoading",
+                    false
                 );
 
 
@@ -1058,11 +1338,9 @@ export const problemSlice =
                     );
 
 
-                state.createIsLoading =
-                    false;
-
                 state.createError =
                     error;
+
 
                 state.error =
                     error;
@@ -1077,19 +1355,27 @@ export const problemSlice =
                 state
             ) => {
 
-                startRequest(
-                    state
+                setLoading(
+                    state,
+                    "detailIsLoading",
+                    true
                 );
 
-
-                state.detailIsLoading =
-                    true;
 
                 state.detailError =
                     null;
 
+
                 state.error =
                     null;
+
+
+                // =========================================
+                // Existing detail saqlanadi.
+                //
+                // Star / accept / refresh paytida
+                // butun page yo‘qolib ketmasligi uchun.
+                // =========================================
             },
 
 
@@ -1098,13 +1384,11 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "detailIsLoading",
+                    false
                 );
-
-
-                state.detailIsLoading =
-                    false;
 
 
                 state.problemDetail =
@@ -1115,6 +1399,7 @@ export const problemSlice =
 
                 state.detailError =
                     null;
+
 
                 state.error =
                     null;
@@ -1126,8 +1411,10 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "detailIsLoading",
+                    false
                 );
 
 
@@ -1138,14 +1425,20 @@ export const problemSlice =
                     );
 
 
-                state.detailIsLoading =
-                    false;
-
                 state.detailError =
                     error;
 
+
                 state.error =
                     error;
+
+
+                // =========================================
+                // Old detailni o‘chirmaymiz.
+                //
+                // ProblemDetail component URL id bilan
+                // current detail id ni tekshiradi.
+                // =========================================
             },
 
 
@@ -1156,26 +1449,122 @@ export const problemSlice =
                 state.problemDetail =
                     null;
 
+
                 state.detailError =
                     null;
+
+
+                state.error =
+                    null;
+
+
+                setLoading(
+                    state,
+                    "detailIsLoading",
+                    false
+                );
             },
 
 
             // =================================================
-            // ADD PROBLEM STAR
+            // SILENT PROBLEM DETAIL REFRESH
+            //
+            // Background refresh uchun.
+            //
+            // Bu reducer:
+            //
+            // - detailIsLoading ga tegmaydi
+            // - detailError ga tegmaydi
+            // - global error ga tegmaydi
+            // - global loadingga tegmaydi
+            //
+            // Yangi solution yaratilgandan keyin
+            // statistics/countlarni yangilash uchun.
+            // =================================================
+
+            refreshProblemDetailSuccess: (
+                state,
+                action
+            ) => {
+
+                const payload =
+                    action.payload;
+
+
+                if (
+                    !payload
+                    ||
+                    typeof payload !==
+                        "object"
+                    ||
+                    Array.isArray(
+                        payload
+                    )
+                ) {
+
+                    return;
+                }
+
+
+                const currentProblemId =
+                    state.problemDetail
+                        ?.id;
+
+
+                const incomingProblemId =
+                    payload
+                        ?.id;
+
+
+                // =========================================
+                // ROUTE SAFETY
+                //
+                // Eski background response boshqa
+                // problem detailini overwrite qilmasin.
+                // =========================================
+
+                if (
+                    currentProblemId !==
+                        null
+                    &&
+                    currentProblemId !==
+                        undefined
+                    &&
+                    incomingProblemId !==
+                        null
+                    &&
+                    incomingProblemId !==
+                        undefined
+                    &&
+                    !sameId(
+                        currentProblemId,
+                        incomingProblemId
+                    )
+                ) {
+
+                    return;
+                }
+
+
+                state.problemDetail =
+                    payload;
+            },
+
+
+            // =================================================
+            // ADD STAR
             // =================================================
 
             postProblemStarStart: (
                 state
             ) => {
 
-                startRequest(
-                    state
+                setLoading(
+                    state,
+                    "starIsLoading",
+                    true
                 );
 
-
-                state.starIsLoading =
-                    true;
 
                 state.starError =
                     null;
@@ -1187,13 +1576,12 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "starIsLoading",
+                    false
                 );
 
-
-                state.starIsLoading =
-                    false;
 
                 state.starError =
                     null;
@@ -1201,22 +1589,17 @@ export const problemSlice =
 
                 const payload =
                     action.payload
-                    ||
-                    {};
+                    &&
+                    typeof action.payload ===
+                        "object"
+                        ? action.payload
+                        : {};
 
 
                 const problemId =
-                    payload.problem_id
-                    ??
-                    payload.problem
-                    ??
-                    state.problemDetail?.id;
-
-
-                const currentStars =
-                    safeNumber(
-                        state.problemDetail?.star,
-                        0
+                    getProblemIdFromPayload(
+                        payload,
+                        state
                     );
 
 
@@ -1226,26 +1609,44 @@ export const problemSlice =
                     );
 
 
-                const nextStars =
-                    serverTotal
-                    ??
-                    (
-                        currentStars
-                        +
-                        1
-                    );
-
-
                 updateProblemEverywhere(
+
                     state,
+
                     problemId,
-                    {
+
+                    (
+                        current
+                    ) => ({
+
                         star:
-                            nextStars,
+                            serverTotal
+
+                            ??
+
+                            (
+                                nonNegativeNumber(
+                                    current?.star,
+                                    0
+                                )
+
+                                +
+
+                                1
+                            ),
+
+
+                        // Current UI.
+
+                        star_by_user:
+                            true,
+
+
+                        // Backend/legacy compatibility.
 
                         is_starred_by_user:
                             true,
-                    }
+                    })
                 );
             },
 
@@ -1255,38 +1656,43 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "starIsLoading",
+                    false
                 );
 
 
-                state.starIsLoading =
-                    false;
-
-
-                state.starError =
+                const error =
                     normalizeError(
                         action.payload,
                         "Star qo‘yishda xato yuz berdi."
                     );
+
+
+                state.starError =
+                    error;
+
+
+                state.error =
+                    error;
             },
 
 
             // =================================================
-            // REMOVE PROBLEM STAR
+            // REMOVE STAR
             // =================================================
 
             deleteProblemStarStart: (
                 state
             ) => {
 
-                startRequest(
-                    state
+                setLoading(
+                    state,
+                    "starIsLoading",
+                    true
                 );
 
-
-                state.starIsLoading =
-                    true;
 
                 state.starError =
                     null;
@@ -1298,13 +1704,12 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "starIsLoading",
+                    false
                 );
 
-
-                state.starIsLoading =
-                    false;
 
                 state.starError =
                     null;
@@ -1312,22 +1717,17 @@ export const problemSlice =
 
                 const payload =
                     action.payload
-                    ||
-                    {};
+                    &&
+                    typeof action.payload ===
+                        "object"
+                        ? action.payload
+                        : {};
 
 
                 const problemId =
-                    payload.problem_id
-                    ??
-                    payload.problem
-                    ??
-                    state.problemDetail?.id;
-
-
-                const currentStars =
-                    safeNumber(
-                        state.problemDetail?.star,
-                        0
+                    getProblemIdFromPayload(
+                        payload,
+                        state
                     );
 
 
@@ -1337,25 +1737,43 @@ export const problemSlice =
                     );
 
 
-                const nextStars =
-                    serverTotal
-                    ??
-                    Math.max(
-                        0,
-                        currentStars - 1
-                    );
-
-
                 updateProblemEverywhere(
+
                     state,
+
                     problemId,
-                    {
+
+                    (
+                        current
+                    ) => ({
+
                         star:
-                            nextStars,
+                            serverTotal
+
+                            ??
+
+                            Math.max(
+
+                                0,
+
+                                nonNegativeNumber(
+                                    current?.star,
+                                    0
+                                )
+
+                                -
+
+                                1
+                            ),
+
+
+                        star_by_user:
+                            false,
+
 
                         is_starred_by_user:
                             false,
-                    }
+                    })
                 );
             },
 
@@ -1365,20 +1783,26 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "starIsLoading",
+                    false
                 );
 
 
-                state.starIsLoading =
-                    false;
-
-
-                state.starError =
+                const error =
                     normalizeError(
                         action.payload,
                         "Starni olib tashlashda xato yuz berdi."
                     );
+
+
+                state.starError =
+                    error;
+
+
+                state.error =
+                    error;
             },
 
 
@@ -1390,13 +1814,12 @@ export const problemSlice =
                 state
             ) => {
 
-                startRequest(
-                    state
+                setLoading(
+                    state,
+                    "acceptSolutionIsLoading",
+                    true
                 );
 
-
-                state.acceptSolutionIsLoading =
-                    true;
 
                 state.acceptSolutionError =
                     null;
@@ -1408,13 +1831,12 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "acceptSolutionIsLoading",
+                    false
                 );
 
-
-                state.acceptSolutionIsLoading =
-                    false;
 
                 state.acceptSolutionError =
                     null;
@@ -1422,89 +1844,80 @@ export const problemSlice =
 
                 const payload =
                     action.payload
-                    ||
-                    {};
+                    &&
+                    typeof action.payload ===
+                        "object"
+                        ? action.payload
+                        : {};
 
 
                 const problemId =
-                    payload.problem_id
-                    ??
-                    state.problemDetail?.id;
+                    getProblemIdFromPayload(
+                        payload,
+                        state
+                    );
 
 
-                // Backend hozir full ProblemDetail emas,
-                // accept natijasini qaytaradi.
+                // =========================================
+                // Backend full ProblemDetail qaytarmaydi.
                 //
-                // Shuning uchun problemDetail'ni
-                // butunlay almashtirmaymiz.
+                // Shu sabab state.problemDetail =
+                // action.payload QILMAYMIZ.
+                //
+                // Faqat patch.
+                // =========================================
 
                 const patch = {
 
                     is_solved:
                         payload.is_solved
+
                         ??
+
                         true,
+
 
                     status:
                         payload.status
+
                         ??
+
                         "solved",
                 };
 
 
-                if (
-                    payload.correct_answer_id
-                    !=
-                    null
-                ) {
+                const optionalKeys = [
 
-                    patch.correct_answer_id =
-                        payload.correct_answer_id;
-                }
+                    "correct_answer_id",
 
+                    "solution_id",
 
-                if (
-                    payload.solution_id
-                    !=
-                    null
-                ) {
+                    "bounty_reward",
 
-                    patch.solution_id =
-                        payload.solution_id;
-                }
+                    "best_solution_reward",
+
+                    "total_reward",
+                ];
 
 
-                if (
-                    payload.bounty_reward
-                    !=
-                    null
-                ) {
+                optionalKeys.forEach(
+                    (
+                        key
+                    ) => {
 
-                    patch.bounty_reward =
-                        payload.bounty_reward;
-                }
+                        if (
+                            payload[key] !==
+                                null
+                            &&
+                            payload[key] !==
+                                undefined
+                        ) {
 
-
-                if (
-                    payload.best_solution_reward
-                    !=
-                    null
-                ) {
-
-                    patch.best_solution_reward =
-                        payload.best_solution_reward;
-                }
-
-
-                if (
-                    payload.total_reward
-                    !=
-                    null
-                ) {
-
-                    patch.total_reward =
-                        payload.total_reward;
-                }
+                            patch[key] =
+                                payload[key];
+                        }
+                    }
+                );
 
 
                 updateProblemEverywhere(
@@ -1520,29 +1933,37 @@ export const problemSlice =
                 action
             ) => {
 
-                finishRequest(
-                    state
+                setLoading(
+                    state,
+                    "acceptSolutionIsLoading",
+                    false
                 );
 
 
-                state.acceptSolutionIsLoading =
-                    false;
-
-
-                state.acceptSolutionError =
+                const error =
                     normalizeError(
                         action.payload,
                         "Yechimni qabul qilishda xato yuz berdi."
                     );
+
+
+                state.acceptSolutionError =
+                    error;
+
+
+                state.error =
+                    error;
             },
 
 
             // =================================================
             // SIMILAR PROBLEMS
             //
-            // Bu request global loaderni o'zgartirmaydi.
-            // ProblemDetail ichidagi asosiy contentni
-            // qayta loading qilib yubormaslik uchun.
+            // Similar loading global isLoadingga
+            // ataylab ta’sir qilmaydi.
+            //
+            // Aks holda SimilarProblems request detail
+            // sahifani global loadingga qaytarishi mumkin.
             // =================================================
 
             similarProblemsStart: (
@@ -1551,6 +1972,7 @@ export const problemSlice =
 
                 state.similarIsLoading =
                     true;
+
 
                 state.similarError =
                     null;
@@ -1593,13 +2015,12 @@ export const problemSlice =
                     );
 
 
-                state.similarProblems =
-                    [];
+                // Old similar data saqlanadi.
             },
 
 
             // =================================================
-            // CLEAR LIST
+            // CLEAR PROBLEMS
             // =================================================
 
             clearProblems: (
@@ -1609,17 +2030,28 @@ export const problemSlice =
                 state.problems =
                     [];
 
+
                 state.count =
                     0;
+
 
                 state.next =
                     null;
 
+
                 state.previous =
                     null;
 
+
                 state.listError =
                     null;
+
+
+                setLoading(
+                    state,
+                    "listIsLoading",
+                    false
+                );
             },
 
 
@@ -1634,17 +2066,28 @@ export const problemSlice =
                 state.myProblems =
                     [];
 
+
                 state.myProblemsCount =
                     0;
+
 
                 state.myProblemsNext =
                     null;
 
+
                 state.myProblemsPrevious =
                     null;
 
+
                 state.myProblemsError =
                     null;
+
+
+                setLoading(
+                    state,
+                    "myProblemsIsLoading",
+                    false
+                );
             },
 
 
@@ -1659,8 +2102,10 @@ export const problemSlice =
                 state.similarProblems =
                     [];
 
+
                 state.similarError =
                     null;
+
 
                 state.similarIsLoading =
                     false;
@@ -1678,32 +2123,42 @@ export const problemSlice =
                 state.error =
                     null;
 
+
                 state.listError =
                     null;
+
 
                 state.myProblemsError =
                     null;
 
+
                 state.popularError =
                     null;
+
 
                 state.detailError =
                     null;
 
+
                 state.createError =
                     null;
+
 
                 state.languagesError =
                     null;
 
+
                 state.technologiesError =
                     null;
+
 
                 state.starError =
                     null;
 
+
                 state.acceptSolutionError =
                     null;
+
 
                 state.similarError =
                     null;
@@ -1714,8 +2169,10 @@ export const problemSlice =
             // RESET
             // =================================================
 
-            resetProblemState: () =>
-                initialState,
+            resetProblemState: () => {
+
+                return createInitialState();
+            },
         },
     });
 
@@ -1726,86 +2183,125 @@ export const problemSlice =
 
 export const {
 
-    // Popular
+    // Popular.
+
     getPopularProblemStart,
+
     getPopularProblemSuccess,
+
     getPopularProblemFailure,
 
 
-    // Problems
+    // Problems.
+
     getProblemStart,
+
     getProblemSuccess,
+
     getProblemFailure,
 
 
-    // My problems
+    // My problems.
+
     getMyProblemStart,
+
     getMyProblemSuccess,
+
     getMyProblemFailure,
 
 
-    // Languages
+    // Languages.
+
     getLanguagesStart,
+
     getLanguagesSuccess,
+
     getLanguagesFailure,
 
 
-    // Technologies
+    // Technologies.
+
     getTechnologiesStart,
+
     getTechnologiesSuccess,
+
     getTechnologiesFailure,
 
 
-    // Create
+    // Create.
+
     postProblemStart,
+
     postProblemSuccess,
+
     postProblemFailure,
 
 
-    // Detail
+    // Detail.
+
     getProblemDetailStart,
+
     getProblemDetailSuccess,
+
     getProblemDetailFailure,
+
+    refreshProblemDetailSuccess,
+
     clearProblemDetail,
 
 
-    // Problem star
+    // Problem star.
+
     postProblemStarStart,
+
     postProblemStarSuccess,
+
     postProblemStarFailure,
 
     deleteProblemStarStart,
+
     deleteProblemStarSuccess,
+
     deleteProblemStarFailure,
 
 
-    // Accept solution
+    // Accept solution.
+
     acceptSolutionStart,
+
     acceptSolutionSuccess,
+
     acceptSolutionFailure,
 
 
-    // Similar
+    // Similar.
+
     similarProblemsStart,
+
     similarProblemsSuccess,
+
     similarProblemsFailure,
 
 
-    // Clear/reset
+    // Clear/reset.
+
     clearProblems,
+
     clearMyProblems,
+
     clearSimilarProblems,
+
     clearProblemErrors,
+
     resetProblemState,
 
 } = problemSlice.actions;
 
 
 // =========================================================
-// LEGACY COMPATIBILITY ALIASES
+// LEGACY COMPATIBILITY
 //
-// Hozirgi componentlarni birdan sindirib yubormaslik uchun.
-// Keyinchalik importlarni tozalab, bularni olib tashlaymiz.
+// Hozirgi eski componentlar birdan buzilmasligi uchun.
 // =========================================================
 
 export const getPopularProblemtFailure =
@@ -1830,37 +2326,122 @@ export const posProblemtSuccess =
 
 export const selectProblemState = (
     state
-) => state.problem;
+) => {
+
+    return state.problem;
+};
 
 
 export const selectProblems = (
     state
-) =>
-    state.problem.problems;
+) => {
+
+    return state.problem.problems;
+};
 
 
 export const selectProblemDetail = (
     state
-) =>
-    state.problem.problemDetail;
+) => {
+
+    return state.problem.problemDetail;
+};
 
 
 export const selectProblemLanguages = (
     state
-) =>
-    state.problem.languages;
+) => {
+
+    return state.problem.languages;
+};
 
 
 export const selectProblemTechnologies = (
     state
-) =>
-    state.problem.technologies;
+) => {
+
+    return state.problem.technologies;
+};
 
 
 export const selectSimilarProblems = (
     state
-) =>
-    state.problem.similarProblems;
+) => {
+
+    return state.problem.similarProblems;
+};
+
+
+// =========================================================
+// LIST META SELECTOR
+// =========================================================
+
+export const selectProblemListMeta = (
+    state
+) => {
+
+    return {
+
+        count:
+            state.problem.count,
+
+        next:
+            state.problem.next,
+
+        previous:
+            state.problem.previous,
+    };
+};
+
+
+// =========================================================
+// LOADING SELECTOR
+// =========================================================
+
+export const selectProblemLoading = (
+    state
+) => {
+
+    const problem =
+        state.problem;
+
+
+    return {
+
+        isLoading:
+            problem.isLoading,
+
+        listIsLoading:
+            problem.listIsLoading,
+
+        myProblemsIsLoading:
+            problem.myProblemsIsLoading,
+
+        popularIsLoading:
+            problem.popularIsLoading,
+
+        detailIsLoading:
+            problem.detailIsLoading,
+
+        createIsLoading:
+            problem.createIsLoading,
+
+        languagesIsLoading:
+            problem.languagesIsLoading,
+
+        technologiesIsLoading:
+            problem.technologiesIsLoading,
+
+        starIsLoading:
+            problem.starIsLoading,
+
+        acceptSolutionIsLoading:
+            problem.acceptSolutionIsLoading,
+
+        similarIsLoading:
+            problem.similarIsLoading,
+    };
+};
 
 
 export default problemSlice.reducer;
