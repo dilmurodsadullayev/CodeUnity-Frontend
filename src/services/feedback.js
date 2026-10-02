@@ -1,118 +1,557 @@
 import axios from "./api";
 
+// =========================================================
+// ENDPOINTS
+// =========================================================
+
+const ENDPOINTS = {
+    list: "/feedback/",
+    mine: "/feedback/mine/",
+    stats: "/feedback/mine/stats/",
+
+    detail: (feedbackId) => (
+        `/feedback/${feedbackId}/`
+    ),
+};
+
+// =========================================================
+// CANCELED REQUEST
+// =========================================================
+
+export const isFeedbackRequestCanceled = (
+    error
+) => {
+    return (
+        error?.code === "ERR_CANCELED"
+        ||
+        error?.name === "CanceledError"
+        ||
+        error?.name === "AbortError"
+    );
+};
+
+// =========================================================
+// ERROR MESSAGE
+// =========================================================
+
+export const getFeedbackServiceErrorMessage = (
+    error,
+    fallback = "Feedback bilan ishlashda xatolik yuz berdi."
+) => {
+    if (
+        isFeedbackRequestCanceled(
+            error
+        )
+    ) {
+        return "";
+    }
+
+    const data =
+        error?.serverData
+        ||
+        error?.response?.data;
+
+    if (
+        typeof data === "string"
+        &&
+        data.trim()
+    ) {
+        return data.trim();
+    }
+
+    if (
+        typeof data?.detail === "string"
+        &&
+        data.detail.trim()
+    ) {
+        return data.detail.trim();
+    }
+
+    if (
+        Array.isArray(
+            data?.detail
+        )
+        &&
+        data.detail.length > 0
+    ) {
+        return String(
+            data.detail[0]
+        );
+    }
+
+    if (
+        data?.message
+    ) {
+        return String(
+            data.message
+        );
+    }
+
+    if (
+        data?.error
+    ) {
+        return String(
+            data.error
+        );
+    }
+
+    if (
+        data
+        &&
+        typeof data === "object"
+    ) {
+        const firstValue =
+            Object.values(
+                data
+            )[0];
+
+        if (
+            Array.isArray(
+                firstValue
+            )
+            &&
+            firstValue.length > 0
+        ) {
+            return String(
+                firstValue[0]
+            );
+        }
+
+        if (
+            typeof firstValue ===
+            "string"
+        ) {
+            return firstValue;
+        }
+    }
+
+    if (
+        error?.message
+    ) {
+        return String(
+            error.message
+        );
+    }
+
+    return fallback;
+};
+
+// =========================================================
+// VALID ID
+// =========================================================
+
+const normalizeFeedbackId = (
+    feedbackId
+) => {
+    const id =
+        Number(
+            feedbackId
+        );
+
+    if (
+        !Number.isInteger(
+            id
+        )
+        ||
+        id <= 0
+    ) {
+        throw new Error(
+            "Feedback ID noto‘g‘ri."
+        );
+    }
+
+    return id;
+};
+
+// =========================================================
+// OPTIONAL POSITIVE INTEGER
+// =========================================================
+
+const normalizeOptionalPositiveInteger = (
+    value,
+    fieldName
+) => {
+    if (
+        value === undefined
+        ||
+        value === null
+        ||
+        value === ""
+    ) {
+        return null;
+    }
+
+    const number =
+        Number(
+            value
+        );
+
+    if (
+        !Number.isInteger(
+            number
+        )
+        ||
+        number <= 0
+    ) {
+        throw new Error(
+            `${fieldName} musbat butun son bo‘lishi kerak.`
+        );
+    }
+
+    return number;
+};
+
+// =========================================================
+// OPTIONAL STRING
+// =========================================================
+
+const normalizeOptionalString = (
+    value
+) => {
+    if (
+        value === undefined
+        ||
+        value === null
+    ) {
+        return "";
+    }
+
+    return String(
+        value
+    ).trim();
+};
+
+// =========================================================
+// PAGINATION PARAMS
+// =========================================================
+
+const appendPaginationParams = (
+    params,
+    {
+        page,
+        pageSize,
+    }
+) => {
+    const normalizedPage =
+        normalizeOptionalPositiveInteger(
+            page,
+            "page"
+        );
+
+    const normalizedPageSize =
+        normalizeOptionalPositiveInteger(
+            pageSize,
+            "pageSize"
+        );
+
+    if (
+        normalizedPage !== null
+    ) {
+        params.page =
+            normalizedPage;
+    }
+
+    if (
+        normalizedPageSize !== null
+    ) {
+        params.page_size =
+            normalizedPageSize;
+    }
+
+    return params;
+};
+
+// =========================================================
+// FILE
+// =========================================================
+
+const isFileObject = (
+    value
+) => {
+    return (
+        typeof File !==
+            "undefined"
+        &&
+        value instanceof File
+    );
+};
+
+// =========================================================
+// STRING FIELD
+// =========================================================
+
+const appendStringField = (
+    formData,
+    key,
+    value,
+    {
+        required = false,
+    } = {}
+) => {
+    if (
+        value === undefined
+        ||
+        value === null
+    ) {
+        if (
+            required
+        ) {
+            throw new Error(
+                `${key} maydoni majburiy.`
+            );
+        }
+
+        return;
+    }
+
+    const normalized =
+        String(
+            value
+        ).trim();
+
+    if (
+        required
+        &&
+        !normalized
+    ) {
+        throw new Error(
+            `${key} maydoni bo‘sh bo‘lishi mumkin emas.`
+        );
+    }
+
+    formData.append(
+        key,
+        normalized
+    );
+};
+
+// =========================================================
+// BUILD CREATE FORM DATA
+// =========================================================
+
+const buildCreateFormData = ({
+    feedbackType,
+    title,
+    message,
+    screenshot = null,
+}) => {
+    const formData =
+        new FormData();
+
+    appendStringField(
+        formData,
+        "feedback_type",
+        feedbackType,
+        {
+            required: true,
+        }
+    );
+
+    appendStringField(
+        formData,
+        "title",
+        title,
+        {
+            required: true,
+        }
+    );
+
+    appendStringField(
+        formData,
+        "message",
+        message,
+        {
+            required: true,
+        }
+    );
+
+    if (
+        isFileObject(
+            screenshot
+        )
+    ) {
+        formData.append(
+            "screenshot",
+            screenshot
+        );
+    }
+
+    return formData;
+};
+
+// =========================================================
+// BUILD UPDATE FORM DATA
+// =========================================================
+
+const buildUpdateFormData = ({
+    feedbackType,
+    title,
+    message,
+    screenshot,
+}) => {
+    const formData =
+        new FormData();
+
+    appendStringField(
+        formData,
+        "feedback_type",
+        feedbackType
+    );
+
+    appendStringField(
+        formData,
+        "title",
+        title
+    );
+
+    appendStringField(
+        formData,
+        "message",
+        message
+    );
+
+    if (
+        isFileObject(
+            screenshot
+        )
+    ) {
+        formData.append(
+            "screenshot",
+            screenshot
+        );
+    }
+
+    return formData;
+};
+
+// =========================================================
+// LOG REQUEST ERROR
+// =========================================================
+
+const logFeedbackError = (
+    label,
+    error
+) => {
+    if (
+        isFeedbackRequestCanceled(
+            error
+        )
+    ) {
+        return;
+    }
+
+    console.error(
+        label,
+        error?.response?.data
+        ||
+        error?.response
+        ||
+        error?.message
+        ||
+        error
+    );
+};
 
 // =========================================================
 // FEEDBACK SERVICE
 // =========================================================
 
 const FeedbackService = {
-
     // =====================================================
     // PUBLIC FEEDBACK LIST
     // =====================================================
 
-    async getFeedbacks() {
+    async getFeedbacks({
+        page,
+        pageSize,
+        signal,
+    } = {}) {
+        const params = {};
+
+        appendPaginationParams(
+            params,
+            {
+                page,
+                pageSize,
+            }
+        );
+
         try {
             const {
                 data,
             } = await axios.get(
-                "/feedback/",
+                ENDPOINTS.list,
                 {
-                    withCredentials: true,
+                    params,
+                    signal,
+
+                    withCredentials:
+                        true,
                 }
             );
 
             return data;
-
-        } catch (error) {
-            console.error(
+        } catch (
+            error
+        ) {
+            logFeedbackError(
                 "Feedbacklarni olishda xato:",
-                error.response?.data ||
-                error.message
+                error
             );
 
             throw error;
         }
     },
-
 
     // =====================================================
     // CREATE FEEDBACK
     // =====================================================
 
-    async createFeedback({
-        feedbackType,
-        title,
-        message,
-        screenshot = null,
-    }) {
+    async createFeedback(
+        {
+            feedbackType,
+            title,
+            message,
+            screenshot = null,
+        },
+        {
+            signal,
+        } = {}
+    ) {
+        const formData =
+            buildCreateFormData({
+                feedbackType,
+                title,
+                message,
+                screenshot,
+            });
+
         try {
-
-            const formData =
-                new FormData();
-
-
-            // ---------------------------------------------
-            // REQUIRED
-            // ---------------------------------------------
-
-            formData.append(
-                "feedback_type",
-                feedbackType
-            );
-
-            formData.append(
-                "title",
-                title
-            );
-
-            formData.append(
-                "message",
-                message
-            );
-
-
-            // ---------------------------------------------
-            // OPTIONAL SCREENSHOT
-            // ---------------------------------------------
-
-            if (screenshot) {
-                formData.append(
-                    "screenshot",
-                    screenshot
-                );
-            }
-
-
             const {
                 data,
             } = await axios.post(
-                "/feedback/",
+                ENDPOINTS.list,
                 formData,
                 {
-                    withCredentials: true,
+                    signal,
 
-                    headers: {
-                        "Content-Type":
-                            "multipart/form-data",
-                    },
+                    withCredentials:
+                        true,
                 }
             );
 
-
             return data;
-
-        } catch (error) {
-            console.error(
+        } catch (
+            error
+        ) {
+            logFeedbackError(
                 "Feedback yuborishda xato:",
-                error.response?.data ||
-                error.message
+                error
             );
 
             throw error;
         }
     },
-
 
     // =====================================================
     // MY FEEDBACKS
@@ -120,112 +559,153 @@ const FeedbackService = {
 
     async getMyFeedbacks({
         status = "",
+        feedbackType = "",
+
+        // Temporary backward compatibility.
         type = "",
+
+        page,
+        pageSize,
+        signal,
     } = {}) {
+        const params = {};
+
+        const normalizedStatus =
+            normalizeOptionalString(
+                status
+            );
+
+        const normalizedFeedbackType =
+            normalizeOptionalString(
+                feedbackType
+                ||
+                type
+            );
+
+        if (
+            normalizedStatus
+        ) {
+            params.status =
+                normalizedStatus;
+        }
+
+        if (
+            normalizedFeedbackType
+        ) {
+            params.feedback_type =
+                normalizedFeedbackType;
+        }
+
+        appendPaginationParams(
+            params,
+            {
+                page,
+                pageSize,
+            }
+        );
+
         try {
-
-            const params = {};
-
-
-            if (status) {
-                params.status =
-                    status;
-            }
-
-
-            if (type) {
-                params.type =
-                    type;
-            }
-
-
             const {
                 data,
             } = await axios.get(
-                "/feedback/mine/",
+                ENDPOINTS.mine,
                 {
                     params,
+                    signal,
 
-                    withCredentials: true,
+                    withCredentials:
+                        true,
                 }
             );
 
-
             return data;
-
-        } catch (error) {
-            console.error(
+        } catch (
+            error
+        ) {
+            logFeedbackError(
                 "Mening feedbacklarimni olishda xato:",
-                error.response?.data ||
-                error.message
+                error
             );
 
             throw error;
         }
     },
-
 
     // =====================================================
     // MY FEEDBACK STATS
     // =====================================================
 
-    async getMyFeedbackStats() {
+    async getMyFeedbackStats({
+        signal,
+    } = {}) {
         try {
             const {
                 data,
             } = await axios.get(
-                "/feedback/mine/stats/",
+                ENDPOINTS.stats,
                 {
-                    withCredentials: true,
+                    signal,
+
+                    withCredentials:
+                        true,
                 }
             );
 
-
             return data;
-
-        } catch (error) {
-            console.error(
+        } catch (
+            error
+        ) {
+            logFeedbackError(
                 "Feedback statistikasini olishda xato:",
-                error.response?.data ||
-                error.message
+                error
             );
 
             throw error;
         }
     },
-
 
     // =====================================================
     // FEEDBACK DETAIL
     // =====================================================
 
     async getFeedbackDetail(
-        feedbackId
+        feedbackId,
+        {
+            signal,
+        } = {}
     ) {
+        const id =
+            normalizeFeedbackId(
+                feedbackId
+            );
+
         try {
             const {
                 data,
             } = await axios.get(
-                `/feedback/${feedbackId}/`,
+                ENDPOINTS.detail(
+                    id
+                ),
                 {
-                    withCredentials: true,
+                    signal,
+
+                    withCredentials:
+                        true,
                 }
             );
 
-
             return data;
-
-        } catch (error) {
-            console.error(
+        } catch (
+            error
+        ) {
+            logFeedbackError(
                 "Feedback detailni olishda xato:",
-                error.response?.data ||
-                error.message
+                error
             );
 
             throw error;
         }
     },
-
 
     // =====================================================
     // UPDATE FEEDBACK
@@ -238,112 +718,88 @@ const FeedbackService = {
             title,
             message,
             screenshot,
-        }
+        },
+        {
+            signal,
+        } = {}
     ) {
+        const id =
+            normalizeFeedbackId(
+                feedbackId
+            );
+
+        const formData =
+            buildUpdateFormData({
+                feedbackType,
+                title,
+                message,
+                screenshot,
+            });
+
         try {
-
-            const formData =
-                new FormData();
-
-
-            // ---------------------------------------------
-            // OPTIONAL FIELDS
-            // ---------------------------------------------
-
-            if (
-                feedbackType !== undefined
-            ) {
-                formData.append(
-                    "feedback_type",
-                    feedbackType
-                );
-            }
-
-
-            if (
-                title !== undefined
-            ) {
-                formData.append(
-                    "title",
-                    title
-                );
-            }
-
-
-            if (
-                message !== undefined
-            ) {
-                formData.append(
-                    "message",
-                    message
-                );
-            }
-
-
-            if (
-                screenshot instanceof File
-            ) {
-                formData.append(
-                    "screenshot",
-                    screenshot
-                );
-            }
-
-
             const {
                 data,
             } = await axios.patch(
-                `/feedback/${feedbackId}/`,
+                ENDPOINTS.detail(
+                    id
+                ),
                 formData,
                 {
-                    withCredentials: true,
+                    signal,
 
-                    headers: {
-                        "Content-Type":
-                            "multipart/form-data",
-                    },
+                    withCredentials:
+                        true,
                 }
             );
 
-
             return data;
-
-        } catch (error) {
-            console.error(
+        } catch (
+            error
+        ) {
+            logFeedbackError(
                 "Feedbackni yangilashda xato:",
-                error.response?.data ||
-                error.message
+                error
             );
 
             throw error;
         }
     },
 
-
     // =====================================================
     // DELETE FEEDBACK
     // =====================================================
 
     async deleteFeedback(
-        feedbackId
+        feedbackId,
+        {
+            signal,
+        } = {}
     ) {
-        try {
+        const id =
+            normalizeFeedbackId(
+                feedbackId
+            );
 
+        try {
             await axios.delete(
-                `/feedback/${feedbackId}/`,
+                ENDPOINTS.detail(
+                    id
+                ),
                 {
-                    withCredentials: true,
+                    signal,
+
+                    withCredentials:
+                        true,
                 }
             );
 
-
-            return true;
-
-        } catch (error) {
-            console.error(
+            return id;
+        } catch (
+            error
+        ) {
+            logFeedbackError(
                 "Feedbackni o‘chirishda xato:",
-                error.response?.data ||
-                error.message
+                error
             );
 
             throw error;
@@ -351,5 +807,8 @@ const FeedbackService = {
     },
 };
 
+// =========================================================
+// EXPORT
+// =========================================================
 
 export default FeedbackService;

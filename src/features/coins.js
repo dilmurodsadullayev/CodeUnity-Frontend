@@ -1,75 +1,609 @@
-import { createSlice } from "@reduxjs/toolkit";
+// src/features/coins.js
 
-const initialState = {
-    isLoading: false,
-    coins: [], 
-    count: 0, 
-    next: null,
-    previous: null,
-    error: null,
-    // Paginatsiya uchun yangi maydonlar:
-    currentPage: 1,  // Hozirgi sahifa raqami
-    pageSize: 15,    // Har bir sahifadagi elementlar soni
+import {
+    createSlice,
+} from "@reduxjs/toolkit";
+
+
+// =========================================================
+// HELPERS
+// =========================================================
+
+const safeNumber = (
+    value,
+    fallback = 0
+) => {
+    const number = Number(
+        value
+    );
+
+
+    return Number.isFinite(
+        number
+    )
+        ? number
+        : fallback;
 };
 
-export const CoinSlice = createSlice({
-    name: 'coin',
-    initialState,
-    reducers: {
-        
-        // ... (getCoinStart o'zgarishsiz)
-        getCoinStart: (state, action) => { // Bu yerga page va pageSize ni olishimiz mumkin
-            state.isLoading = true;
-            state.error = null; 
-            // Agar so'rov boshlanganda page berilsa, uni state ga yozamiz
-            if (action.payload && action.payload.page) {
-                state.currentPage = action.payload.page;
-            }
-            if (action.payload && action.payload.pageSize) {
-                state.pageSize = action.payload.pageSize;
-            }
-        },
 
-        getCoinSuccess: (state, actions) => {
-            const payload = actions.payload;
-            state.isLoading = false;
-            
-            // Paginatsiyalangan javobni kutamiz: { count: N, next: '...', previous: '...', results: [...] }
-            if (payload && Array.isArray(payload.results)) {
-                state.coins = payload.results;
-                state.count = payload.count || 0;
-                state.next = payload.next;
-                state.previous = payload.previous;
-                // currentPage ni CoinService'ga yuborganimiz sababli, 
-                // bu yerda uni API javobidan olish shart emas, chunki u getCoinStart'da yozilgan.
-            } 
-            // Agar API paginatsiya qilmasa (masalan, eski CoinHistoryAPI kabi sof massiv [{}, {}])
-            else if (Array.isArray(payload)) {
-                state.coins = payload;
-                state.count = payload.length; 
-                state.next = null;
-                state.previous = null;
-                state.currentPage = 1; // Massiv bo'lsa, bitta sahifa deb hisoblaymiz
-            }
-            
-            state.error = null; 
-        },
+const safePositiveInteger = (
+    value,
+    fallback = 1
+) => {
+    const number = Math.trunc(
+        safeNumber(
+            value,
+            fallback
+        )
+    );
 
-        // ... (getCoinFailure o'zgarishsiz)
-        getCoinFailure: (state, action) => {
-            state.isLoading = false;
-            state.error = action.payload;
-            state.coins = []; 
-            state.count = 0;     
-        },
+
+    return number > 0
+        ? number
+        : fallback;
+};
+
+
+const safeArray = (
+    value
+) => {
+    return Array.isArray(
+        value
+    )
+        ? value
+        : [];
+};
+
+
+const normalizeError = (
+    value,
+    fallback = "FCoin tarixini yuklashda xatolik yuz berdi."
+) => {
+    if (
+        !value
+    ) {
+        return fallback;
     }
-});
+
+
+    if (
+        typeof value === "string"
+    ) {
+        return value;
+    }
+
+
+    if (
+        value?.message
+    ) {
+        return String(
+            value.message
+        );
+    }
+
+
+    return fallback;
+};
+
+
+// =========================================================
+// INITIAL STATE
+// =========================================================
+
+const initialState = {
+
+    // =====================================================
+    // DATA
+    // =====================================================
+
+    coins: [],
+
+    balance: 0,
+
+
+    // =====================================================
+    // REQUEST STATE
+    // =====================================================
+
+    isLoading: false,
+
+    error: null,
+
+    hasLoaded: false,
+
+
+    // =====================================================
+    // PAGINATION
+    // =====================================================
+
+    count: 0,
+
+    currentPage: 1,
+
+    pageSize: 15,
+
+    totalPages: 0,
+
+    next: null,
+
+    previous: null,
+};
+
+
+// =========================================================
+// COIN SLICE
+// =========================================================
+
+export const coinSlice =
+    createSlice({
+
+        name:
+            "coin",
+
+        initialState,
+
+        reducers: {
+
+            // =================================================
+            // GET HISTORY START
+            // =================================================
+
+            getCoinStart: (
+                state,
+                action
+            ) => {
+                state.isLoading =
+                    true;
+
+
+                state.error =
+                    null;
+
+
+                const payload =
+                    action.payload
+                    ||
+                    {};
+
+
+                if (
+                    payload.page !==
+                    undefined
+                ) {
+                    state.currentPage =
+                        safePositiveInteger(
+                            payload.page,
+                            state.currentPage
+                        );
+                }
+
+
+                if (
+                    payload.pageSize !==
+                    undefined
+                ) {
+                    state.pageSize =
+                        safePositiveInteger(
+                            payload.pageSize,
+                            state.pageSize
+                        );
+                }
+            },
+
+
+            // =================================================
+            // GET HISTORY SUCCESS
+            //
+            // Expected normalized response:
+            //
+            // {
+            //     balance,
+            //     count,
+            //     page,
+            //     page_size,
+            //     total_pages,
+            //     next,
+            //     previous,
+            //     results
+            // }
+            // =================================================
+
+            getCoinSuccess: (
+                state,
+                action
+            ) => {
+                const payload =
+                    action.payload
+                    ||
+                    {};
+
+
+                state.isLoading =
+                    false;
+
+
+                state.error =
+                    null;
+
+
+                state.hasLoaded =
+                    true;
+
+
+                // =============================================
+                // RESULTS
+                // =============================================
+
+                state.coins =
+                    safeArray(
+                        payload.results
+                    );
+
+
+                // =============================================
+                // BALANCE
+                // =============================================
+
+                if (
+                    payload.balance !==
+                    null
+                    &&
+                    payload.balance !==
+                    undefined
+                ) {
+                    state.balance =
+                        safeNumber(
+                            payload.balance,
+                            state.balance
+                        );
+                }
+
+
+                // =============================================
+                // COUNT
+                // =============================================
+
+                state.count =
+                    Math.max(
+                        0,
+                        Math.trunc(
+                            safeNumber(
+                                payload.count,
+                                state.coins.length
+                            )
+                        )
+                    );
+
+
+                // =============================================
+                // PAGE
+                // =============================================
+
+                state.currentPage =
+                    safePositiveInteger(
+                        payload.page,
+                        state.currentPage
+                    );
+
+
+                // =============================================
+                // PAGE SIZE
+                // =============================================
+
+                state.pageSize =
+                    safePositiveInteger(
+                        payload.page_size,
+                        state.pageSize
+                    );
+
+
+                // =============================================
+                // TOTAL PAGES
+                // =============================================
+
+                const fallbackTotalPages =
+                    state.count > 0
+                        ? Math.ceil(
+                            state.count
+                            /
+                            state.pageSize
+                        )
+                        : 0;
+
+
+                state.totalPages =
+                    Math.max(
+                        0,
+                        Math.trunc(
+                            safeNumber(
+                                payload.total_pages,
+                                fallbackTotalPages
+                            )
+                        )
+                    );
+
+
+                // =============================================
+                // NAVIGATION
+                // =============================================
+
+                state.next =
+                    payload.next
+                    ??
+                    null;
+
+
+                state.previous =
+                    payload.previous
+                    ??
+                    null;
+            },
+
+
+            // =================================================
+            // GET HISTORY FAILURE
+            // =================================================
+
+            getCoinFailure: (
+                state,
+                action
+            ) => {
+                state.isLoading =
+                    false;
+
+
+                state.error =
+                    normalizeError(
+                        action.payload
+                    );
+
+
+                state.hasLoaded =
+                    true;
+            },
+
+
+            // =================================================
+            // SET BALANCE
+            //
+            // Boshqa actiondan keyin navbar/profile balance
+            // bilan sync qilish kerak bo'lsa ishlatiladi.
+            // =================================================
+
+            setCoinBalance: (
+                state,
+                action
+            ) => {
+                state.balance =
+                    safeNumber(
+                        action.payload,
+                        state.balance
+                    );
+            },
+
+
+            // =================================================
+            // SET PAGE
+            // =================================================
+
+            setCoinPage: (
+                state,
+                action
+            ) => {
+                state.currentPage =
+                    safePositiveInteger(
+                        action.payload,
+                        state.currentPage
+                    );
+            },
+
+
+            // =================================================
+            // SET PAGE SIZE
+            //
+            // Page size o'zgarsa birinchi sahifaga qaytamiz.
+            // =================================================
+
+            setCoinPageSize: (
+                state,
+                action
+            ) => {
+                state.pageSize =
+                    safePositiveInteger(
+                        action.payload,
+                        state.pageSize
+                    );
+
+
+                state.currentPage =
+                    1;
+            },
+
+
+            // =================================================
+            // CLEAR ERROR
+            // =================================================
+
+            clearCoinError: (
+                state
+            ) => {
+                state.error =
+                    null;
+            },
+
+
+            // =================================================
+            // CLEAR HISTORY
+            //
+            // Balance saqlanadi.
+            // =================================================
+
+            clearCoinHistory: (
+                state
+            ) => {
+                state.coins =
+                    [];
+
+
+                state.count =
+                    0;
+
+
+                state.currentPage =
+                    1;
+
+
+                state.totalPages =
+                    0;
+
+
+                state.next =
+                    null;
+
+
+                state.previous =
+                    null;
+
+
+                state.error =
+                    null;
+
+
+                state.hasLoaded =
+                    false;
+
+
+                state.isLoading =
+                    false;
+            },
+
+
+            // =================================================
+            // RESET ENTIRE COIN STATE
+            // =================================================
+
+            resetCoinState: () => {
+                return {
+                    ...initialState,
+                };
+            },
+        },
+    });
+
+
+// =========================================================
+// ACTIONS
+// =========================================================
 
 export const {
     getCoinStart,
     getCoinSuccess,
-    getCoinFailure
+    getCoinFailure,
 
-} = CoinSlice.actions;
+    setCoinBalance,
 
-export default CoinSlice.reducer;
+    setCoinPage,
+    setCoinPageSize,
+
+    clearCoinError,
+    clearCoinHistory,
+
+    resetCoinState,
+} = coinSlice.actions;
+
+
+// =========================================================
+// SELECTORS
+// =========================================================
+
+export const selectCoinState = (
+    state
+) => {
+    return (
+        state?.coin
+        ||
+        initialState
+    );
+};
+
+
+export const selectCoins = (
+    state
+) => {
+    return (
+        selectCoinState(
+            state
+        ).coins
+    );
+};
+
+
+export const selectCoinBalance = (
+    state
+) => {
+    return (
+        selectCoinState(
+            state
+        ).balance
+    );
+};
+
+
+export const selectCoinLoading = (
+    state
+) => {
+    return (
+        selectCoinState(
+            state
+        ).isLoading
+    );
+};
+
+
+export const selectCoinError = (
+    state
+) => {
+    return (
+        selectCoinState(
+            state
+        ).error
+    );
+};
+
+
+export const selectCoinPagination = (
+    state
+) => {
+    const coin =
+        selectCoinState(
+            state
+        );
+
+
+    return {
+        count:
+            coin.count,
+
+        currentPage:
+            coin.currentPage,
+
+        pageSize:
+            coin.pageSize,
+
+        totalPages:
+            coin.totalPages,
+
+        next:
+            coin.next,
+
+        previous:
+            coin.previous,
+    };
+};
+
+
+// =========================================================
+// REDUCER
+// =========================================================
+
+export default coinSlice.reducer;

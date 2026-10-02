@@ -236,9 +236,7 @@ export {
     default as MyProblems,
 } from "./MyProblems";
 
-export {
-    default as MyProblemCard,
-} from "./MyProblemCard";
+
 
 export {
     default as SimilarProblems,

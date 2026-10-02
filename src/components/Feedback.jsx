@@ -1,25 +1,14 @@
+// src/components/Feedback.jsx
+
 import React, {
-    useCallback,
-    useEffect,
     useMemo,
     useState,
 } from "react";
 
 import {
-    useSelector,
-} from "react-redux";
-
-import {
-    useNavigate,
-} from "react-router-dom";
-
-import {
+    AnimatePresence,
     motion,
 } from "framer-motion";
-
-import toast, {
-    Toaster,
-} from "react-hot-toast";
 
 import {
     AlertCircle,
@@ -37,139 +26,13 @@ import {
     XCircle,
 } from "lucide-react";
 
-import FeedbackService from "../services/feedback";
-
-import FeedbackCreateModal from "./feedback/FeedbackCreateModal";
-
-import FeedbackEditModal from "./feedback/FeedbackEditModal";
-
-import FeedbackCard from "./feedback/FeedbackCard";
-
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 
-
-// =========================================================
-// STATUS FILTERS
-// =========================================================
-
-const STATUS_FILTERS = [
-    {
-        value: "all",
-        label: "Barchasi",
-    },
-
-    {
-        value: "pending",
-        label: "Pending",
-    },
-
-    {
-        value: "approved",
-        label: "Approved",
-    },
-
-    {
-        value: "rejected",
-        label: "Rejected",
-    },
-];
-
-
-// =========================================================
-// ERROR PARSER
-// =========================================================
-
-const getErrorMessage = (
-    error
-) => {
-    const data =
-        error?.response?.data;
-
-
-    if (!data) {
-        return (
-            error?.message
-            ||
-            "Server bilan bog‘lanishda xatolik yuz berdi."
-        );
-    }
-
-
-    if (
-        typeof data ===
-        "string"
-    ) {
-        return data;
-    }
-
-
-    if (
-        data?.detail
-    ) {
-        return data.detail;
-    }
-
-
-    if (
-        data?.message
-    ) {
-        return data.message;
-    }
-
-
-    if (
-        data?.error
-    ) {
-        return data.error;
-    }
-
-
-    if (
-        typeof data ===
-        "object"
-    ) {
-        const firstKey =
-            Object.keys(
-                data
-            )[0];
-
-
-        if (firstKey) {
-            const value =
-                data[
-                    firstKey
-                ];
-
-
-            if (
-                Array.isArray(
-                    value
-                )
-            ) {
-                return (
-                    value[0]
-                    ||
-                    "Xatolik yuz berdi."
-                );
-            }
-
-
-            if (
-                typeof value ===
-                "string"
-            ) {
-                return value;
-            }
-        }
-    }
-
-
-    return (
-        "Feedback bilan ishlashda "
-        + "xatolik yuz berdi."
-    );
-};
-
+import FeedbackCard from "./feedback/FeedbackCard";
+import FeedbackCreateModal from "./feedback/FeedbackCreateModal";
+import FeedbackEditModal from "./feedback/FeedbackEditModal";
+import FeedbackPagination from "./feedback/FeedbackPagination";
+import useFeedbackPage from "./feedback/useFeedbackPage";
 
 // =========================================================
 // STAT CARD
@@ -180,6 +43,7 @@ const StatCard = ({
     value,
     Icon,
     description,
+    isLoading = false,
 }) => {
     return (
         <motion.div
@@ -187,7 +51,7 @@ const StatCard = ({
                 y: -3,
             }}
             transition={{
-                duration: 0.18,
+                duration: 0.2,
             }}
             className="
                 relative
@@ -197,13 +61,13 @@ const StatCard = ({
                 border-white/[0.06]
                 bg-white/[0.025]
                 p-5
-                transition
+                transition-colors
                 hover:border-indigo-400/15
                 hover:bg-white/[0.035]
             "
         >
-
             <div
+                aria-hidden="true"
                 className="
                     pointer-events-none
                     absolute
@@ -217,7 +81,6 @@ const StatCard = ({
                 "
             />
 
-
             <div
                 className="
                     relative
@@ -227,54 +90,65 @@ const StatCard = ({
                     gap-4
                 "
             >
-
-                <div>
-
+                <div className="min-w-0">
                     <p
                         className="
-                            text-[10px]
-                            font-bold
+                            font-display
+                            text-[9px]
+                            font-semibold
                             uppercase
-                            tracking-[0.16em]
+                            tracking-[0.14em]
                             text-gray-600
                         "
                     >
                         {title}
                     </p>
 
-
-                    <h3
-                        className="
-                            mt-2
-                            text-2xl
-                            font-black
-                            text-white
-                        "
-                    >
-                        {value}
-                    </h3>
-
+                    {isLoading ? (
+                        <div
+                            className="
+                                mt-3
+                                h-8
+                                w-16
+                                animate-pulse
+                                rounded-lg
+                                bg-white/[0.06]
+                            "
+                        />
+                    ) : (
+                        <h3
+                            className="
+                                mt-2
+                                font-display
+                                text-2xl
+                                font-bold
+                                tracking-tight
+                                text-white
+                            "
+                        >
+                            {value}
+                        </h3>
+                    )}
 
                     <p
                         className="
                             mt-1
                             text-[10px]
+                            font-medium
                             leading-5
                             text-gray-600
                         "
                     >
                         {description}
                     </p>
-
                 </div>
-
 
                 <div
                     className="
                         grid
                         h-10
                         w-10
-                        flex-shrink-0
+                        shrink-0
                         place-items-center
                         rounded-xl
                         border
@@ -283,19 +157,21 @@ const StatCard = ({
                         text-indigo-300
                     "
                 >
-
-                    <Icon
-                        size={18}
-                    />
-
+                    {isLoading ? (
+                        <Loader2
+                            size={17}
+                            className="animate-spin"
+                        />
+                    ) : (
+                        <Icon
+                            size={18}
+                        />
+                    )}
                 </div>
-
             </div>
-
         </motion.div>
     );
 };
-
 
 // =========================================================
 // EMPTY STATE
@@ -318,7 +194,6 @@ const EmptyState = ({
                 text-center
             "
         >
-
             <div
                 className="
                     mx-auto
@@ -333,25 +208,22 @@ const EmptyState = ({
                     text-gray-600
                 "
             >
-
                 <MessageSquareText
                     size={24}
                 />
-
             </div>
-
 
             <h3
                 className="
                     mt-4
+                    font-display
                     text-sm
-                    font-black
+                    font-semibold
                     text-gray-300
                 "
             >
                 {title}
             </h3>
-
 
             <p
                 className="
@@ -359,846 +231,244 @@ const EmptyState = ({
                     mt-2
                     max-w-md
                     text-xs
+                    font-medium
                     leading-6
                     text-gray-600
                 "
             >
                 {description}
             </p>
-
         </div>
     );
 };
 
+// =========================================================
+// SECTION LOADER
+// =========================================================
+
+const SectionLoader = ({
+    label = "Yuklanmoqda...",
+}) => {
+    return (
+        <div
+            className="
+                flex
+                min-h-[180px]
+                items-center
+                justify-center
+                rounded-3xl
+                border
+                border-white/[0.05]
+                bg-white/[0.015]
+            "
+        >
+            <div className="text-center">
+                <Loader2
+                    size={25}
+                    className="
+                        mx-auto
+                        animate-spin
+                        text-indigo-400
+                    "
+                />
+
+                <p
+                    className="
+                        mt-3
+                        font-display
+                        text-[9px]
+                        font-semibold
+                        uppercase
+                        tracking-[0.13em]
+                        text-gray-600
+                    "
+                >
+                    {label}
+                </p>
+            </div>
+        </div>
+    );
+};
 
 // =========================================================
 // FEEDBACK PAGE
 // =========================================================
 
 const Feedback = () => {
-
-    const navigate =
-        useNavigate();
-
-
-    // =====================================================
-    // AUTH
-    // =====================================================
-
     const {
+        // =================================================
+        // AUTH
+        // =================================================
+
         isLoggedIn,
-    } = useSelector(
-        (
-            state
-        ) =>
-            state.auth
-    );
 
+        // =================================================
+        // PUBLIC
+        // =================================================
 
-    // =====================================================
-    // DATA
-    // =====================================================
-
-    const [
         publicFeedbacks,
-        setPublicFeedbacks,
-    ] = useState([]);
+        publicCount,
 
+        publicPagination,
+        isPublicLoading,
 
-    const [
+        handlePublicPageChange,
+
+        // =================================================
+        // MY
+        // =================================================
+
         myFeedbacks,
-        setMyFeedbacks,
-    ] = useState([]);
 
+        myPagination,
+        isMyLoading,
 
-    const [
+        handleMyPageChange,
+
+        // =================================================
+        // STATS
+        // =================================================
+
         stats,
-        setStats,
-    ] = useState({
-        total: 0,
-        pending: 0,
-        approved: 0,
-        rejected: 0,
-        earned_fcoin: 0,
-        approved_bugs: 0,
-    });
 
+        // =================================================
+        // FILTER
+        // =================================================
 
-    // =====================================================
-    // FILTER
-    // =====================================================
-
-    const [
         activeStatus,
+        statusFilters,
         setActiveStatus,
-    ] = useState(
-        "all"
-    );
 
+        // =================================================
+        // CREATE
+        // =================================================
 
-    // =====================================================
-    // MODALS
-    // =====================================================
-
-    const [
         isCreateModalOpen,
-        setIsCreateModalOpen,
-    ] = useState(
-        false
-    );
 
+        handleOpenCreate,
+        handleCloseCreate,
+        handleCreated,
 
-    const [
+        // =================================================
+        // EDIT
+        // =================================================
+
         editingFeedback,
-        setEditingFeedback,
-    ] = useState(
-        null
-    );
+        isEditModalOpen,
 
+        isUpdating,
+        updatingId,
 
-    const [
-        deletingFeedback,
-        setDeletingFeedback,
-    ] = useState(
-        null
-    );
+        handleOpenEdit,
+        handleCloseEdit,
+        handleUpdateFeedback,
 
+        // =================================================
+        // DELETE
+        // =================================================
 
-    // =====================================================
-    // LOADING
-    // =====================================================
-
-    const [
-        isLoading,
-        setIsLoading,
-    ] = useState(
-        true
-    );
-
-
-    const [
-        isRefreshing,
-        setIsRefreshing,
-    ] = useState(
-        false
-    );
-
-
-    const [
         isDeleting,
-        setIsDeleting,
-    ] = useState(
-        false
-    );
+        deletingId,
 
+        handleDeleteFeedback,
+
+        // =================================================
+        // REQUEST
+        // =================================================
+
+        isRefreshing,
+
+        isInitialLoading,
+        isMyInitialLoading,
+        isStatsInitialLoading,
+
+        error,
+
+        handleRefresh,
+    } = useFeedbackPage();
 
     // =====================================================
-    // PAGE ERROR
+    // DELETE TARGET
     // =====================================================
 
     const [
-        error,
-        setError,
-    ] = useState("");
+        deleteTarget,
+        setDeleteTarget,
+    ] = useState(null);
 
-
-    // =====================================================
-    // FILTERED MY FEEDBACKS
-    // =====================================================
-
-    const filteredMyFeedbacks =
-        useMemo(
-            () => {
-
-                if (
-                    activeStatus ===
-                    "all"
-                ) {
-                    return (
-                        myFeedbacks
-                    );
-                }
-
-
-                return (
-                    myFeedbacks.filter(
-                        (
-                            feedback
-                        ) =>
-                            feedback.status ===
-                            activeStatus
-                    )
-                );
-
-            },
-            [
-                activeStatus,
-                myFeedbacks,
-            ]
+    const isDeleteModalOpen =
+        Boolean(
+            deleteTarget
         );
 
-
     // =====================================================
-    // LOAD PUBLIC
-    // =====================================================
-
-    const loadPublicFeedbacks =
-        useCallback(
-            async () => {
-
-                const data =
-                    await FeedbackService
-                        .getFeedbacks();
-
-
-                setPublicFeedbacks(
-                    Array.isArray(
-                        data
-                    )
-                        ? data
-                        : []
-                );
-
-            },
-            []
-        );
-
-
-    // =====================================================
-    // LOAD MY FEEDBACKS
+    // OPEN DELETE MODAL
     // =====================================================
 
-    const loadMyFeedbacks =
-        useCallback(
-            async () => {
-
-                if (
-                    !isLoggedIn
-                ) {
-
-                    setMyFeedbacks(
-                        []
-                    );
-
-                    return;
-                }
-
-
-                const data =
-                    await FeedbackService
-                        .getMyFeedbacks();
-
-
-                setMyFeedbacks(
-                    Array.isArray(
-                        data
-                    )
-                        ? data
-                        : []
-                );
-
-            },
-            [
-                isLoggedIn,
-            ]
-        );
-
-
-    // =====================================================
-    // LOAD STATS
-    // =====================================================
-
-    const loadStats =
-        useCallback(
-            async () => {
-
-                if (
-                    !isLoggedIn
-                ) {
-
-                    setStats({
-                        total: 0,
-                        pending: 0,
-                        approved: 0,
-                        rejected: 0,
-                        earned_fcoin: 0,
-                        approved_bugs: 0,
-                    });
-
-                    return;
-                }
-
-
-                const data =
-                    await FeedbackService
-                        .getMyFeedbackStats();
-
-
-                setStats({
-                    total:
-                        data?.total
-                        ?? 0,
-
-                    pending:
-                        data?.pending
-                        ?? 0,
-
-                    approved:
-                        data?.approved
-                        ?? 0,
-
-                    rejected:
-                        data?.rejected
-                        ?? 0,
-
-                    earned_fcoin:
-                        data?.earned_fcoin
-                        ?? 0,
-
-                    approved_bugs:
-                        data?.approved_bugs
-                        ?? 0,
-                });
-
-            },
-            [
-                isLoggedIn,
-            ]
-        );
-
-
-    // =====================================================
-    // LOAD ALL
-    // =====================================================
-
-    const loadAllData =
-        useCallback(
-            async () => {
-
-                await Promise.all([
-                    loadPublicFeedbacks(),
-                    loadMyFeedbacks(),
-                    loadStats(),
-                ]);
-
-            },
-            [
-                loadPublicFeedbacks,
-                loadMyFeedbacks,
-                loadStats,
-            ]
-        );
-
-
-    // =====================================================
-    // INITIAL LOAD
-    // =====================================================
-
-    useEffect(
-        () => {
-
-            let mounted =
-                true;
-
-
-            const load =
-                async () => {
-
-                    setIsLoading(
-                        true
-                    );
-
-                    setError("");
-
-
-                    try {
-
-                        await loadAllData();
-
-                    } catch (
-                        requestError
-                    ) {
-
-                        if (
-                            mounted
-                        ) {
-
-                            setError(
-                                getErrorMessage(
-                                    requestError
-                                )
-                            );
-
-                        }
-
-                    } finally {
-
-                        if (
-                            mounted
-                        ) {
-
-                            setIsLoading(
-                                false
-                            );
-
-                        }
-                    }
-                };
-
-
-            load();
-
-
-            return () => {
-
-                mounted =
-                    false;
-
-            };
-
-        },
-        [
-            loadAllData,
-        ]
-    );
-
-
-    // =====================================================
-    // REFRESH
-    // =====================================================
-
-    const handleRefresh =
-        async () => {
-
-            if (
-                isRefreshing
-            ) {
-                return;
-            }
-
-
-            const toastId =
-                toast.loading(
-                    "Feedbacklar yangilanmoqda..."
-                );
-
-
-            setIsRefreshing(
-                true
-            );
-
-            setError("");
-
-
-            try {
-
-                await loadAllData();
-
-
-                toast.success(
-                    "Feedback ma’lumotlari yangilandi.",
-                    {
-                        id:
-                            toastId,
-                    }
-                );
-
-            } catch (
-                requestError
-            ) {
-
-                const message =
-                    getErrorMessage(
-                        requestError
-                    );
-
-
-                setError(
-                    message
-                );
-
-
-                toast.error(
-                    message,
-                    {
-                        id:
-                            toastId,
-
-                        duration:
-                            5000,
-                    }
-                );
-
-            } finally {
-
-                setIsRefreshing(
-                    false
-                );
-
-            }
-        };
-
-
-    // =====================================================
-    // OPEN CREATE
-    // =====================================================
-
-    const handleOpenCreate =
-        () => {
-
-            if (
-                !isLoggedIn
-            ) {
-
-                toast.error(
-                    "Feedback yuborish uchun avval tizimga kiring."
-                );
-
-
-                navigate(
-                    "/login"
-                );
-
-                return;
-            }
-
-
-            setIsCreateModalOpen(
-                true
-            );
-        };
-
-
-    // =====================================================
-    // CREATED
-    // =====================================================
-
-    const handleCreated =
-        async (
-            createdFeedback
-        ) => {
-
-            setActiveStatus(
-                "all"
-            );
-
-
-            setIsCreateModalOpen(
-                false
-            );
-
-
-            if (
-                createdFeedback?.id
-            ) {
-
-                setMyFeedbacks(
-                    (
-                        current
-                    ) => [
-                        createdFeedback,
-                        ...current.filter(
-                            (
-                                item
-                            ) =>
-                                item.id !==
-                                createdFeedback.id
-                        ),
-                    ]
-                );
-
-            }
-
-
-            try {
-
-                await Promise.all([
-                    loadMyFeedbacks(),
-                    loadStats(),
-                    loadPublicFeedbacks(),
-                ]);
-
-            } catch (
-                requestError
-            ) {
-
-                console.error(
-                    "Feedback create refresh error:",
-                    requestError
-                );
-
-            }
-        };
-
-
-    // =====================================================
-    // EDIT OPEN
-    // =====================================================
-
-    const handleEdit =
-        (
+    const handleOpenDeleteModal = (
+        feedback
+    ) => {
+        if (
+            !feedback
+            ||
+            isDeleting
+            ||
+            isUpdating
+        ) {
+            return;
+        }
+
+        setDeleteTarget(
             feedback
-        ) => {
-
-            if (
-                !feedback
-                    ?.can_user_modify
-            ) {
-
-                toast.error(
-                    "Faqat pending feedbackni tahrirlash mumkin."
-                );
-
-                return;
-            }
-
-
-            setEditingFeedback(
-                feedback
-            );
-        };
-
+        );
+    };
 
     // =====================================================
-    // UPDATED
+    // CLOSE DELETE MODAL
     // =====================================================
 
-    const handleUpdated =
-        async (
-            updatedFeedback
-        ) => {
+    const handleCloseDeleteModal = () => {
+        if (
+            isDeleting
+        ) {
+            return;
+        }
 
-            setEditingFeedback(
-                null
-            );
-
-
-            if (
-                updatedFeedback?.id
-            ) {
-
-                setMyFeedbacks(
-                    (
-                        current
-                    ) =>
-                        current.map(
-                            (
-                                item
-                            ) =>
-                                item.id ===
-                                updatedFeedback.id
-
-                                    ? updatedFeedback
-
-                                    : item
-                        )
-                );
-
-            }
-
-
-            try {
-
-                await Promise.all([
-                    loadMyFeedbacks(),
-                    loadStats(),
-                    loadPublicFeedbacks(),
-                ]);
-
-            } catch (
-                requestError
-            ) {
-
-                console.error(
-                    "Feedback update refresh error:",
-                    requestError
-                );
-
-            }
-        };
-
+        setDeleteTarget(
+            null
+        );
+    };
 
     // =====================================================
-    // DELETE OPEN
+    // CONFIRM DELETE
     // =====================================================
 
-    const handleDelete =
-        (
-            feedback
-        ) => {
-
-            if (
-                !feedback
-                    ?.can_user_modify
-            ) {
-
-                toast.error(
-                    "Faqat pending feedbackni o‘chirish mumkin."
-                );
-
-                return;
-            }
-
-
-            setDeletingFeedback(
-                feedback
-            );
-        };
-
-
-    // =====================================================
-    // DELETE CLOSE
-    // =====================================================
-
-    const handleDeleteClose =
-        () => {
-
-            if (
-                isDeleting
-            ) {
-                return;
-            }
-
-
-            setDeletingFeedback(
-                null
-            );
-        };
-
-
-    // =====================================================
-    // DELETE CONFIRM
-    // =====================================================
-
-    const handleDeleteConfirm =
+    const handleConfirmDelete =
         async () => {
-
             if (
-                !deletingFeedback?.id
+                !deleteTarget
                 ||
                 isDeleting
             ) {
                 return;
             }
 
-
-            const feedbackId =
-                deletingFeedback.id;
-
-
-            const feedbackTitle =
-                deletingFeedback.title
-                || "Feedback";
-
-
-            const toastId =
-                toast.loading(
-                    "Feedback o‘chirilmoqda..."
+            const success =
+                await handleDeleteFeedback(
+                    deleteTarget
                 );
 
-
-            setIsDeleting(
-                true
-            );
-
-            setError("");
-
-
-            try {
-
-                await FeedbackService
-                    .deleteFeedback(
-                        feedbackId
-                    );
-
-
-                setMyFeedbacks(
-                    (
-                        current
-                    ) =>
-                        current.filter(
-                            (
-                                feedback
-                            ) =>
-                                feedback.id !==
-                                feedbackId
-                        )
-                );
-
-
-                setDeletingFeedback(
+            if (
+                success
+            ) {
+                setDeleteTarget(
                     null
                 );
-
-
-                toast.success(
-                    `"${feedbackTitle}" muvaffaqiyatli o‘chirildi.`,
-                    {
-                        id:
-                            toastId,
-
-                        duration:
-                            3500,
-                    }
-                );
-
-
-                try {
-
-                    await Promise.all([
-                        loadStats(),
-                        loadPublicFeedbacks(),
-                    ]);
-
-                } catch (
-                    refreshError
-                ) {
-
-                    console.error(
-                        "Delete refresh error:",
-                        refreshError
-                    );
-
-                }
-
-            } catch (
-                requestError
-            ) {
-
-                const message =
-                    getErrorMessage(
-                        requestError
-                    );
-
-
-                setError(
-                    message
-                );
-
-
-                toast.error(
-                    message,
-                    {
-                        id:
-                            toastId,
-
-                        duration:
-                            5000,
-                    }
-                );
-
-            } finally {
-
-                setIsDeleting(
-                    false
-                );
-
             }
         };
 
-
     // =====================================================
-    // STAT CARDS
+    // STATS
     // =====================================================
 
     const statCards =
@@ -1209,7 +479,9 @@ const Feedback = () => {
                         "Jami",
 
                     value:
-                        stats.total,
+                        stats?.total
+                        ??
+                        0,
 
                     Icon:
                         MessageSquareText,
@@ -1217,13 +489,14 @@ const Feedback = () => {
                     description:
                         "Yuborgan feedbacklaringiz",
                 },
-
                 {
                     title:
                         "Pending",
 
                     value:
-                        stats.pending,
+                        stats?.pending
+                        ??
+                        0,
 
                     Icon:
                         Clock3,
@@ -1231,13 +504,14 @@ const Feedback = () => {
                     description:
                         "Admin tekshiruvini kutmoqda",
                 },
-
                 {
                     title:
                         "Approved",
 
                     value:
-                        stats.approved,
+                        stats?.approved
+                        ??
+                        0,
 
                     Icon:
                         CheckCircle2,
@@ -1245,13 +519,14 @@ const Feedback = () => {
                     description:
                         "Tasdiqlangan feedbacklar",
                 },
-
                 {
                     title:
                         "Rejected",
 
                     value:
-                        stats.rejected,
+                        stats?.rejected
+                        ??
+                        0,
 
                     Icon:
                         XCircle,
@@ -1259,13 +534,14 @@ const Feedback = () => {
                     description:
                         "Rad etilgan feedbacklar",
                 },
-
                 {
                     title:
                         "Earned FCoin",
 
                     value:
-                        stats.earned_fcoin,
+                        stats?.earned_fcoin
+                        ??
+                        0,
 
                     Icon:
                         Coins,
@@ -1273,13 +549,14 @@ const Feedback = () => {
                     description:
                         "Feedback orqali topilgan",
                 },
-
                 {
                     title:
                         "Approved Bugs",
 
                     value:
-                        stats.approved_bugs,
+                        stats?.approved_bugs
+                        ??
+                        0,
 
                     Icon:
                         Bug,
@@ -1293,227 +570,58 @@ const Feedback = () => {
             ]
         );
 
-
     // =====================================================
-    // LOADING
+    // INITIAL LOADING
     // =====================================================
 
     if (
-        isLoading
+        isInitialLoading
     ) {
         return (
-            <>
-                <Toaster
-                    position="top-right"
-                    containerStyle={{
-                        zIndex:
-                            2147483647,
-
-                        top:
-                            24,
-
-                        right:
-                            24,
-                    }}
-                    toastOptions={{
-                        duration:
-                            4000,
-
-                        style: {
-                            background:
-                                "#161b22",
-
-                            color:
-                                "#f0f6fc",
-
-                            border:
-                                "1px solid #30363d",
-
-                            borderRadius:
-                                "14px",
-
-                            padding:
-                                "14px 16px",
-
-                            fontSize:
-                                "13px",
-
-                            fontWeight:
-                                "600",
-
-                            boxShadow:
-                                "0 20px 60px rgba(0, 0, 0, 0.55)",
-
-                            maxWidth:
-                                "420px",
-                        },
-
-                        success: {
-                            iconTheme: {
-                                primary:
-                                    "#22c55e",
-
-                                secondary:
-                                    "#161b22",
-                            },
-                        },
-
-                        error: {
-                            iconTheme: {
-                                primary:
-                                    "#ef4444",
-
-                                secondary:
-                                    "#161b22",
-                            },
-                        },
-
-                        loading: {
-                            iconTheme: {
-                                primary:
-                                    "#818cf8",
-
-                                secondary:
-                                    "#161b22",
-                            },
-                        },
-                    }}
-                />
-
-
-                <div
-                    className="
-                        flex
-                        min-h-[70vh]
-                        items-center
-                        justify-center
-                    "
-                >
-
-                    <div
+            <main
+                className="
+                    flex
+                    min-h-[70vh]
+                    items-center
+                    justify-center
+                    bg-[#06080d]
+                    font-sans
+                "
+            >
+                <div className="text-center">
+                    <Loader2
+                        size={34}
                         className="
-                            text-center
+                            mx-auto
+                            animate-spin
+                            text-indigo-400
+                        "
+                    />
+
+                    <p
+                        className="
+                            mt-3
+                            font-display
+                            text-[10px]
+                            font-semibold
+                            uppercase
+                            tracking-[0.14em]
+                            text-gray-600
                         "
                     >
-
-                        <Loader2
-                            size={34}
-                            className="
-                                mx-auto
-                                animate-spin
-                                text-indigo-400
-                            "
-                        />
-
-
-                        <p
-                            className="
-                                mt-3
-                                text-xs
-                                font-semibold
-                                text-gray-600
-                            "
-                        >
-                            Feedbacklar yuklanmoqda...
-                        </p>
-
-                    </div>
-
+                        Feedbacklar yuklanmoqda
+                    </p>
                 </div>
-            </>
+            </main>
         );
     }
 
-
     // =====================================================
-    // JSX
+    // PAGE
     // =====================================================
 
     return (
         <>
-
-            {/* =============================================
-                TOAST
-            ============================================== */}
-
-            <Toaster
-                position="top-right"
-                containerStyle={{
-                    zIndex:
-                        2147483647,
-
-                    top:
-                        24,
-
-                    right:
-                        24,
-                }}
-                toastOptions={{
-                    duration:
-                        4000,
-
-                    style: {
-                        background:
-                            "#161b22",
-
-                        color:
-                            "#f0f6fc",
-
-                        border:
-                            "1px solid #30363d",
-
-                        borderRadius:
-                            "14px",
-
-                        padding:
-                            "14px 16px",
-
-                        fontSize:
-                            "13px",
-
-                        fontWeight:
-                            "600",
-
-                        boxShadow:
-                            "0 20px 60px rgba(0, 0, 0, 0.55)",
-
-                        maxWidth:
-                            "420px",
-                    },
-
-                    success: {
-                        iconTheme: {
-                            primary:
-                                "#22c55e",
-
-                            secondary:
-                                "#161b22",
-                        },
-                    },
-
-                    error: {
-                        iconTheme: {
-                            primary:
-                                "#ef4444",
-
-                            secondary:
-                                "#161b22",
-                        },
-                    },
-
-                    loading: {
-                        iconTheme: {
-                            primary:
-                                "#818cf8",
-
-                            secondary:
-                                "#161b22",
-                        },
-                    },
-                }}
-            />
-
-
             <main
                 className="
                     relative
@@ -1521,14 +629,15 @@ const Feedback = () => {
                     overflow-hidden
                     bg-[#06080d]
                     pb-24
+                    font-sans
                 "
             >
-
                 {/* =========================================
                     BACKGROUND
                 ========================================== */}
 
                 <div
+                    aria-hidden="true"
                     className="
                         pointer-events-none
                         absolute
@@ -1543,8 +652,8 @@ const Feedback = () => {
                     "
                 />
 
-
                 <div
+                    aria-hidden="true"
                     className="
                         pointer-events-none
                         absolute
@@ -1558,9 +667,20 @@ const Feedback = () => {
                     "
                 />
 
+                <div
+                    aria-hidden="true"
+                    className="
+                        pointer-events-none
+                        absolute
+                        inset-0
+                        opacity-[0.014]
+                        [background-image:linear-gradient(rgba(255,255,255,0.8)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.8)_1px,transparent_1px)]
+                        [background-size:56px_56px]
+                    "
+                />
 
                 {/* =========================================
-                    CONTAINER
+                    CONTENT
                 ========================================== */}
 
                 <div
@@ -1576,13 +696,13 @@ const Feedback = () => {
                         lg:px-8
                     "
                 >
-
                     {/* =====================================
                         HERO
                     ====================================== */}
 
                     <section
                         className="
+                            relative
                             overflow-hidden
                             rounded-[32px]
                             border
@@ -1594,9 +714,25 @@ const Feedback = () => {
                             sm:py-10
                         "
                     >
+                        <div
+                            aria-hidden="true"
+                            className="
+                                pointer-events-none
+                                absolute
+                                -right-20
+                                -top-20
+                                h-60
+                                w-60
+                                rounded-full
+                                bg-indigo-500/[0.06]
+                                blur-[90px]
+                            "
+                        />
 
                         <div
                             className="
+                                relative
+                                z-10
                                 flex
                                 flex-col
                                 gap-8
@@ -1605,13 +741,7 @@ const Feedback = () => {
                                 lg:justify-between
                             "
                         >
-
-                            <div
-                                className="
-                                    max-w-3xl
-                                "
-                            >
-
+                            <div className="max-w-3xl">
                                 <div
                                     className="
                                         inline-flex
@@ -1623,37 +753,34 @@ const Feedback = () => {
                                         bg-indigo-500/[0.05]
                                         px-3
                                         py-1.5
-                                        text-[10px]
-                                        font-black
+                                        font-display
+                                        text-[9px]
+                                        font-semibold
                                         uppercase
-                                        tracking-[0.15em]
+                                        tracking-[0.14em]
                                         text-indigo-300
                                     "
                                 >
-
                                     <Sparkles
                                         size={12}
                                     />
 
                                     Community Feedback
-
                                 </div>
-
 
                                 <h1
                                     className="
                                         mt-5
+                                        font-display
                                         text-3xl
-                                        font-black
-                                        tracking-tight
+                                        font-bold
+                                        tracking-[-0.03em]
                                         text-white
                                         sm:text-4xl
                                         lg:text-5xl
                                     "
                                 >
-
-                                    F.Society’ni
-                                    {" "}
+                                    F.Society’ni{" "}
 
                                     <span
                                         className="
@@ -1667,32 +794,26 @@ const Feedback = () => {
                                     >
                                         birga yaxshilaymiz.
                                     </span>
-
                                 </h1>
-
 
                                 <p
                                     className="
                                         mt-4
                                         max-w-2xl
                                         text-sm
+                                        font-medium
                                         leading-7
                                         text-gray-500
                                     "
                                 >
-                                    Bug topdingizmi,
-                                    yangi feature g‘oyangiz
-                                    bormi yoki platforma
-                                    haqida fikringizni
-                                    aytmoqchimisiz?
-                                    Feedback yuboring.
-                                    Admin tasdiqlagan foydali
-                                    feedbacklar uchun FCoin
-                                    mukofoti beriladi.
+                                    Bug topdingizmi, yangi feature
+                                    g‘oyangiz bormi yoki platforma
+                                    haqida fikringizni aytmoqchimisiz?
+                                    Feedback yuboring. Admin
+                                    tasdiqlagan foydali feedbacklar
+                                    uchun FCoin mukofoti beriladi.
                                 </p>
-
                             </div>
-
 
                             <div
                                 className="
@@ -1701,7 +822,6 @@ const Feedback = () => {
                                     gap-3
                                 "
                             >
-
                                 <button
                                     type="button"
                                     onClick={
@@ -1721,17 +841,19 @@ const Feedback = () => {
                                         bg-white/[0.025]
                                         px-4
                                         py-3
+                                        font-display
                                         text-xs
-                                        font-bold
+                                        font-semibold
                                         text-gray-400
-                                        transition
+                                        transition-all
+                                        hover:-translate-y-0.5
                                         hover:bg-white/[0.06]
                                         hover:text-white
+                                        active:translate-y-0
                                         disabled:cursor-not-allowed
                                         disabled:opacity-50
                                     "
                                 >
-
                                     <RefreshCcw
                                         size={16}
                                         className={
@@ -1742,9 +864,7 @@ const Feedback = () => {
                                     />
 
                                     Yangilash
-
                                 </button>
-
 
                                 <button
                                     type="button"
@@ -1757,125 +877,124 @@ const Feedback = () => {
                                         justify-center
                                         gap-2
                                         rounded-xl
+                                        border
+                                        border-indigo-400/20
                                         bg-indigo-600
                                         px-5
                                         py-3
+                                        font-display
                                         text-xs
-                                        font-black
+                                        font-semibold
                                         text-white
                                         shadow-lg
                                         shadow-indigo-950/30
-                                        transition
+                                        transition-all
+                                        hover:-translate-y-0.5
                                         hover:bg-indigo-500
+                                        active:translate-y-0
+                                        active:scale-[0.98]
                                     "
                                 >
-
                                     <Plus
                                         size={17}
                                     />
 
                                     Feedback yuborish
-
                                 </button>
-
                             </div>
-
                         </div>
-
                     </section>
-
 
                     {/* =====================================
                         ERROR
                     ====================================== */}
 
-                    {error && (
-
-                        <div
-                            className="
-                                mt-6
-                                flex
-                                items-start
-                                gap-3
-                                rounded-2xl
-                                border
-                                border-red-400/15
-                                bg-red-500/[0.05]
-                                px-4
-                                py-3
-                                text-xs
-                                text-red-300
-                            "
-                        >
-
-                            <AlertCircle
-                                size={17}
+                    <AnimatePresence>
+                        {error && (
+                            <motion.div
+                                initial={{
+                                    opacity: 0,
+                                    y: -6,
+                                }}
+                                animate={{
+                                    opacity: 1,
+                                    y: 0,
+                                }}
+                                exit={{
+                                    opacity: 0,
+                                    y: -6,
+                                }}
                                 className="
-                                    mt-0.5
-                                    flex-shrink-0
-                                "
-                            />
-
-                            <div
-                                className="
-                                    flex-1
+                                    mt-6
+                                    flex
+                                    items-start
+                                    gap-3
+                                    rounded-2xl
+                                    border
+                                    border-red-400/15
+                                    bg-red-500/[0.05]
+                                    px-4
+                                    py-3
+                                    text-xs
+                                    font-medium
+                                    leading-5
+                                    text-red-300
                                 "
                             >
-                                {error}
-                            </div>
+                                <AlertCircle
+                                    size={17}
+                                    className="
+                                        mt-0.5
+                                        shrink-0
+                                    "
+                                />
 
-                        </div>
-
-                    )}
-
+                                <span>
+                                    {error}
+                                </span>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* =====================================
-                        STATS
+                        MY STATS
                     ====================================== */}
 
                     {isLoggedIn && (
-
-                        <section
-                            className="
-                                mt-8
-                            "
-                        >
-
+                        <section className="mt-8">
                             <div
                                 className="
                                     mb-4
                                     flex
                                     items-center
                                     justify-between
+                                    gap-3
                                 "
                             >
-
                                 <div>
-
                                     <h2
                                         className="
+                                            font-display
                                             text-lg
-                                            font-black
+                                            font-semibold
                                             text-white
                                         "
                                     >
                                         Mening statistikam
                                     </h2>
 
-
                                     <p
                                         className="
                                             mt-1
                                             text-xs
+                                            font-medium
                                             text-gray-600
                                         "
                                     >
                                         Feedback faoliyatingiz
                                         va FCoin natijalari.
                                     </p>
-
                                 </div>
-
 
                                 <Gift
                                     size={20}
@@ -1883,9 +1002,7 @@ const Feedback = () => {
                                         text-amber-300
                                     "
                                 />
-
                             </div>
-
 
                             <div
                                 className="
@@ -1896,41 +1013,31 @@ const Feedback = () => {
                                     xl:grid-cols-6
                                 "
                             >
-
                                 {statCards.map(
                                     (
                                         card
                                     ) => (
-
                                         <StatCard
                                             key={
                                                 card.title
                                             }
                                             {...card}
+                                            isLoading={
+                                                isStatsInitialLoading
+                                            }
                                         />
-
                                     )
                                 )}
-
                             </div>
-
                         </section>
-
                     )}
-
 
                     {/* =====================================
                         MY FEEDBACKS
                     ====================================== */}
 
                     {isLoggedIn && (
-
-                        <section
-                            className="
-                                mt-12
-                            "
-                        >
-
+                        <section className="mt-12">
                             <div
                                 className="
                                     flex
@@ -1941,33 +1048,34 @@ const Feedback = () => {
                                     sm:justify-between
                                 "
                             >
-
                                 <div>
-
                                     <h2
                                         className="
+                                            font-display
                                             text-xl
-                                            font-black
+                                            font-semibold
                                             text-white
                                         "
                                     >
                                         Mening feedbacklarim
                                     </h2>
 
-
                                     <p
                                         className="
                                             mt-1
                                             text-xs
+                                            font-medium
                                             text-gray-600
                                         "
                                     >
-                                        Yuborgan feedbacklaringiz
-                                        holatini kuzating.
+                                        Pending feedbacklarni
+                                        tahrirlash yoki o‘chirish mumkin.
                                     </p>
-
                                 </div>
 
+                                {/* =====================
+                                    FILTERS
+                                ====================== */}
 
                                 <div
                                     className="
@@ -1976,16 +1084,13 @@ const Feedback = () => {
                                         gap-2
                                     "
                                 >
-
-                                    {STATUS_FILTERS.map(
+                                    {statusFilters.map(
                                         (
                                             item
                                         ) => {
-
                                             const active =
                                                 activeStatus ===
                                                 item.value;
-
 
                                             return (
                                                 <button
@@ -1993,35 +1098,48 @@ const Feedback = () => {
                                                         item.value
                                                     }
                                                     type="button"
-                                                    onClick={
-                                                        () =>
-                                                            setActiveStatus(
-                                                                item.value
-                                                            )
+                                                    onClick={() => {
+                                                        setActiveStatus(
+                                                            item.value
+                                                        );
+                                                    }}
+                                                    disabled={
+                                                        isMyLoading
                                                     }
                                                     className={`
                                                         rounded-xl
                                                         border
                                                         px-3
                                                         py-2
-                                                        text-[10px]
-                                                        font-bold
-                                                        transition
+                                                        font-display
+                                                        text-[9px]
+                                                        font-semibold
+                                                        uppercase
+                                                        tracking-[0.08em]
+                                                        transition-all
+                                                        disabled:cursor-not-allowed
+                                                        disabled:opacity-50
 
                                                         ${
                                                             active
-                                                                ? `
-                                                                    border-indigo-400/25
-                                                                    bg-indigo-500/[0.10]
-                                                                    text-indigo-300
-                                                                `
-                                                                : `
-                                                                    border-white/[0.06]
-                                                                    bg-white/[0.02]
-                                                                    text-gray-600
-                                                                    hover:bg-white/[0.05]
-                                                                    hover:text-gray-300
-                                                                `
+                                                                ? (
+                                                                    "border-indigo-400/25 "
+                                                                    +
+                                                                    "bg-indigo-500/[0.10] "
+                                                                    +
+                                                                    "text-indigo-300"
+                                                                )
+                                                                : (
+                                                                    "border-white/[0.06] "
+                                                                    +
+                                                                    "bg-white/[0.02] "
+                                                                    +
+                                                                    "text-gray-600 "
+                                                                    +
+                                                                    "hover:bg-white/[0.05] "
+                                                                    +
+                                                                    "hover:text-gray-300"
+                                                                )
                                                         }
                                                     `}
                                                 >
@@ -2032,92 +1150,148 @@ const Feedback = () => {
                                             );
                                         }
                                     )}
-
                                 </div>
-
                             </div>
 
+                            {/* =========================
+                                LIST
+                            ========================== */}
 
-                            <div
-                                className="
-                                    mt-5
-                                    grid
-                                    grid-cols-1
-                                    gap-4
-                                    lg:grid-cols-2
-                                "
-                            >
-
-                                {filteredMyFeedbacks.length ? (
-
-                                    filteredMyFeedbacks.map(
-                                        (
-                                            feedback
-                                        ) => (
-
-                                            <FeedbackCard
-                                                key={
-                                                    feedback.id
-                                                }
-                                                feedback={
-                                                    feedback
-                                                }
-                                                onEdit={
-                                                    handleEdit
-                                                }
-                                                onDelete={
-                                                    handleDelete
-                                                }
-                                            />
-
-                                        )
-                                    )
-
-                                ) : (
-
-                                    <div
+                            <div className="mt-5">
+                                {isMyInitialLoading ? (
+                                    <SectionLoader
+                                        label="Feedbacklaringiz yuklanmoqda"
+                                    />
+                                ) : myFeedbacks.length > 0 ? (
+                                    <motion.div
+                                        layout
                                         className="
-                                            lg:col-span-2
+                                            grid
+                                            grid-cols-1
+                                            gap-4
+                                            lg:grid-cols-2
                                         "
                                     >
+                                        <AnimatePresence
+                                            mode="popLayout"
+                                        >
+                                            {myFeedbacks.map(
+                                                (
+                                                    feedback
+                                                ) => {
+                                                    const feedbackId =
+                                                        Number(
+                                                            feedback?.id
+                                                        );
 
-                                        <EmptyState
-                                            title="Feedback topilmadi"
-                                            description={
-                                                activeStatus ===
-                                                "all"
-                                                    ? (
-                                                        "Siz hali feedback "
-                                                        + "yubormagansiz."
-                                                    )
-                                                    : (
-                                                        `Hozircha ${activeStatus} `
-                                                        + "holatidagi feedback yo‘q."
-                                                    )
-                                            }
-                                        />
+                                                    const cardUpdating =
+                                                        isUpdating
+                                                        &&
+                                                        Number(
+                                                            updatingId
+                                                        )
+                                                        ===
+                                                        feedbackId;
 
-                                    </div>
+                                                    const cardDeleting =
+                                                        isDeleting
+                                                        &&
+                                                        Number(
+                                                            deletingId
+                                                        )
+                                                        ===
+                                                        feedbackId;
 
+                                                    return (
+                                                        <FeedbackCard
+                                                            key={
+                                                                feedback.id
+                                                            }
+                                                            feedback={
+                                                                feedback
+                                                            }
+                                                            onEdit={
+                                                                handleOpenEdit
+                                                            }
+                                                            onDelete={
+                                                                handleOpenDeleteModal
+                                                            }
+                                                            isUpdating={
+                                                                cardUpdating
+                                                            }
+                                                            isDeleting={
+                                                                cardDeleting
+                                                            }
+                                                            actionsDisabled={
+                                                                (
+                                                                    isUpdating
+                                                                    ||
+                                                                    isDeleting
+                                                                )
+                                                                &&
+                                                                !cardUpdating
+                                                                &&
+                                                                !cardDeleting
+                                                            }
+                                                        />
+                                                    );
+                                                }
+                                            )}
+                                        </AnimatePresence>
+                                    </motion.div>
+                                ) : (
+                                    <EmptyState
+                                        title="Feedback topilmadi"
+                                        description={
+                                            activeStatus ===
+                                            "all"
+                                                ? (
+                                                    "Siz hali feedback yubormagansiz."
+                                                )
+                                                : (
+                                                    `Hozircha ${activeStatus} holatidagi feedback yo‘q.`
+                                                )
+                                        }
+                                    />
                                 )}
-
                             </div>
 
+                            {/* =========================
+                                MY PAGINATION
+                            ========================== */}
+
+                            <FeedbackPagination
+                                page={
+                                    myPagination.page
+                                }
+                                totalPages={
+                                    myPagination.totalPages
+                                }
+                                count={
+                                    myPagination.count
+                                }
+                                hasPrevious={
+                                    myPagination.hasPrevious
+                                }
+                                hasNext={
+                                    myPagination.hasNext
+                                }
+                                isLoading={
+                                    isMyLoading
+                                }
+                                onPageChange={
+                                    handleMyPageChange
+                                }
+                                label="Mening feedbacklarim sahifalari"
+                            />
                         </section>
-
                     )}
-
 
                     {/* =====================================
                         COMMUNITY
                     ====================================== */}
 
-                    <section
-                        className="
-                            mt-14
-                        "
-                    >
-
+                    <section className="mt-14">
                         <div
                             className="
                                 flex
@@ -2126,9 +1300,7 @@ const Feedback = () => {
                                 gap-4
                             "
                         >
-
                             <div>
-
                                 <div
                                     className="
                                         flex
@@ -2136,7 +1308,6 @@ const Feedback = () => {
                                         gap-2
                                     "
                                 >
-
                                     <ShieldCheck
                                         size={18}
                                         className="
@@ -2144,34 +1315,30 @@ const Feedback = () => {
                                         "
                                     />
 
-
                                     <h2
                                         className="
+                                            font-display
                                             text-xl
-                                            font-black
+                                            font-semibold
                                             text-white
                                         "
                                     >
                                         Tasdiqlangan feedbacklar
                                     </h2>
-
                                 </div>
-
 
                                 <p
                                     className="
                                         mt-1
                                         text-xs
+                                        font-medium
                                         text-gray-600
                                     "
                                 >
-                                    Admin tomonidan
-                                    tasdiqlangan hamjamiyat
-                                    feedbacklari.
+                                    Admin tomonidan tasdiqlangan
+                                    hamjamiyat feedbacklari.
                                 </p>
-
                             </div>
-
 
                             <span
                                 className="
@@ -2181,81 +1348,95 @@ const Feedback = () => {
                                     bg-white/[0.02]
                                     px-3
                                     py-1.5
-                                    text-[10px]
-                                    font-bold
+                                    font-display
+                                    text-[9px]
+                                    font-semibold
+                                    uppercase
+                                    tracking-[0.08em]
                                     text-gray-500
                                 "
                             >
                                 {
+                                    publicCount
+                                    ??
                                     publicFeedbacks.length
                                 }
+
                                 {" "}
+
                                 ta
                             </span>
-
                         </div>
 
-
-                        <div
-                            className="
-                                mt-5
-                                grid
-                                grid-cols-1
-                                gap-4
-                                lg:grid-cols-2
-                            "
-                        >
-
-                            {publicFeedbacks.length ? (
-
-                                publicFeedbacks.map(
-                                    (
-                                        feedback
-                                    ) => (
-
-                                        <FeedbackCard
-                                            key={
-                                                feedback.id
-                                            }
-                                            feedback={
-                                                feedback
-                                            }
-                                            showStatus={
-                                                false
-                                            }
-                                        />
-
-                                    )
-                                )
-
-                            ) : (
-
+                        <div className="mt-5">
+                            {publicFeedbacks.length > 0 ? (
                                 <div
                                     className="
-                                        lg:col-span-2
+                                        grid
+                                        grid-cols-1
+                                        gap-4
+                                        lg:grid-cols-2
                                     "
                                 >
-
-                                    <EmptyState
-                                        title="Hozircha tasdiqlangan feedback yo‘q"
-                                        description={
-                                            "Birinchi foydali feedbackni "
-                                            + "siz yuborishingiz mumkin."
-                                        }
-                                    />
-
+                                    {publicFeedbacks.map(
+                                        (
+                                            feedback
+                                        ) => (
+                                            <FeedbackCard
+                                                key={
+                                                    feedback.id
+                                                }
+                                                feedback={
+                                                    feedback
+                                                }
+                                                showStatus={
+                                                    false
+                                                }
+                                            />
+                                        )
+                                    )}
                                 </div>
-
+                            ) : (
+                                <EmptyState
+                                    title="Hozircha tasdiqlangan feedback yo‘q"
+                                    description={
+                                        "Birinchi foydali feedbackni siz yuborishingiz mumkin."
+                                    }
+                                />
                             )}
-
                         </div>
 
+                        {/* =========================
+                            PUBLIC PAGINATION
+                        ========================== */}
+
+                        <FeedbackPagination
+                            page={
+                                publicPagination.page
+                            }
+                            totalPages={
+                                publicPagination.totalPages
+                            }
+                            count={
+                                publicPagination.count
+                            }
+                            hasPrevious={
+                                publicPagination.hasPrevious
+                            }
+                            hasNext={
+                                publicPagination.hasNext
+                            }
+                            isLoading={
+                                isPublicLoading
+                            }
+                            onPageChange={
+                                handlePublicPageChange
+                            }
+                            label="Tasdiqlangan feedbacklar sahifalari"
+                        />
                     </section>
-
                 </div>
-
             </main>
-
 
             {/* =============================================
                 CREATE MODAL
@@ -2266,16 +1447,12 @@ const Feedback = () => {
                     isCreateModalOpen
                 }
                 onClose={
-                    () =>
-                        setIsCreateModalOpen(
-                            false
-                        )
+                    handleCloseCreate
                 }
                 onCreated={
                     handleCreated
                 }
             />
-
 
             {/* =============================================
                 EDIT MODAL
@@ -2283,52 +1460,55 @@ const Feedback = () => {
 
             <FeedbackEditModal
                 isOpen={
-                    Boolean(
-                        editingFeedback
-                    )
+                    isEditModalOpen
                 }
                 feedback={
                     editingFeedback
                 }
-                onClose={
-                    () =>
-                        setEditingFeedback(
-                            null
-                        )
+                isSubmitting={
+                    isUpdating
                 }
-                onUpdated={
-                    handleUpdated
+                onClose={
+                    handleCloseEdit
+                }
+                onSubmit={
+                    handleUpdateFeedback
                 }
             />
-
 
             {/* =============================================
-                DELETE MODAL
+                DELETE CONFIRMATION
             ============================================== */}
 
-            <DeleteConfirmationModal
-                isOpen={
-                    Boolean(
-                        deletingFeedback
-                    )
-                }
-                onClose={
-                    handleDeleteClose
-                }
-                onConfirm={
-                    handleDeleteConfirm
-                }
-                itemTitle={
-                    deletingFeedback
-                        ?.title
-                    ||
-                    "ushbu feedbackni"
-                }
-            />
-
+            {isLoggedIn && (
+                <DeleteConfirmationModal
+                    isOpen={
+                        isDeleteModalOpen
+                    }
+                    onClose={
+                        handleCloseDeleteModal
+                    }
+                    onConfirm={
+                        handleConfirmDelete
+                    }
+                    itemTitle={
+                        deleteTarget
+                            ?.title
+                            ?.trim()
+                        ||
+                        "Feedback"
+                    }
+                    isProcessing={
+                        isDeleting
+                    }
+                />
+            )}
         </>
     );
 };
 
+// =========================================================
+// EXPORT
+// =========================================================
 
 export default Feedback;
