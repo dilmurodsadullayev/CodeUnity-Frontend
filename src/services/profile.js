@@ -1,73 +1,263 @@
-// CommentService.js
-import axios from './api'
+// src/services/profile.js
 
-const ProfileService = {
-    async getProfile(username) { // page va pageSize parametrlarni qabul qilamiz
-        try {
-            // URL ga page va page_size query parametrlarni qo'shamiz
-            const { data } = await axios.get(`/users/${username}/profile/`, { withCredentials: true });
-            console.log("Bu Profile ni malumoti ", data.results);
-            return data; // API javobining butunini qaytaramiz (count, next, previous, results)
-        } catch (error) {
-            console.error("Profile olishda xato:", error.response || error.message);
-            throw error; // Xatoni yuqoriga uzatish
-        }
-    },
+import axios from "./api";
 
-    async updateProfile(username, dataToSend) {
-    try {
-        const { data } = await axios.patch(`/users/${username}/profile/`, dataToSend, { withCredentials: true })
-        
-        // Eslatma: Backend URL'ni `/users/profile/update/` ga o'zgartirdim, 
-        // chunki siz ProfileUpdateAPI uchun shunday URL belgilagandingiz.
-        
-        console.log("✅ ProfileData yuborildi:", data)
-        return data
-        } catch (error) {
-            if (error.response) {
-                // DRF xatolarini to'g'riroq chiqarish
-                console.error("❌ Server xatosi (Data/Status):", error.response.data, error.response.status)
-                // Error'ni tashlashdan oldin xato ma'lumotini to'g'ridan-to'g'ri ulash
-                const detailError = error.response.data?.detail || JSON.stringify(error.response.data) || "Serverdan noma'lum xato";
-                throw new Error(detailError);
-            } else if (error.request) {
-                console.error("❌ So‘rov yuborildi, lekin javob kelmadi:", error.request)
-                throw new Error("Server bilan bog'lanishda xato. Internet aloqasini tekshiring.");
-            } else {
-                console.error("❌ So‘rov sozlanishda xato:", error.message)
-                throw new Error(`So‘rovni tayyorlashda xato: ${error.message}`);
-            }
-        }
-    },
+// =========================================================
+// HELPERS
+// =========================================================
 
+const normalizeUsername = (
+    username
+) => {
+    const value =
+        String(
+            username
+            ??
+            ""
+        ).trim();
 
-    async updateCoverImage(formData) {
-        try {
-            // FormData bilan ishlashda content-type: multipart/form-data bo'ladi.
-            // Axios uni avtomatik tarzda qo'shishi uchun, 
-            // siz o'zingiz qo'lda "Content-Type: undefined" kabi narsani o'rnatmasligingiz kerak.
-            const { data } = await axios.patch(`/users/profile/cover-image/update/`, formData, { 
-                withCredentials: true,
-                headers: {
-                    // Bu yerda o'rnatish shart emas, chunki FormData ishlatilyapti.
-                    // 'Content-Type': 'multipart/form-data'
-                }
-            });
-            console.log("✅ Cover Image yuborildi:", data);
-            return data;
-                } catch (error) {
-                    // ... Oldingi xato qaytarish mantiqini qo'shing
-                    if (error.response) {
-                        const detailError = error.response.data?.detail || JSON.stringify(error.response.data) || "Serverdan noma'lum xato";
-                        throw new Error(detailError);
-                    } else {
-                        throw new Error("Fon rasmini yangilashda kutilmagan xato.");
-                    }
-                }
-            }
+    if (
+        !value
+    ) {
+        throw new Error(
+            "Username topilmadi."
+        );
+    }
+
+    return encodeURIComponent(
+        value
+    );
 };
 
-    
+// =========================================================
+// ERROR
+//
+// Original axios errorni saqlaymiz.
+//
+// Muhim:
+// EditProfileModal error.serverData yoki
+// error.response.data orqali real DRF xatosini
+// o‘qiy oladi.
+// =========================================================
 
+const prepareProfileError = (
+    error,
+    fallbackMessage
+) => {
+    if (
+        !error
+    ) {
+        return new Error(
+            fallbackMessage
+        );
+    }
+
+    const serverData =
+        error?.response?.data;
+
+    if (
+        serverData !==
+        undefined
+    ) {
+        error.serverData =
+            serverData;
+    }
+
+    if (
+        !error.message
+    ) {
+        error.message =
+            fallbackMessage;
+    }
+
+    return error;
+};
+
+// =========================================================
+// PROFILE SERVICE
+// =========================================================
+
+const ProfileService = {
+    // =====================================================
+    // GET PROFILE
+    // =====================================================
+
+    async getProfile(
+        username,
+        {
+            signal,
+        } = {}
+    ) {
+        const normalizedUsername =
+            normalizeUsername(
+                username
+            );
+
+        try {
+            const {
+                data,
+            } = await axios.get(
+                `/users/${normalizedUsername}/profile/`,
+                {
+                    withCredentials:
+                        true,
+
+                    signal,
+                }
+            );
+
+            return data;
+        } catch (
+            error
+        ) {
+            console.error(
+                "Profilni olishda xato:",
+                error?.response?.data
+                ||
+                error?.response
+                ||
+                error?.message
+                ||
+                error
+            );
+
+            throw prepareProfileError(
+                error,
+                "Profilni olishda xatolik yuz berdi."
+            );
+        }
+    },
+
+    // =====================================================
+    // UPDATE PROFILE
+    //
+    // dataToSend:
+    //
+    // 1) oddiy object
+    // 2) FormData
+    //
+    // FormData bo‘lsa Content-Type qo‘lda berilmaydi.
+    // Axios boundary bilan o‘zi yaratadi.
+    // =====================================================
+
+    async updateProfile(
+        username,
+        dataToSend,
+        {
+            signal,
+        } = {}
+    ) {
+        const normalizedUsername =
+            normalizeUsername(
+                username
+            );
+
+        if (
+            !dataToSend
+        ) {
+            throw new Error(
+                "Profil ma’lumotlari yuborilmadi."
+            );
+        }
+
+        try {
+            const {
+                data,
+            } = await axios.patch(
+                `/users/${normalizedUsername}/profile/`,
+                dataToSend,
+                {
+                    withCredentials:
+                        true,
+
+                    signal,
+                }
+            );
+
+            return data;
+        } catch (
+            error
+        ) {
+            console.error(
+                "Profilni yangilashda xato:",
+                error?.response?.data
+                ||
+                error?.response
+                ||
+                error?.message
+                ||
+                error
+            );
+
+            throw prepareProfileError(
+                error,
+                "Profilni yangilashda xatolik yuz berdi."
+            );
+        }
+    },
+
+    // =====================================================
+    // UPDATE COVER IMAGE
+    //
+    // Endpoint existing contract bo‘yicha saqlangan.
+    // =====================================================
+
+    async updateCoverImage(
+        formData,
+        {
+            signal,
+        } = {}
+    ) {
+        if (
+            !formData
+        ) {
+            throw new Error(
+                "Fon rasmi ma’lumotlari yuborilmadi."
+            );
+        }
+
+        try {
+            const {
+                data,
+            } = await axios.patch(
+                "/users/profile/cover-image/update/",
+                formData,
+                {
+                    withCredentials:
+                        true,
+
+                    signal,
+
+                    // Content-Type YOZILMAYDI.
+                    // FormData uchun axios o‘zi belgilaydi.
+                }
+            );
+
+            return data;
+        } catch (
+            error
+        ) {
+            console.error(
+                "Fon rasmini yangilashda xato:",
+                error?.response?.data
+                ||
+                error?.response
+                ||
+                error?.message
+                ||
+                error
+            );
+
+            throw prepareProfileError(
+                error,
+                "Fon rasmini yangilashda xatolik yuz berdi."
+            );
+        }
+    },
+};
+
+// =========================================================
+// EXPORT
+// =========================================================
 
 export default ProfileService;

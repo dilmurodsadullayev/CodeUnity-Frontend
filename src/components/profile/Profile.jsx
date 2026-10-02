@@ -19,7 +19,12 @@ import {
 import {
     AlertCircle,
     Loader2,
+    RefreshCcw,
 } from "lucide-react";
+
+// =========================================================
+// REDUX
+// =========================================================
 
 import {
     getProfileFailure,
@@ -33,25 +38,48 @@ import {
     getTelegramProfileSuccess,
 } from "../../features/bot";
 
+// =========================================================
+// SERVICES
+// =========================================================
+
 import ProfileService from "../../services/profile";
 import BotService from "../../services/bot";
+
+// =========================================================
+// UTILS
+// =========================================================
 
 import {
     getBirthdayStatus,
 } from "../../utils/formatDate";
 
+// =========================================================
+// PROFILE COMPONENTS
+// =========================================================
+
 import EditProfileModal from "./EditProfileModal";
+import CoverImageEditModal from "./CoverImageEditModal";
 
 import ProfileHero from "./ProfileHero";
 import ProfileSidebar from "./ProfileSidebar";
 import ProfileContent from "./ProfileContent";
+import ProfileSkeleton from "./ProfileSkeleton";
 
-import CoverImageEditModal from "../CoverImageEditModal";
+// =========================================================
+// GLOBAL UI
+// =========================================================
+
+import {
+    siteToast,
+} from "../ui/AuthToast";
+
+// =========================================================
+// HELPERS
+// =========================================================
 
 import {
     buildProfileViewModel,
 } from "./profileHelpers";
-
 
 // =========================================================
 // ERROR MESSAGE
@@ -66,285 +94,245 @@ const getErrorMessage = (
         ||
         error?.response?.data;
 
+    // =====================================================
+    // STRING
+    // =====================================================
 
     if (
-        typeof data === "string"
+        typeof data ===
+            "string"
         &&
         data.trim()
     ) {
         return data.trim();
     }
 
+    // =====================================================
+    // COMMON DRF RESPONSE
+    // =====================================================
 
     if (
-        data?.detail
+        typeof data?.detail ===
+            "string"
+        &&
+        data.detail.trim()
     ) {
-        return String(
-            data.detail
-        );
+        return data.detail.trim();
     }
-
 
     if (
-        data?.message
+        typeof data?.message ===
+            "string"
+        &&
+        data.message.trim()
     ) {
-        return String(
-            data.message
-        );
+        return data.message.trim();
     }
-
 
     if (
-        data?.error
+        typeof data?.error ===
+            "string"
+        &&
+        data.error.trim()
     ) {
-        return String(
-            data.error
-        );
+        return data.error.trim();
     }
 
+    // =====================================================
+    // DRF FIELD VALIDATION
+    // =====================================================
 
     if (
-        error?.message
+        data
+        &&
+        typeof data ===
+            "object"
     ) {
-        return String(
-            error.message
-        );
+        const firstValue =
+            Object.values(
+                data
+            )[0];
+
+        if (
+            Array.isArray(
+                firstValue
+            )
+            &&
+            firstValue.length > 0
+        ) {
+            return String(
+                firstValue[0]
+            );
+        }
+
+        if (
+            typeof firstValue ===
+                "string"
+            &&
+            firstValue.trim()
+        ) {
+            return firstValue.trim();
+        }
     }
 
+    // =====================================================
+    // GENERIC ERROR
+    // =====================================================
+
+    if (
+        typeof error?.message ===
+            "string"
+        &&
+        error.message.trim()
+    ) {
+        return error.message.trim();
+    }
 
     return fallback;
 };
 
-
 // =========================================================
-// SKELETON
-// =========================================================
-
-const ProfileSkeleton = () => {
-    return (
-        <main
-            className="
-                container
-                mx-auto
-
-                p-3
-
-                font-sans
-
-                sm:p-4
-                md:p-6
-            "
-        >
-            <div
-                className="
-                    overflow-hidden
-
-                    rounded-3xl
-
-                    border
-                    border-gray-800
-
-                    bg-gray-900/60
-                "
-            >
-                <div
-                    className="
-                        h-44
-
-                        animate-pulse
-
-                        bg-gray-800
-
-                        md:h-64
-                    "
-                />
-
-
-                <div
-                    className="
-                        p-4
-
-                        sm:p-6
-                    "
-                >
-                    <div
-                        className="
-                            flex
-                            items-start
-
-                            gap-4
-                        "
-                    >
-                        <div
-                            className="
-                                h-24
-                                w-24
-
-                                shrink-0
-
-                                animate-pulse
-
-                                rounded-full
-
-                                bg-gray-800
-
-                                sm:h-32
-                                sm:w-32
-                            "
-                        />
-
-
-                        <div
-                            className="
-                                flex-1
-
-                                space-y-4
-
-                                pt-3
-                            "
-                        >
-                            <div
-                                className="
-                                    h-6
-                                    w-48
-
-                                    animate-pulse
-
-                                    rounded-xl
-
-                                    bg-gray-800
-
-                                    sm:w-64
-                                "
-                            />
-
-
-                            <div
-                                className="
-                                    h-4
-                                    w-full
-                                    max-w-md
-
-                                    animate-pulse
-
-                                    rounded-xl
-
-                                    bg-gray-800
-                                "
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    );
-};
-
-
-// =========================================================
-// ERROR
+// PROFILE ERROR
 // =========================================================
 
 const ProfileError = ({
     error,
     onRetry,
+    isRetrying = false,
 }) => {
     return (
         <main
             className="
                 container
                 mx-auto
-
+                min-h-[70vh]
                 p-3
-
                 font-sans
-
                 sm:p-4
                 md:p-6
             "
         >
             <div
                 className="
-                    rounded-3xl
-
-                    border
-                    border-red-500/30
-
-                    bg-red-500/10
-
-                    p-8
-
-                    text-center
+                    flex
+                    min-h-[420px]
+                    items-center
+                    justify-center
                 "
             >
-                <AlertCircle
-                    size={46}
+                <div
                     className="
-                        mx-auto
-                        mb-4
-
-                        text-red-300
-                    "
-                />
-
-
-                <h2
-                    className="
-                        font-display
-
-                        text-2xl
-                        font-bold
-
-                        text-white
+                        w-full
+                        max-w-xl
+                        rounded-3xl
+                        border
+                        border-red-400/15
+                        bg-red-500/[0.045]
+                        p-8
+                        text-center
+                        shadow-2xl
+                        shadow-black/20
                     "
                 >
-                    Profil yuklanmadi
-                </h2>
+                    <div
+                        className="
+                            mx-auto
+                            grid
+                            h-14
+                            w-14
+                            place-items-center
+                            rounded-2xl
+                            border
+                            border-red-400/15
+                            bg-red-500/[0.06]
+                            text-red-300
+                        "
+                    >
+                        <AlertCircle
+                            size={25}
+                        />
+                    </div>
 
+                    <h2
+                        className="
+                            mt-5
+                            font-display
+                            text-2xl
+                            font-bold
+                            text-white
+                        "
+                    >
+                        Profil yuklanmadi
+                    </h2>
 
-                <p
-                    className="
-                        mt-2
+                    <p
+                        className="
+                            mx-auto
+                            mt-2
+                            max-w-md
+                            text-sm
+                            font-medium
+                            leading-6
+                            text-red-200/80
+                        "
+                    >
+                        {error}
+                    </p>
 
-                        text-red-200
-                    "
-                >
-                    {error}
-                </p>
+                    <button
+                        type="button"
+                        onClick={
+                            onRetry
+                        }
+                        disabled={
+                            isRetrying
+                        }
+                        className="
+                            mt-6
+                            inline-flex
+                            items-center
+                            justify-center
+                            gap-2
+                            rounded-xl
+                            border
+                            border-red-400/20
+                            bg-red-600
+                            px-5
+                            py-2.5
+                            font-display
+                            text-xs
+                            font-semibold
+                            text-white
+                            transition-all
+                            hover:-translate-y-0.5
+                            hover:bg-red-500
+                            active:translate-y-0
+                            disabled:cursor-not-allowed
+                            disabled:opacity-50
+                        "
+                    >
+                        {isRetrying ? (
+                            <Loader2
+                                size={15}
+                                className="
+                                    animate-spin
+                                "
+                            />
+                        ) : (
+                            <RefreshCcw
+                                size={15}
+                            />
+                        )}
 
-
-                <button
-                    type="button"
-                    onClick={
-                        onRetry
-                    }
-                    className="
-                        mt-5
-
-                        rounded-xl
-
-                        bg-red-600
-
-                        px-5
-                        py-2.5
-
-                        font-display
-                        font-bold
-
-                        text-white
-
-                        transition
-
-                        hover:bg-red-500
-                    "
-                >
-                    Qayta urinish
-                </button>
+                        {isRetrying
+                            ? "Yuklanmoqda..."
+                            : "Qayta urinish"}
+                    </button>
+                </div>
             </div>
         </main>
     );
 };
-
 
 // =========================================================
 // PROFILE
@@ -354,14 +342,12 @@ const Profile = () => {
     const dispatch =
         useDispatch();
 
-
     const {
         username,
     } = useParams();
 
-
     // =====================================================
-    // REDUX
+    // PROFILE REDUX
     // =====================================================
 
     const {
@@ -374,6 +360,9 @@ const Profile = () => {
         ) => state.profile
     );
 
+    // =====================================================
+    // AUTH REDUX
+    // =====================================================
 
     const {
         user,
@@ -383,16 +372,20 @@ const Profile = () => {
         ) => state.auth
     );
 
+    // =====================================================
+    // TELEGRAM REDUX
+    // =====================================================
 
     const {
-        isLoading: botLoading,
+        isLoading:
+            botLoading,
+
         telegramProfile,
     } = useSelector(
         (
             state
         ) => state.bot
     );
-
 
     // =====================================================
     // LOCAL STATE
@@ -405,7 +398,6 @@ const Profile = () => {
         false
     );
 
-
     const [
         isCoverModalOpen,
         setIsCoverModalOpen,
@@ -413,14 +405,12 @@ const Profile = () => {
         false
     );
 
-
     const [
         activeTab,
         setActiveTab,
     ] = useState(
         "projects"
     );
-
 
     // =====================================================
     // OWNER
@@ -433,16 +423,26 @@ const Profile = () => {
             username
         )
         &&
-        user.username.toLowerCase()
+        String(
+            user.username
+        )
+            .toLowerCase()
         ===
-        username.toLowerCase();
-
+        String(
+            username
+        )
+            .toLowerCase();
 
     // =====================================================
-    // PROFILE BELONGS TO CURRENT ROUTE?
+    // PROFILE MATCHES CURRENT ROUTE
     //
-    // /alice/profile -> /bob/profile o'tganda
-    // Alice ma'lumoti bir lahza ko'rinib qolmaydi.
+    // Masalan:
+    //
+    // /alice/profile
+    //      ↓
+    // /bob/profile
+    //
+    // Alice ma'lumoti Bob profilida ko'rinib qolmaydi.
     // =====================================================
 
     const profileMatchesRoute =
@@ -452,16 +452,18 @@ const Profile = () => {
             username
         )
         &&
-        profile.username.toLowerCase()
+        String(
+            profile.username
+        )
+            .toLowerCase()
         ===
-        username.toLowerCase();
-
+        String(
+            username
+        )
+            .toLowerCase();
 
     // =====================================================
-    // TELEGRAM
-    //
-    // Telegram profile faqat o'z profilimizda ko'rinadi.
-    // Oldingi owner state boshqa userga o'tib ketmaydi.
+    // TELEGRAM PROFILE
     // =====================================================
 
     const effectiveTelegramProfile =
@@ -469,40 +471,39 @@ const Profile = () => {
             ? telegramProfile
             : null;
 
-
     const isTelegramLinked =
         Boolean(
             isOwner
             &&
-            effectiveTelegramProfile?.is_linked
+            effectiveTelegramProfile
+                ?.is_linked
         );
 
-
     // =====================================================
-    // LOAD PROFILE
+    // GET PROFILE
     // =====================================================
 
     const getProfile =
         useCallback(
-            async () => {
+            async ({
+                notifyOnError = false,
+            } = {}) => {
                 if (
                     !username
                 ) {
-                    return;
+                    return false;
                 }
-
 
                 dispatch(
                     getProfileStart()
                 );
 
-
                 try {
                     const response =
-                        await ProfileService.getProfile(
-                            username
-                        );
-
+                        await ProfileService
+                            .getProfile(
+                                username
+                            );
 
                     dispatch(
                         getProfileSuccess(
@@ -510,23 +511,36 @@ const Profile = () => {
                         )
                     );
 
+                    return true;
                 } catch (
                     requestError
                 ) {
+                    const message =
+                        getErrorMessage(
+                            requestError,
+                            "Profilni olishda xatolik yuz berdi."
+                        );
+
                     console.error(
                         "Profile olishda xato:",
                         requestError
                     );
 
-
                     dispatch(
                         getProfileFailure(
-                            getErrorMessage(
-                                requestError,
-                                "Profile olishda xato yuz berdi."
-                            )
+                            message
                         )
                     );
+
+                    if (
+                        notifyOnError
+                    ) {
+                        siteToast.error(
+                            message
+                        );
+                    }
+
+                    return false;
                 }
             },
             [
@@ -535,9 +549,8 @@ const Profile = () => {
             ]
         );
 
-
     // =====================================================
-    // TELEGRAM STATUS
+    // GET TELEGRAM STATUS
     // =====================================================
 
     const getTelegramBotStatus =
@@ -546,20 +559,17 @@ const Profile = () => {
                 if (
                     !isOwner
                 ) {
-                    return;
+                    return false;
                 }
-
 
                 dispatch(
                     getTelegramProfileStart()
                 );
 
-
                 try {
                     const response =
                         await BotService
                             .getTelegramProfile();
-
 
                     dispatch(
                         getTelegramProfileSuccess(
@@ -567,23 +577,28 @@ const Profile = () => {
                         )
                     );
 
+                    return true;
                 } catch (
                     requestError
                 ) {
+                    const message =
+                        getErrorMessage(
+                            requestError,
+                            "Telegram bot holatini olishda xatolik yuz berdi."
+                        );
+
                     console.error(
                         "Telegram bot status olishda xato:",
                         requestError
                     );
 
-
                     dispatch(
                         getTelegramProfileFailure(
-                            getErrorMessage(
-                                requestError,
-                                "Telegram bot holatini olishda xato."
-                            )
+                            message
                         )
                     );
+
+                    return false;
                 }
             },
             [
@@ -591,7 +606,6 @@ const Profile = () => {
                 isOwner,
             ]
         );
-
 
     // =====================================================
     // CONNECT TELEGRAM
@@ -608,17 +622,14 @@ const Profile = () => {
                     return;
                 }
 
-
                 dispatch(
                     getTelegramProfileStart()
                 );
-
 
                 try {
                     const response =
                         await BotService
                             .getTelegramProfile();
-
 
                     dispatch(
                         getTelegramProfileSuccess(
@@ -626,70 +637,88 @@ const Profile = () => {
                         )
                     );
 
-
-                    const profileData =
+                    const botProfile =
                         response?.data
                         ||
                         response;
 
+                    // =====================================
+                    // ALREADY CONNECTED
+                    // =====================================
 
                     if (
-                        profileData?.is_linked
+                        botProfile?.is_linked
                     ) {
-                        window.alert(
-                            "Telegram bot allaqachon ulangan ✅"
+                        siteToast.info(
+                            "Telegram bot allaqachon ulangan."
                         );
 
                         return;
                     }
 
+                    // =====================================
+                    // LINK CODE
+                    // =====================================
 
                     const linkCode =
-                        profileData?.link_code;
-
+                        botProfile?.link_code;
 
                     if (
                         !linkCode
                     ) {
-                        window.alert(
+                        siteToast.warning(
                             "Telegram ulash kodi topilmadi."
                         );
 
                         return;
                     }
 
+                    // =====================================
+                    // TELEGRAM URL
+                    // =====================================
 
                     const botUsername =
                         "FixSocietybot";
-
 
                     const telegramUrl =
                         `https://t.me/${botUsername}?start=${encodeURIComponent(
                             linkCode
                         )}`;
 
+                    const telegramWindow =
+                        window.open(
+                            telegramUrl,
+                            "_blank",
+                            "noopener,noreferrer"
+                        );
 
-                    window.open(
-                        telegramUrl,
-                        "_blank",
-                        "noopener,noreferrer"
+                    // Popup bloklangan bo'lishi mumkin.
+                    if (
+                        !telegramWindow
+                    ) {
+                        siteToast.warning(
+                            "Telegram oynasi ochilmadi. Brauzer popup oynalarni bloklagan bo‘lishi mumkin."
+                        );
+
+                        return;
+                    }
+
+                    siteToast.success(
+                        "Telegram bot oynasi ochildi."
                     );
-
                 } catch (
                     requestError
                 ) {
                     const message =
                         getErrorMessage(
                             requestError,
-                            "Telegram botni ulashda xato yuz berdi."
+                            "Telegram botni ulashda xatolik yuz berdi."
                         );
-
 
                     console.error(
                         "Telegram bot ulashda xato:",
                         requestError
                     );
-
 
                     dispatch(
                         getTelegramProfileFailure(
@@ -697,8 +726,7 @@ const Profile = () => {
                         )
                     );
 
-
-                    window.alert(
+                    siteToast.error(
                         message
                     );
                 }
@@ -710,9 +738,8 @@ const Profile = () => {
             ]
         );
 
-
     // =====================================================
-    // LOAD
+    // INITIAL PROFILE LOAD
     // =====================================================
 
     useEffect(
@@ -724,6 +751,9 @@ const Profile = () => {
         ]
     );
 
+    // =====================================================
+    // TELEGRAM STATUS LOAD
+    // =====================================================
 
     useEffect(
         () => {
@@ -734,9 +764,8 @@ const Profile = () => {
         ]
     );
 
-
     // =====================================================
-    // RESET TAB WHEN PROFILE CHANGES
+    // RESET UI WHEN PROFILE ROUTE CHANGES
     // =====================================================
 
     useEffect(
@@ -745,11 +774,9 @@ const Profile = () => {
                 "projects"
             );
 
-
             setIsEditModalOpen(
                 false
             );
-
 
             setIsCoverModalOpen(
                 false
@@ -759,7 +786,6 @@ const Profile = () => {
             username,
         ]
     );
-
 
     // =====================================================
     // VIEW MODEL
@@ -785,7 +811,6 @@ const Profile = () => {
             ]
         );
 
-
     // =====================================================
     // BIRTHDAY
     // =====================================================
@@ -802,47 +827,173 @@ const Profile = () => {
             ]
         );
 
+    // =====================================================
+    // LOADING STATES
+    //
+    // Muhim:
+    //
+    // !profile ni bu yerga qo'shmaymiz.
+    //
+    // Aks holda initial request error bilan tugaganda:
+    //
+    // isLoading = false
+    // profile = null
+    //
+    // bo'lsa ham skeleton abadiy qolib ketadi.
+    // =====================================================
+
+    const isInitialLoading =
+        !profileMatchesRoute
+        &&
+        isLoading;
+
+    const isRefreshing =
+        profileMatchesRoute
+        &&
+        isLoading;
 
     // =====================================================
-    // FIRST / ROUTE LOAD
+    // OPEN EDIT
+    // =====================================================
+
+    const handleOpenEditModal =
+        useCallback(
+            () => {
+                if (
+                    !isOwner
+                ) {
+                    return;
+                }
+
+                setIsEditModalOpen(
+                    true
+                );
+            },
+            [
+                isOwner,
+            ]
+        );
+
+    // =====================================================
+    // CLOSE EDIT
+    //
+    // EditProfileModal muvaffaqiyatli PATCHdan keyin
+    // getProfileSuccess(response) qiladi.
+    //
+    // Shu sabab bu yerda yana GET request kerak emas.
+    // =====================================================
+
+    const handleCloseEditModal =
+        useCallback(
+            () => {
+                setIsEditModalOpen(
+                    false
+                );
+            },
+            []
+        );
+
+    // =====================================================
+    // OPEN COVER
+    // =====================================================
+
+    const handleOpenCoverModal =
+        useCallback(
+            () => {
+                if (
+                    !isOwner
+                ) {
+                    return;
+                }
+
+                setIsCoverModalOpen(
+                    true
+                );
+            },
+            [
+                isOwner,
+            ]
+        );
+
+    // =====================================================
+    // CLOSE COVER
+    //
+    // CoverImageEditModal ham successdan keyin:
+    //
+    // dispatch(getProfileSuccess(updatedProfile))
+    //
+    // qiladi.
+    //
+    // Demak duplicate GET request kerak emas.
+    // =====================================================
+
+    const handleCloseCoverModal =
+        useCallback(
+            () => {
+                setIsCoverModalOpen(
+                    false
+                );
+            },
+            []
+        );
+
+    // =====================================================
+    // INITIAL / ROUTE LOADING
     // =====================================================
 
     if (
-        !profileMatchesRoute
-        &&
-        (
-            isLoading
-            ||
-            !profile
-        )
+        isInitialLoading
     ) {
         return (
             <ProfileSkeleton />
         );
     }
 
-
     // =====================================================
-    // ROUTE ERROR
+    // INITIAL / ROUTE ERROR
+    //
+    // Loading tugagan bo'lishi shart.
     // =====================================================
 
     if (
         error
         &&
         !profileMatchesRoute
+        &&
+        !isLoading
     ) {
         return (
             <ProfileError
                 error={
                     error
                 }
-                onRetry={
-                    getProfile
+                isRetrying={
+                    isLoading
                 }
+                onRetry={() => {
+                    getProfile({
+                        notifyOnError:
+                            true,
+                    });
+                }}
             />
         );
     }
 
+    // =====================================================
+    // ROUTE SAFETY
+    //
+    // Effect hali requestni boshlamagan qisqa momentda ham
+    // eski profilni chiqarib yubormaymiz.
+    // =====================================================
+
+    if (
+        !profileMatchesRoute
+    ) {
+        return (
+            <ProfileSkeleton />
+        );
+    }
 
     // =====================================================
     // CONTENT
@@ -853,13 +1004,10 @@ const Profile = () => {
             className="
                 container
                 mx-auto
-
+                min-h-screen
                 p-3
-
                 font-sans
-
                 text-gray-100
-
                 sm:p-4
                 md:p-6
             "
@@ -885,21 +1033,12 @@ const Profile = () => {
                     handleConnectTelegramBot
                 }
                 onEditCover={
-                    () => {
-                        setIsCoverModalOpen(
-                            true
-                        );
-                    }
+                    handleOpenCoverModal
                 }
                 onEditProfile={
-                    () => {
-                        setIsEditModalOpen(
-                            true
-                        );
-                    }
+                    handleOpenEditModal
                 }
             />
-
 
             {/* =============================================
                 BODY
@@ -908,11 +1047,8 @@ const Profile = () => {
             <div
                 className="
                     mt-6
-
                     grid
-
                     gap-6
-
                     lg:grid-cols-[380px_1fr]
                 "
             >
@@ -928,7 +1064,6 @@ const Profile = () => {
                     }
                 />
 
-
                 <ProfileContent
                     username={
                         username
@@ -942,113 +1077,143 @@ const Profile = () => {
                 />
             </div>
 
-
             {/* =============================================
                 EDIT PROFILE
             ============================================== */}
 
-            <EditProfileModal
-                profileData={
-                    profile
-                }
-                isOpen={
-                    isEditModalOpen
-                }
-                onClose={
-                    () => {
-                        setIsEditModalOpen(
-                            false
-                        );
-
-
-                        getProfile();
+            {isOwner && (
+                <EditProfileModal
+                    profileData={
+                        profile
                     }
-                }
-            />
-
+                    isOpen={
+                        isEditModalOpen
+                    }
+                    onClose={
+                        handleCloseEditModal
+                    }
+                />
+            )}
 
             {/* =============================================
-                COVER
+                COVER IMAGE
             ============================================== */}
 
-            <CoverImageEditModal
-                isOpen={
-                    isCoverModalOpen
-                }
-                currentCoverImage={
-                    currentUser.coverImage
-                }
-                onClose={
-                    () => {
-                        setIsCoverModalOpen(
-                            false
-                        );
-
-
-                        getProfile();
+            {isOwner && (
+                <CoverImageEditModal
+                    isOpen={
+                        isCoverModalOpen
                     }
-                }
-            />
-
+                    currentCoverImage={
+                        currentUser.coverImage
+                    }
+                    onClose={
+                        handleCloseCoverModal
+                    }
+                />
+            )}
 
             {/* =============================================
-                REFRESH
+                BACKGROUND REFRESH INDICATOR
             ============================================== */}
 
-            {
-                isLoading
+            {isRefreshing && (
+                <div
+                    aria-live="polite"
+                    aria-label="Profil yangilanmoqda"
+                    className="
+                        pointer-events-none
+                        fixed
+                        bottom-5
+                        right-4
+                        z-50
+                        inline-flex
+                        items-center
+                        gap-2.5
+                        rounded-2xl
+                        border
+                        border-indigo-400/15
+                        bg-[#0b0e14]/95
+                        px-4
+                        py-3
+                        font-display
+                        text-[10px]
+                        font-semibold
+                        uppercase
+                        tracking-[0.08em]
+                        text-indigo-300
+                        shadow-2xl
+                        shadow-black/30
+                        backdrop-blur-xl
+                        sm:right-5
+                    "
+                >
+                    <Loader2
+                        size={15}
+                        className="
+                            animate-spin
+                        "
+                    />
+
+                    Profil yangilanmoqda
+                </div>
+            )}
+
+            {/* =============================================
+                BACKGROUND REFRESH ERROR
+            ============================================== */}
+
+            {error
                 &&
                 profileMatchesRoute
                 &&
-                (
+                !isLoading
+                && (
                     <div
+                        role="alert"
                         className="
                             fixed
                             bottom-5
-                            right-5
-                            z-50
-
-                            inline-flex
-                            items-center
-
-                            gap-3
-
+                            left-4
+                            z-40
+                            hidden
+                            max-w-md
+                            items-start
+                            gap-2
                             rounded-2xl
-
                             border
-                            border-indigo-400/20
-
-                            bg-gray-900/95
-
+                            border-red-400/10
+                            bg-[#0b0e14]/95
                             px-4
                             py-3
-
-                            font-display
-
-                            text-sm
-                            font-semibold
-
-                            text-indigo-200
-
-                            shadow-2xl
-
-                            backdrop-blur-md
+                            text-[10px]
+                            font-medium
+                            leading-5
+                            text-red-300
+                            shadow-xl
+                            backdrop-blur-xl
+                            lg:flex
                         "
                     >
-                        <Loader2
-                            size={18}
+                        <AlertCircle
+                            size={15}
                             className="
-                                animate-spin
+                                mt-0.5
+                                shrink-0
                             "
                         />
 
-                        Profil yangilanmoqda...
+                        <span>
+                            {error}
+                        </span>
                     </div>
-                )
-            }
+                )}
         </main>
     );
 };
 
+// =========================================================
+// EXPORT
+// =========================================================
 
 export default Profile;

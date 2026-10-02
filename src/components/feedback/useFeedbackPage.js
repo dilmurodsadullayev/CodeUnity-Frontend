@@ -7,58 +7,235 @@ import {
     useRef,
     useState,
 } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+
+import {
+    useDispatch,
+    useSelector,
+} from "react-redux";
+
+import {
+    useNavigate,
+} from "react-router-dom";
 
 import FeedbackService, {
     getFeedbackServiceErrorMessage,
     isFeedbackRequestCanceled,
 } from "../../services/feedback";
+
 import {
     FEEDBACK_DEFAULT_PAGE_SIZE,
     clearMyFeedbackData,
+
     deleteFeedbackFailure,
     deleteFeedbackStart,
     deleteFeedbackSuccess,
+
     getFeedbackFailure,
     getFeedbackStart,
     getFeedbackSuccess,
+
     getFeedbackStatsFailure,
     getFeedbackStatsStart,
     getFeedbackStatsSuccess,
+
     getMyFeedbackFailure,
     getMyFeedbackStart,
     getMyFeedbackSuccess,
+
     postFeedbackSuccess,
+
     selectFeedbackState,
+
     updateFeedbackFailure,
     updateFeedbackStart,
     updateFeedbackSuccess,
 } from "../../features/feedback";
-import { siteToast } from "../ui/AuthToast";
+
+import {
+    siteToast,
+} from "../ui/AuthToast";
+
 import {
     FEEDBACK_STATUS_FILTERS,
     canModifyFeedback,
 } from "./feedbackHelpers";
 
+
 // =========================================================
-// VALID STATUS
+// PAGINATION
 // =========================================================
 
-const isValidFeedbackStatus = (value) => {
+const createPaginationState = () => ({
+    count: 0,
+    page: 1,
+    pageSize: FEEDBACK_DEFAULT_PAGE_SIZE,
+    totalPages: 1,
+    next: null,
+    previous: null,
+    hasNext: false,
+    hasPrevious: false,
+});
+
+
+const toPositiveInteger = (
+    value,
+    fallback = null
+) => {
+    const number = Number(value);
+
+    if (
+        !Number.isInteger(number)
+        ||
+        number <= 0
+    ) {
+        return fallback;
+    }
+
+    return number;
+};
+
+
+const toNonNegativeInteger = (
+    value,
+    fallback = 0
+) => {
+    const number = Number(value);
+
+    if (
+        !Number.isFinite(number)
+        ||
+        number < 0
+    ) {
+        return fallback;
+    }
+
+    return Math.trunc(number);
+};
+
+
+const normalizePagination = (
+    response,
+    requestedPage = 1
+) => {
+    if (
+        Array.isArray(response)
+    ) {
+        return {
+            count: response.length,
+            page: requestedPage,
+            pageSize: FEEDBACK_DEFAULT_PAGE_SIZE,
+            totalPages: 1,
+            next: null,
+            previous: null,
+            hasNext: false,
+            hasPrevious: false,
+        };
+    }
+
+    const source =
+        response
+        &&
+        typeof response === "object"
+            ? response
+            : {};
+
+    const results =
+        Array.isArray(
+            source.results
+        )
+            ? source.results
+            : [];
+
+    const count =
+        toNonNegativeInteger(
+            source.count,
+            results.length
+        );
+
+    const pageSize =
+        toPositiveInteger(
+            source.page_size,
+            FEEDBACK_DEFAULT_PAGE_SIZE
+        );
+
+    const calculatedTotalPages =
+        Math.max(
+            1,
+            Math.ceil(
+                count / pageSize
+            )
+        );
+
+    const totalPages =
+        toPositiveInteger(
+            source.total_pages,
+            calculatedTotalPages
+        );
+
+    const page =
+        Math.min(
+            toPositiveInteger(
+                source.page,
+                requestedPage
+            ),
+            totalPages
+        );
+
+    const next =
+        source.next
+        ??
+        null;
+
+    const previous =
+        source.previous
+        ??
+        null;
+
+    return {
+        count,
+        page,
+        pageSize,
+        totalPages,
+        next,
+        previous,
+
+        hasNext:
+            Boolean(next)
+            ||
+            page < totalPages,
+
+        hasPrevious:
+            Boolean(previous)
+            ||
+            page > 1,
+    };
+};
+
+
+// =========================================================
+// VALIDATION
+// =========================================================
+
+const isValidFeedbackStatus = (
+    value
+) => {
     return FEEDBACK_STATUS_FILTERS.some(
-        (item) => item.value === value
+        (
+            item
+        ) => item.value === value
     );
 };
 
-// =========================================================
-// VALID FEEDBACK ID
-// =========================================================
 
-const getFeedbackId = (feedback) => {
-    const id = Number(
-        feedback?.id ?? feedback
-    );
+const getFeedbackId = (
+    feedback
+) => {
+    const id =
+        Number(
+            feedback?.id
+            ??
+            feedback
+        );
 
     if (
         !Number.isInteger(id)
@@ -71,104 +248,117 @@ const getFeedbackId = (feedback) => {
     return id;
 };
 
-// =========================================================
-// VALID PAGE
-// =========================================================
 
-const getValidPage = (value) => {
-    const page = Number(value);
-
-    if (
-        !Number.isInteger(page)
-        ||
-        page <= 0
-    ) {
-        return null;
-    }
-
-    return page;
+const getValidPage = (
+    value
+) => {
+    return toPositiveInteger(
+        value,
+        null
+    );
 };
 
-// =========================================================
-// SAFE TOTAL PAGES
-// =========================================================
-
-const getSafeTotalPages = (value) => {
-    const totalPages = Number(value);
-
-    if (
-        !Number.isInteger(totalPages)
-        ||
-        totalPages <= 0
-    ) {
-        return 1;
-    }
-
-    return totalPages;
-};
 
 // =========================================================
-// USE FEEDBACK PAGE
+// HOOK
 // =========================================================
 
 const useFeedbackPage = () => {
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
+    const dispatch =
+        useDispatch();
+
+    const navigate =
+        useNavigate();
 
     // =====================================================
     // AUTH
     // =====================================================
 
-    const isLoggedIn = useSelector((state) =>
-        Boolean(state?.auth?.isLoggedIn)
-    );
+    const isLoggedIn =
+        useSelector(
+            (
+                state
+            ) => Boolean(
+                state
+                    ?.auth
+                    ?.isLoggedIn
+            )
+        );
 
     // =====================================================
     // REDUX
     // =====================================================
 
-    const feedbackState = useSelector(
-        selectFeedbackState
-    );
+    const feedbackState =
+        useSelector(
+            selectFeedbackState
+        );
 
     const {
         // Public
-        feedbacks: publicFeedbacks,
-        count: publicCount,
-        page: publicPage,
-        pageSize: publicPageSize,
-        totalPages: publicTotalPages,
-        next: publicNext,
-        previous: publicPrevious,
-        isLoading: isPublicLoading,
-        error: publicError,
-        hasLoaded: hasPublicLoaded,
+        feedbacks:
+            publicFeedbacks,
 
-        // My feedbacks
+        count:
+            publicCountFromRedux,
+
+        isLoading:
+            isPublicLoading,
+
+        error:
+            publicError,
+
+        hasLoaded:
+            hasPublicLoaded,
+
+        // My
         myFeedbacks,
-        myCount,
-        myPage,
-        myPageSize,
-        myTotalPages,
-        myNext,
-        myPrevious,
+
+        myCount:
+            myCountFromRedux,
+
         isMyLoading,
+
         myError,
+
         hasMyLoaded,
 
         // Stats
         stats,
+
         isStatsLoading,
+
         statsError,
+
         hasStatsLoaded,
 
         // Mutations
         isUpdating,
         isDeleting,
+
         updatingId,
         deletingId,
+
         mutationError,
     } = feedbackState;
+
+    // =====================================================
+    // PAGINATION STATE
+    // =====================================================
+
+    const [
+        publicPagination,
+        setPublicPagination,
+    ] = useState(
+        createPaginationState
+    );
+
+    const [
+        myPagination,
+        setMyPagination,
+    ] = useState(
+        createPaginationState
+    );
 
     // =====================================================
     // FILTER
@@ -177,7 +367,9 @@ const useFeedbackPage = () => {
     const [
         activeStatus,
         setActiveStatusState,
-    ] = useState("all");
+    ] = useState(
+        "all"
+    );
 
     // =====================================================
     // CREATE MODAL
@@ -186,7 +378,9 @@ const useFeedbackPage = () => {
     const [
         isCreateModalOpen,
         setIsCreateModalOpen,
-    ] = useState(false);
+    ] = useState(
+        false
+    );
 
     // =====================================================
     // EDIT MODAL
@@ -195,19 +389,25 @@ const useFeedbackPage = () => {
     const [
         editingFeedback,
         setEditingFeedback,
-    ] = useState(null);
+    ] = useState(
+        null
+    );
 
     const isEditModalOpen =
-        Boolean(editingFeedback);
+        Boolean(
+            editingFeedback
+        );
 
     // =====================================================
-    // REFRESH
+    // MANUAL REFRESH
     // =====================================================
 
     const [
         isRefreshing,
         setIsRefreshing,
-    ] = useState(false);
+    ] = useState(
+        false
+    );
 
     // =====================================================
     // REQUEST CONTROLLERS
@@ -232,12 +432,17 @@ const useFeedbackPage = () => {
                 if (
                     publicControllerRef.current
                 ) {
-                    publicControllerRef.current.abort();
-                    publicControllerRef.current = null;
+                    publicControllerRef
+                        .current
+                        .abort();
+
+                    publicControllerRef.current =
+                        null;
                 }
             },
             []
         );
+
 
     const abortMyRequest =
         useCallback(
@@ -245,12 +450,17 @@ const useFeedbackPage = () => {
                 if (
                     myControllerRef.current
                 ) {
-                    myControllerRef.current.abort();
-                    myControllerRef.current = null;
+                    myControllerRef
+                        .current
+                        .abort();
+
+                    myControllerRef.current =
+                        null;
                 }
             },
             []
         );
+
 
     const abortStatsRequest =
         useCallback(
@@ -258,8 +468,12 @@ const useFeedbackPage = () => {
                 if (
                     statsControllerRef.current
                 ) {
-                    statsControllerRef.current.abort();
-                    statsControllerRef.current = null;
+                    statsControllerRef
+                        .current
+                        .abort();
+
+                    statsControllerRef.current =
+                        null;
                 }
             },
             []
@@ -311,6 +525,7 @@ const useFeedbackPage = () => {
                                     controller.signal,
                             });
 
+                    // Request stale bo‘lib qolgan.
                     if (
                         publicControllerRef.current
                         !==
@@ -322,6 +537,13 @@ const useFeedbackPage = () => {
                     dispatch(
                         getFeedbackSuccess(
                             response
+                        )
+                    );
+
+                    setPublicPagination(
+                        normalizePagination(
+                            response,
+                            requestedPage
                         )
                     );
 
@@ -366,54 +588,23 @@ const useFeedbackPage = () => {
 
     // =====================================================
     // LOAD MY FEEDBACKS
-    //
-    // Backward compatible:
-    //
-    // loadMyFeedbacks("pending")
-    // loadMyFeedbacks("pending", 2)
-    // loadMyFeedbacks({ status: "pending", page: 2 })
     // =====================================================
 
     const loadMyFeedbacks =
         useCallback(
-            async (
-                statusOrOptions = "all",
-                pageOverride = 1
-            ) => {
+            async ({
+                status = "all",
+                page = 1,
+            } = {}) => {
                 if (
                     !isLoggedIn
                 ) {
                     return false;
                 }
 
-                const isOptionsObject =
-                    statusOrOptions
-                    &&
-                    typeof statusOrOptions ===
-                        "object"
-                    &&
-                    !Array.isArray(
-                        statusOrOptions
-                    );
-
-                const requestedStatus =
-                    isOptionsObject
-                        ? (
-                            statusOrOptions.status
-                            ??
-                            "all"
-                        )
-                        : statusOrOptions;
-
                 const requestedPage =
                     getValidPage(
-                        isOptionsObject
-                            ? (
-                                statusOrOptions.page
-                                ??
-                                1
-                            )
-                            : pageOverride
+                        page
                     );
 
                 if (
@@ -424,9 +615,9 @@ const useFeedbackPage = () => {
 
                 const normalizedStatus =
                     isValidFeedbackStatus(
-                        requestedStatus
+                        status
                     )
-                        ? requestedStatus
+                        ? status
                         : "all";
 
                 abortMyRequest();
@@ -472,6 +663,13 @@ const useFeedbackPage = () => {
                     dispatch(
                         getMyFeedbackSuccess(
                             response
+                        )
+                    );
+
+                    setMyPagination(
+                        normalizePagination(
+                            response,
+                            requestedPage
                         )
                     );
 
@@ -608,7 +806,9 @@ const useFeedbackPage = () => {
 
     useEffect(
         () => {
-            loadPublicFeedbacks(1);
+            loadPublicFeedbacks(
+                1
+            );
 
             return () => {
                 abortPublicRequest();
@@ -621,9 +821,7 @@ const useFeedbackPage = () => {
     );
 
     // =====================================================
-    // MY FILTER
-    //
-    // Status o'zgarsa har doim 1-sahifadan boshlaymiz.
+    // MY FILTER / AUTH
     // =====================================================
 
     useEffect(
@@ -635,6 +833,10 @@ const useFeedbackPage = () => {
 
                 dispatch(
                     clearMyFeedbackData()
+                );
+
+                setMyPagination(
+                    createPaginationState()
                 );
 
                 setActiveStatusState(
@@ -683,6 +885,7 @@ const useFeedbackPage = () => {
                 !isLoggedIn
             ) {
                 abortStatsRequest();
+
                 return undefined;
             }
 
@@ -700,7 +903,7 @@ const useFeedbackPage = () => {
     );
 
     // =====================================================
-    // STATUS
+    // FILTER CHANGE
     // =====================================================
 
     const setActiveStatus =
@@ -733,7 +936,7 @@ const useFeedbackPage = () => {
         );
 
     // =====================================================
-    // PUBLIC PAGE CHANGE
+    // PUBLIC PAGE
     // =====================================================
 
     const handlePublicPageChange =
@@ -746,17 +949,14 @@ const useFeedbackPage = () => {
                         nextPage
                     );
 
-                const totalPages =
-                    getSafeTotalPages(
-                        publicTotalPages
-                    );
-
                 if (
                     !page
                     ||
-                    page > totalPages
+                    page >
+                    publicPagination.totalPages
                     ||
-                    page === publicPage
+                    page ===
+                    publicPagination.page
                     ||
                     isPublicLoading
                 ) {
@@ -770,13 +970,13 @@ const useFeedbackPage = () => {
             [
                 isPublicLoading,
                 loadPublicFeedbacks,
-                publicPage,
-                publicTotalPages,
+                publicPagination.page,
+                publicPagination.totalPages,
             ]
         );
 
     // =====================================================
-    // MY PAGE CHANGE
+    // MY PAGE
     // =====================================================
 
     const handleMyPageChange =
@@ -795,17 +995,14 @@ const useFeedbackPage = () => {
                         nextPage
                     );
 
-                const totalPages =
-                    getSafeTotalPages(
-                        myTotalPages
-                    );
-
                 if (
                     !page
                     ||
-                    page > totalPages
+                    page >
+                    myPagination.totalPages
                     ||
-                    page === myPage
+                    page ===
+                    myPagination.page
                     ||
                     isMyLoading
                 ) {
@@ -824,8 +1021,8 @@ const useFeedbackPage = () => {
                 isLoggedIn,
                 isMyLoading,
                 loadMyFeedbacks,
-                myPage,
-                myTotalPages,
+                myPagination.page,
+                myPagination.totalPages,
             ]
         );
 
@@ -839,7 +1036,7 @@ const useFeedbackPage = () => {
                 if (
                     isRefreshing
                 ) {
-                    return;
+                    return false;
                 }
 
                 setIsRefreshing(
@@ -849,7 +1046,7 @@ const useFeedbackPage = () => {
                 try {
                     const requests = [
                         loadPublicFeedbacks(
-                            publicPage || 1
+                            publicPagination.page
                         ),
                     ];
 
@@ -862,7 +1059,7 @@ const useFeedbackPage = () => {
                                     activeStatus,
 
                                 page:
-                                    myPage || 1,
+                                    myPagination.page,
                             })
                         );
 
@@ -871,8 +1068,13 @@ const useFeedbackPage = () => {
                         );
                     }
 
-                    await Promise.all(
-                        requests
+                    const results =
+                        await Promise.all(
+                            requests
+                        );
+
+                    return results.every(
+                        Boolean
                     );
                 } finally {
                     setIsRefreshing(
@@ -887,8 +1089,8 @@ const useFeedbackPage = () => {
                 loadMyFeedbacks,
                 loadPublicFeedbacks,
                 loadStats,
-                myPage,
-                publicPage,
+                myPagination.page,
+                publicPagination.page,
             ]
         );
 
@@ -917,17 +1119,18 @@ const useFeedbackPage = () => {
                     return;
                 }
 
+                // Yangi feedback pending bo‘ladi.
+                // "all" ga qaytib 1-sahifani ko‘rsatamiz.
                 if (
                     activeStatus !==
                     "all"
                 ) {
-                    // activeStatus o'zgarishi MY FILTER effect orqali
-                    // 1-sahifani qayta yuklaydi.
                     setActiveStatusState(
                         "all"
                     );
 
                     await loadStats();
+
                     return;
                 }
 
@@ -939,6 +1142,7 @@ const useFeedbackPage = () => {
                         page:
                             1,
                     }),
+
                     loadStats(),
                 ]);
             },
@@ -952,7 +1156,7 @@ const useFeedbackPage = () => {
         );
 
     // =====================================================
-    // OPEN CREATE
+    // CREATE MODAL
     // =====================================================
 
     const handleOpenCreate =
@@ -964,6 +1168,7 @@ const useFeedbackPage = () => {
                     navigate(
                         "/login"
                     );
+
                     return;
                 }
 
@@ -977,9 +1182,6 @@ const useFeedbackPage = () => {
             ]
         );
 
-    // =====================================================
-    // CLOSE CREATE
-    // =====================================================
 
     const handleCloseCreate =
         useCallback(
@@ -992,7 +1194,7 @@ const useFeedbackPage = () => {
         );
 
     // =====================================================
-    // OPEN EDIT
+    // EDIT MODAL
     // =====================================================
 
     const handleOpenEdit =
@@ -1006,6 +1208,7 @@ const useFeedbackPage = () => {
                     navigate(
                         "/login"
                     );
+
                     return;
                 }
 
@@ -1019,6 +1222,7 @@ const useFeedbackPage = () => {
                     siteToast.warning(
                         "Bu feedbackni tahrirlash mumkin emas."
                     );
+
                     return;
                 }
 
@@ -1032,9 +1236,6 @@ const useFeedbackPage = () => {
             ]
         );
 
-    // =====================================================
-    // CLOSE EDIT
-    // =====================================================
 
     const handleCloseEdit =
         useCallback(
@@ -1075,12 +1276,36 @@ const useFeedbackPage = () => {
                     siteToast.error(
                         "Feedback ID noto‘g‘ri."
                     );
+
                     return false;
                 }
 
                 if (
                     isUpdating
+                    ||
+                    isDeleting
                 ) {
+                    return false;
+                }
+
+                const editingId =
+                    getFeedbackId(
+                        editingFeedback
+                    );
+
+                if (
+                    !editingFeedback
+                    ||
+                    editingId !== id
+                    ||
+                    !canModifyFeedback(
+                        editingFeedback
+                    )
+                ) {
+                    siteToast.warning(
+                        "Bu feedbackni tahrirlash mumkin emas."
+                    );
+
                     return false;
                 }
 
@@ -1114,14 +1339,14 @@ const useFeedbackPage = () => {
                         )
                     );
 
+                    setEditingFeedback(
+                        null
+                    );
+
                     siteToast.update(
                         toastId,
                         "success",
                         "Feedback muvaffaqiyatli yangilandi."
-                    );
-
-                    setEditingFeedback(
-                        null
                     );
 
                     await Promise.all([
@@ -1130,8 +1355,9 @@ const useFeedbackPage = () => {
                                 activeStatus,
 
                             page:
-                                myPage || 1,
+                                myPagination.page,
                         }),
+
                         loadStats(),
                     ]);
 
@@ -1149,6 +1375,7 @@ const useFeedbackPage = () => {
                             "info",
                             "Feedbackni yangilash bekor qilindi."
                         );
+
                         return false;
                     }
 
@@ -1176,10 +1403,12 @@ const useFeedbackPage = () => {
             [
                 activeStatus,
                 dispatch,
+                editingFeedback,
+                isDeleting,
                 isUpdating,
                 loadMyFeedbacks,
                 loadStats,
-                myPage,
+                myPagination.page,
             ]
         );
 
@@ -1203,6 +1432,7 @@ const useFeedbackPage = () => {
                     siteToast.error(
                         "Feedback ID noto‘g‘ri."
                     );
+
                     return false;
                 }
 
@@ -1214,17 +1444,20 @@ const useFeedbackPage = () => {
                     siteToast.warning(
                         "Bu feedbackni o‘chirish mumkin emas."
                     );
+
                     return false;
                 }
 
                 if (
                     isDeleting
+                    ||
+                    isUpdating
                 ) {
                     return false;
                 }
 
-                const isCurrentPageLastItem =
-                    myPage > 1
+                const isLastItemOnCurrentPage =
+                    myPagination.page > 1
                     &&
                     myFeedbacks.length === 1
                     &&
@@ -1233,9 +1466,9 @@ const useFeedbackPage = () => {
                     ) === id;
 
                 const pageAfterDelete =
-                    isCurrentPageLastItem
-                        ? myPage - 1
-                        : myPage;
+                    isLastItemOnCurrentPage
+                        ? myPagination.page - 1
+                        : myPagination.page;
 
                 dispatch(
                     deleteFeedbackStart(
@@ -1275,6 +1508,7 @@ const useFeedbackPage = () => {
                             page:
                                 pageAfterDelete,
                         }),
+
                         loadStats(),
                     ]);
 
@@ -1292,6 +1526,7 @@ const useFeedbackPage = () => {
                             "info",
                             "Feedbackni o‘chirish bekor qilindi."
                         );
+
                         return false;
                     }
 
@@ -1320,136 +1555,11 @@ const useFeedbackPage = () => {
                 activeStatus,
                 dispatch,
                 isDeleting,
+                isUpdating,
                 loadMyFeedbacks,
                 loadStats,
                 myFeedbacks,
-                myPage,
-            ]
-        );
-
-    // =====================================================
-    // PAGINATION META
-    // =====================================================
-
-    const publicPagination =
-        useMemo(
-            () => {
-                const totalPages =
-                    getSafeTotalPages(
-                        publicTotalPages
-                    );
-
-                const page =
-                    Math.min(
-                        getValidPage(
-                            publicPage
-                        ) || 1,
-                        totalPages
-                    );
-
-                return {
-                    count:
-                        Math.max(
-                            0,
-                            Number(
-                                publicCount
-                            ) || 0
-                        ),
-
-                    page,
-
-                    pageSize:
-                        getValidPage(
-                            publicPageSize
-                        )
-                        ||
-                        FEEDBACK_DEFAULT_PAGE_SIZE,
-
-                    totalPages,
-
-                    hasPrevious:
-                        Boolean(
-                            publicPrevious
-                        )
-                        ||
-                        page > 1,
-
-                    hasNext:
-                        Boolean(
-                            publicNext
-                        )
-                        ||
-                        page < totalPages,
-                };
-            },
-            [
-                publicCount,
-                publicNext,
-                publicPage,
-                publicPageSize,
-                publicPrevious,
-                publicTotalPages,
-            ]
-        );
-
-    const myPagination =
-        useMemo(
-            () => {
-                const totalPages =
-                    getSafeTotalPages(
-                        myTotalPages
-                    );
-
-                const page =
-                    Math.min(
-                        getValidPage(
-                            myPage
-                        ) || 1,
-                        totalPages
-                    );
-
-                return {
-                    count:
-                        Math.max(
-                            0,
-                            Number(
-                                myCount
-                            ) || 0
-                        ),
-
-                    page,
-
-                    pageSize:
-                        getValidPage(
-                            myPageSize
-                        )
-                        ||
-                        FEEDBACK_DEFAULT_PAGE_SIZE,
-
-                    totalPages,
-
-                    hasPrevious:
-                        Boolean(
-                            myPrevious
-                        )
-                        ||
-                        page > 1,
-
-                    hasNext:
-                        Boolean(
-                            myNext
-                        )
-                        ||
-                        page < totalPages,
-                };
-            },
-            [
-                myCount,
-                myNext,
-                myPage,
-                myPageSize,
-                myPrevious,
-                myTotalPages,
+                myPagination.page,
             ]
         );
 
@@ -1496,6 +1606,7 @@ const useFeedbackPage = () => {
         &&
         !hasPublicLoaded;
 
+
     const isMyInitialLoading =
         isLoggedIn
         &&
@@ -1503,12 +1614,14 @@ const useFeedbackPage = () => {
         &&
         !hasMyLoaded;
 
+
     const isStatsInitialLoading =
         isLoggedIn
         &&
         isStatsLoading
         &&
         !hasStatsLoaded;
+
 
     const isAnyLoading =
         isPublicLoading
@@ -1522,6 +1635,27 @@ const useFeedbackPage = () => {
         isDeleting;
 
     // =====================================================
+    // COUNTS
+    // =====================================================
+
+    const publicCount =
+        Math.max(
+            publicPagination.count,
+            Number(
+                publicCountFromRedux
+            ) || 0
+        );
+
+
+    const myCount =
+        Math.max(
+            myPagination.count,
+            Number(
+                myCountFromRedux
+            ) || 0
+        );
+
+    // =====================================================
     // RETURN
     // =====================================================
 
@@ -1532,11 +1666,6 @@ const useFeedbackPage = () => {
         // Public
         publicFeedbacks,
         publicCount,
-        publicPage,
-        publicPageSize,
-        publicTotalPages,
-        publicNext,
-        publicPrevious,
         publicPagination,
         isPublicLoading,
         hasPublicLoaded,
@@ -1545,11 +1674,6 @@ const useFeedbackPage = () => {
         // My
         myFeedbacks,
         myCount,
-        myPage,
-        myPageSize,
-        myTotalPages,
-        myNext,
-        myPrevious,
         myPagination,
         isMyLoading,
         hasMyLoaded,
@@ -1594,7 +1718,7 @@ const useFeedbackPage = () => {
         isAnyLoading,
         error,
 
-        // Actions
+        // Loaders / actions
         handleRefresh,
         loadPublicFeedbacks,
         loadMyFeedbacks,

@@ -1,6 +1,7 @@
 // src/components/Feedback.jsx
 
 import React, {
+    useEffect,
     useMemo,
     useState,
 } from "react";
@@ -17,7 +18,6 @@ import {
     Clock3,
     Coins,
     Gift,
-    Loader2,
     MessageSquareText,
     Plus,
     RefreshCcw,
@@ -32,7 +32,13 @@ import FeedbackCard from "./feedback/FeedbackCard";
 import FeedbackCreateModal from "./feedback/FeedbackCreateModal";
 import FeedbackEditModal from "./feedback/FeedbackEditModal";
 import FeedbackPagination from "./feedback/FeedbackPagination";
+
+import FeedbackSkeleton, {
+    FeedbackListSkeleton,
+} from "./feedback/FeedbackSkeleton";
+
 import useFeedbackPage from "./feedback/useFeedbackPage";
+
 
 // =========================================================
 // STAT CARD
@@ -47,9 +53,13 @@ const StatCard = ({
 }) => {
     return (
         <motion.div
-            whileHover={{
-                y: -3,
-            }}
+            whileHover={
+                isLoading
+                    ? undefined
+                    : {
+                        y: -3,
+                    }
+            }
             transition={{
                 duration: 0.2,
             }}
@@ -90,88 +100,125 @@ const StatCard = ({
                     gap-4
                 "
             >
-                <div className="min-w-0">
-                    <p
-                        className="
-                            font-display
-                            text-[9px]
-                            font-semibold
-                            uppercase
-                            tracking-[0.14em]
-                            text-gray-600
-                        "
-                    >
-                        {title}
-                    </p>
-
-                    {isLoading ? (
-                        <div
-                            className="
-                                mt-3
-                                h-8
-                                w-16
-                                animate-pulse
-                                rounded-lg
-                                bg-white/[0.06]
-                            "
-                        />
-                    ) : (
-                        <h3
-                            className="
-                                mt-2
-                                font-display
-                                text-2xl
-                                font-bold
-                                tracking-tight
-                                text-white
-                            "
-                        >
-                            {value}
-                        </h3>
-                    )}
-
-                    <p
-                        className="
-                            mt-1
-                            text-[10px]
-                            font-medium
-                            leading-5
-                            text-gray-600
-                        "
-                    >
-                        {description}
-                    </p>
-                </div>
-
                 <div
                     className="
-                        grid
-                        h-10
-                        w-10
-                        shrink-0
-                        place-items-center
-                        rounded-xl
-                        border
-                        border-indigo-400/10
-                        bg-indigo-500/[0.06]
-                        text-indigo-300
+                        min-w-0
+                        flex-1
                     "
                 >
                     {isLoading ? (
-                        <Loader2
-                            size={17}
-                            className="animate-spin"
-                        />
+                        <>
+                            <div
+                                className="
+                                    h-2.5
+                                    w-16
+                                    animate-pulse
+                                    rounded-full
+                                    bg-white/[0.055]
+                                "
+                            />
+
+                            <div
+                                className="
+                                    mt-3
+                                    h-8
+                                    w-14
+                                    animate-pulse
+                                    rounded-lg
+                                    bg-white/[0.055]
+                                "
+                            />
+
+                            <div
+                                className="
+                                    mt-2
+                                    h-2.5
+                                    w-24
+                                    animate-pulse
+                                    rounded-full
+                                    bg-white/[0.055]
+                                "
+                            />
+                        </>
                     ) : (
+                        <>
+                            <p
+                                className="
+                                    font-display
+                                    text-[9px]
+                                    font-semibold
+                                    uppercase
+                                    tracking-[0.14em]
+                                    text-gray-600
+                                "
+                            >
+                                {title}
+                            </p>
+
+                            <h3
+                                className="
+                                    mt-2
+                                    font-display
+                                    text-2xl
+                                    font-bold
+                                    tracking-tight
+                                    text-white
+                                "
+                            >
+                                {value}
+                            </h3>
+
+                            <p
+                                className="
+                                    mt-1
+                                    text-[10px]
+                                    font-medium
+                                    leading-5
+                                    text-gray-600
+                                "
+                            >
+                                {description}
+                            </p>
+                        </>
+                    )}
+                </div>
+
+                {isLoading ? (
+                    <div
+                        className="
+                            h-10
+                            w-10
+                            shrink-0
+                            animate-pulse
+                            rounded-xl
+                            bg-white/[0.055]
+                        "
+                    />
+                ) : (
+                    <div
+                        className="
+                            grid
+                            h-10
+                            w-10
+                            shrink-0
+                            place-items-center
+                            rounded-xl
+                            border
+                            border-indigo-400/10
+                            bg-indigo-500/[0.06]
+                            text-indigo-300
+                        "
+                    >
                         <Icon
                             size={18}
                         />
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
         </motion.div>
     );
 };
+
 
 // =========================================================
 // EMPTY STATE
@@ -242,53 +289,6 @@ const EmptyState = ({
     );
 };
 
-// =========================================================
-// SECTION LOADER
-// =========================================================
-
-const SectionLoader = ({
-    label = "Yuklanmoqda...",
-}) => {
-    return (
-        <div
-            className="
-                flex
-                min-h-[180px]
-                items-center
-                justify-center
-                rounded-3xl
-                border
-                border-white/[0.05]
-                bg-white/[0.015]
-            "
-        >
-            <div className="text-center">
-                <Loader2
-                    size={25}
-                    className="
-                        mx-auto
-                        animate-spin
-                        text-indigo-400
-                    "
-                />
-
-                <p
-                    className="
-                        mt-3
-                        font-display
-                        text-[9px]
-                        font-semibold
-                        uppercase
-                        tracking-[0.13em]
-                        text-gray-600
-                    "
-                >
-                    {label}
-                </p>
-            </div>
-        </div>
-    );
-};
 
 // =========================================================
 // FEEDBACK PAGE
@@ -296,94 +296,56 @@ const SectionLoader = ({
 
 const Feedback = () => {
     const {
-        // =================================================
-        // AUTH
-        // =================================================
-
+        // Auth
         isLoggedIn,
 
-        // =================================================
-        // PUBLIC
-        // =================================================
-
+        // Public
         publicFeedbacks,
         publicCount,
-
         publicPagination,
         isPublicLoading,
-
         handlePublicPageChange,
 
-        // =================================================
-        // MY
-        // =================================================
-
+        // My
         myFeedbacks,
-
         myPagination,
         isMyLoading,
-
         handleMyPageChange,
 
-        // =================================================
-        // STATS
-        // =================================================
-
+        // Stats
         stats,
 
-        // =================================================
-        // FILTER
-        // =================================================
-
+        // Filter
         activeStatus,
         statusFilters,
         setActiveStatus,
 
-        // =================================================
-        // CREATE
-        // =================================================
-
+        // Create
         isCreateModalOpen,
-
         handleOpenCreate,
         handleCloseCreate,
         handleCreated,
 
-        // =================================================
-        // EDIT
-        // =================================================
-
+        // Edit
         editingFeedback,
         isEditModalOpen,
-
         isUpdating,
         updatingId,
-
         handleOpenEdit,
         handleCloseEdit,
         handleUpdateFeedback,
 
-        // =================================================
-        // DELETE
-        // =================================================
-
+        // Delete
         isDeleting,
         deletingId,
-
         handleDeleteFeedback,
 
-        // =================================================
-        // REQUEST
-        // =================================================
-
+        // Request
         isRefreshing,
-
         isInitialLoading,
         isMyInitialLoading,
         isStatsInitialLoading,
-
         error,
-
         handleRefresh,
     } = useFeedbackPage();
 
@@ -394,7 +356,9 @@ const Feedback = () => {
     const [
         deleteTarget,
         setDeleteTarget,
-    ] = useState(null);
+    ] = useState(
+        null
+    );
 
     const isDeleteModalOpen =
         Boolean(
@@ -402,7 +366,51 @@ const Feedback = () => {
         );
 
     // =====================================================
-    // OPEN DELETE MODAL
+    // LOGOUT SAFETY
+    // =====================================================
+
+    useEffect(
+        () => {
+            if (
+                !isLoggedIn
+            ) {
+                setDeleteTarget(
+                    null
+                );
+            }
+        },
+        [
+            isLoggedIn,
+        ]
+    );
+
+    // =====================================================
+    // DELETE TITLE
+    // =====================================================
+
+    const deleteTargetTitle =
+        useMemo(
+            () => {
+                const title =
+                    String(
+                        deleteTarget?.title
+                        ||
+                        ""
+                    ).trim();
+
+                return (
+                    title
+                    ||
+                    "Feedback"
+                );
+            },
+            [
+                deleteTarget,
+            ]
+        );
+
+    // =====================================================
+    // DELETE MODAL
     // =====================================================
 
     const handleOpenDeleteModal = (
@@ -423,25 +431,20 @@ const Feedback = () => {
         );
     };
 
-    // =====================================================
-    // CLOSE DELETE MODAL
-    // =====================================================
 
-    const handleCloseDeleteModal = () => {
-        if (
-            isDeleting
-        ) {
-            return;
-        }
+    const handleCloseDeleteModal =
+        () => {
+            if (
+                isDeleting
+            ) {
+                return;
+            }
 
-        setDeleteTarget(
-            null
-        );
-    };
+            setDeleteTarget(
+                null
+            );
+        };
 
-    // =====================================================
-    // CONFIRM DELETE
-    // =====================================================
 
     const handleConfirmDelete =
         async () => {
@@ -449,6 +452,8 @@ const Feedback = () => {
                 !deleteTarget
                 ||
                 isDeleting
+                ||
+                isUpdating
             ) {
                 return;
             }
@@ -571,48 +576,18 @@ const Feedback = () => {
         );
 
     // =====================================================
-    // INITIAL LOADING
+    // INITIAL SKELETON
     // =====================================================
 
     if (
         isInitialLoading
     ) {
         return (
-            <main
-                className="
-                    flex
-                    min-h-[70vh]
-                    items-center
-                    justify-center
-                    bg-[#06080d]
-                    font-sans
-                "
-            >
-                <div className="text-center">
-                    <Loader2
-                        size={34}
-                        className="
-                            mx-auto
-                            animate-spin
-                            text-indigo-400
-                        "
-                    />
-
-                    <p
-                        className="
-                            mt-3
-                            font-display
-                            text-[10px]
-                            font-semibold
-                            uppercase
-                            tracking-[0.14em]
-                            text-gray-600
-                        "
-                    >
-                        Feedbacklar yuklanmoqda
-                    </p>
-                </div>
-            </main>
+            <FeedbackSkeleton
+                showPrivate={
+                    isLoggedIn
+                }
+            />
         );
     }
 
@@ -623,6 +598,9 @@ const Feedback = () => {
     return (
         <>
             <main
+                aria-busy={
+                    isRefreshing
+                }
                 className="
                     relative
                     min-h-screen
@@ -741,7 +719,11 @@ const Feedback = () => {
                                 lg:justify-between
                             "
                         >
-                            <div className="max-w-3xl">
+                            <div
+                                className="
+                                    max-w-3xl
+                                "
+                            >
                                 <div
                                     className="
                                         inline-flex
@@ -832,6 +814,7 @@ const Feedback = () => {
                                     }
                                     className="
                                         inline-flex
+                                        min-w-[120px]
                                         items-center
                                         justify-center
                                         gap-2
@@ -850,20 +833,17 @@ const Feedback = () => {
                                         hover:bg-white/[0.06]
                                         hover:text-white
                                         active:translate-y-0
-                                        disabled:cursor-not-allowed
-                                        disabled:opacity-50
+                                        disabled:cursor-wait
+                                        disabled:opacity-60
                                     "
                                 >
                                     <RefreshCcw
                                         size={16}
-                                        className={
-                                            isRefreshing
-                                                ? "animate-spin"
-                                                : ""
-                                        }
                                     />
 
-                                    Yangilash
+                                    {isRefreshing
+                                        ? "Yangilanmoqda..."
+                                        : "Yangilash"}
                                 </button>
 
                                 <button
@@ -924,6 +904,7 @@ const Feedback = () => {
                                     opacity: 0,
                                     y: -6,
                                 }}
+                                role="alert"
                                 className="
                                     mt-6
                                     flex
@@ -961,7 +942,11 @@ const Feedback = () => {
                     ====================================== */}
 
                     {isLoggedIn && (
-                        <section className="mt-8">
+                        <section
+                            className="
+                                mt-8
+                            "
+                        >
                             <div
                                 className="
                                     mb-4
@@ -1037,7 +1022,11 @@ const Feedback = () => {
                     ====================================== */}
 
                     {isLoggedIn && (
-                        <section className="mt-12">
+                        <section
+                            className="
+                                mt-12
+                            "
+                        >
                             <div
                                 className="
                                     flex
@@ -1072,10 +1061,6 @@ const Feedback = () => {
                                         tahrirlash yoki o‘chirish mumkin.
                                     </p>
                                 </div>
-
-                                {/* =====================
-                                    FILTERS
-                                ====================== */}
 
                                 <div
                                     className="
@@ -1143,9 +1128,7 @@ const Feedback = () => {
                                                         }
                                                     `}
                                                 >
-                                                    {
-                                                        item.label
-                                                    }
+                                                    {item.label}
                                                 </button>
                                             );
                                         }
@@ -1153,14 +1136,14 @@ const Feedback = () => {
                                 </div>
                             </div>
 
-                            {/* =========================
-                                LIST
-                            ========================== */}
-
-                            <div className="mt-5">
+                            <div
+                                className="
+                                    mt-5
+                                "
+                            >
                                 {isMyInitialLoading ? (
-                                    <SectionLoader
-                                        label="Feedbacklaringiz yuklanmoqda"
+                                    <FeedbackListSkeleton
+                                        count={4}
                                     />
                                 ) : myFeedbacks.length > 0 ? (
                                     <motion.div
@@ -1202,6 +1185,17 @@ const Feedback = () => {
                                                         ===
                                                         feedbackId;
 
+                                                    const actionsDisabled =
+                                                        (
+                                                            isUpdating
+                                                            ||
+                                                            isDeleting
+                                                        )
+                                                        &&
+                                                        !cardUpdating
+                                                        &&
+                                                        !cardDeleting;
+
                                                     return (
                                                         <FeedbackCard
                                                             key={
@@ -1223,15 +1217,7 @@ const Feedback = () => {
                                                                 cardDeleting
                                                             }
                                                             actionsDisabled={
-                                                                (
-                                                                    isUpdating
-                                                                    ||
-                                                                    isDeleting
-                                                                )
-                                                                &&
-                                                                !cardUpdating
-                                                                &&
-                                                                !cardDeleting
+                                                                actionsDisabled
                                                             }
                                                         />
                                                     );
@@ -1256,34 +1242,32 @@ const Feedback = () => {
                                 )}
                             </div>
 
-                            {/* =========================
-                                MY PAGINATION
-                            ========================== */}
-
-                            <FeedbackPagination
-                                page={
-                                    myPagination.page
-                                }
-                                totalPages={
-                                    myPagination.totalPages
-                                }
-                                count={
-                                    myPagination.count
-                                }
-                                hasPrevious={
-                                    myPagination.hasPrevious
-                                }
-                                hasNext={
-                                    myPagination.hasNext
-                                }
-                                isLoading={
-                                    isMyLoading
-                                }
-                                onPageChange={
-                                    handleMyPageChange
-                                }
-                                label="Mening feedbacklarim sahifalari"
-                            />
+                            {!isMyInitialLoading && (
+                                <FeedbackPagination
+                                    page={
+                                        myPagination.page
+                                    }
+                                    totalPages={
+                                        myPagination.totalPages
+                                    }
+                                    count={
+                                        myPagination.count
+                                    }
+                                    hasPrevious={
+                                        myPagination.hasPrevious
+                                    }
+                                    hasNext={
+                                        myPagination.hasNext
+                                    }
+                                    isLoading={
+                                        isMyLoading
+                                    }
+                                    onPageChange={
+                                        handleMyPageChange
+                                    }
+                                    label="Mening feedbacklarim sahifalari"
+                                />
+                            )}
                         </section>
                     )}
 
@@ -1291,7 +1275,11 @@ const Feedback = () => {
                         COMMUNITY
                     ====================================== */}
 
-                    <section className="mt-14">
+                    <section
+                        className="
+                            mt-14
+                        "
+                    >
                         <div
                             className="
                                 flex
@@ -1342,6 +1330,7 @@ const Feedback = () => {
 
                             <span
                                 className="
+                                    shrink-0
                                     rounded-full
                                     border
                                     border-white/[0.06]
@@ -1360,15 +1349,16 @@ const Feedback = () => {
                                     publicCount
                                     ??
                                     publicFeedbacks.length
-                                }
-
-                                {" "}
-
+                                }{" "}
                                 ta
                             </span>
                         </div>
 
-                        <div className="mt-5">
+                        <div
+                            className="
+                                mt-5
+                            "
+                        >
                             {publicFeedbacks.length > 0 ? (
                                 <div
                                     className="
@@ -1405,10 +1395,6 @@ const Feedback = () => {
                                 />
                             )}
                         </div>
-
-                        {/* =========================
-                            PUBLIC PAGINATION
-                        ========================== */}
 
                         <FeedbackPagination
                             page={
@@ -1492,11 +1478,7 @@ const Feedback = () => {
                         handleConfirmDelete
                     }
                     itemTitle={
-                        deleteTarget
-                            ?.title
-                            ?.trim()
-                        ||
-                        "Feedback"
+                        deleteTargetTitle
                     }
                     isProcessing={
                         isDeleting
@@ -1506,6 +1488,7 @@ const Feedback = () => {
         </>
     );
 };
+
 
 // =========================================================
 // EXPORT

@@ -1,593 +1,2717 @@
-// EditProfileModal.jsx
-import React, { useState, useEffect } from "react";
-import { useDispatch } from "react-redux";
+// src/components/profile/EditProfileModal.jsx
+
+import React, {
+    useEffect,
+    useRef,
+    useState,
+} from "react";
+
+import {
+    useDispatch,
+} from "react-redux";
+
+import {
+    AnimatePresence,
+    motion,
+} from "framer-motion";
+
+import {
+    AlertTriangle,
+    BriefcaseBusiness,
+    Building2,
+    CalendarDays,
+    Camera,
+    ChevronDown,
+    Code2,
+    FileText,
+    Github,
+    Image as ImageIcon,
+    Link2,
+    Loader2,
+    Mail,
+    MapPin,
+    Save,
+    ShieldCheck,
+    Sparkles,
+    Trash2,
+    UploadCloud,
+    UserRound,
+    X,
+} from "lucide-react";
 
 import ProfileService from "../../services/profile";
-import { getProfileSuccess } from "../../features/profile";
+
+import {
+    getProfileSuccess,
+} from "../../features/profile";
+
+import {
+    siteToast,
+} from "../ui/AuthToast";
+
+// =========================================================
+// CONSTANTS
+// =========================================================
 
 const SKILL_LEVELS = [
-    { value: "beginner", label: "Boshlang'ich" },
-    { value: "junior", label: "Junior (Kichik mutaxassis)" },
-    { value: "intermediate", label: "O'rta (Intermediate)" },
-    { value: "advanced", label: "Kengaytirilgan (Advanced)" },
-    { value: "senior", label: "Senior (Katta mutaxassis)" },
-    { value: "lead", label: "Lead / Tech Lead (Yetakchi)" },
-    { value: "expert", label: "Expert / Architect (Ekspert)" },
+    {
+        value: "beginner",
+        label: "Boshlang‘ich",
+    },
+    {
+        value: "junior",
+        label: "Junior (Kichik mutaxassis)",
+    },
+    {
+        value: "intermediate",
+        label: "O‘rta (Intermediate)",
+    },
+    {
+        value: "advanced",
+        label: "Kengaytirilgan (Advanced)",
+    },
+    {
+        value: "senior",
+        label: "Senior (Katta mutaxassis)",
+    },
+    {
+        value: "lead",
+        label: "Lead / Tech Lead (Yetakchi)",
+    },
+    {
+        value: "expert",
+        label: "Expert / Architect (Ekspert)",
+    },
 ];
 
-const normalizeDateForInput = (dateValue) => {
-    if (!dateValue) return "";
+const INITIAL_FORM_DATA = {
+    first_name: "",
+    last_name: "",
+    email: "",
+    birthday: "",
+    address: "",
+    about_me: "",
+    skill_level: "beginner",
+    skills: "",
+    company: "",
+    position: "",
+    website_url: "",
+    github_url: "",
+};
 
-    if (typeof dateValue === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+// =========================================================
+// NORMALIZE DATE
+// =========================================================
+
+const normalizeDateForInput = (
+    dateValue
+) => {
+    if (
+        !dateValue
+    ) {
+        return "";
+    }
+
+    if (
+        typeof dateValue ===
+            "string"
+        &&
+        /^\d{4}-\d{2}-\d{2}$/.test(
+            dateValue
+        )
+    ) {
         return dateValue;
     }
 
-    if (typeof dateValue === "string" && dateValue.includes("T")) {
-        return dateValue.split("T")[0];
+    if (
+        typeof dateValue ===
+            "string"
+        &&
+        dateValue.includes(
+            "T"
+        )
+    ) {
+        return (
+            dateValue.split(
+                "T"
+            )[0]
+            ||
+            ""
+        );
     }
 
     return "";
 };
 
-const normalizeSkillsForInput = (skills) => {
-    if (!skills) return "";
+// =========================================================
+// NORMALIZE SKILLS
+// =========================================================
 
-    if (Array.isArray(skills)) {
-        return skills
-            .map((skill) => {
-                if (typeof skill === "string") return skill;
-                return skill?.name || skill?.title || "";
-            })
-            .filter(Boolean)
-            .join(", ");
+const normalizeSkillsForInput = (
+    skills
+) => {
+    if (
+        !skills
+    ) {
+        return "";
     }
 
-    return skills;
+    if (
+        Array.isArray(
+            skills
+        )
+    ) {
+        return skills
+            .map(
+                (
+                    skill
+                ) => {
+                    if (
+                        typeof skill ===
+                        "string"
+                    ) {
+                        return skill;
+                    }
+
+                    return (
+                        skill?.name
+                        ||
+                        skill?.title
+                        ||
+                        ""
+                    );
+                }
+            )
+            .filter(
+                Boolean
+            )
+            .join(
+                ", "
+            );
+    }
+
+    return String(
+        skills
+    );
 };
 
-const EditProfileModal = ({ profileData, isOpen, onClose }) => {
-    const dispatch = useDispatch();
+// =========================================================
+// ERROR MESSAGE
+// =========================================================
 
-    const [formData, setFormData] = useState({
-        first_name: "",
-        last_name: "",
-        email: "",
-        birthday: "",
-        address: "",
-        about_me: "",
-        skill_level: "beginner",
-        skills: "",
-        company: "",
-        position: "",
-        website_url: "",
-        github_url: "",
-    });
+const getProfileErrorMessage = (
+    error,
+    fallback = "Ma’lumotlarni saqlashda xatolik yuz berdi."
+) => {
+    const data =
+        error?.serverData
+        ||
+        error?.response?.data;
 
-    const [profileImageFile, setProfileImageFile] = useState(null);
-    const [profileImagePreview, setProfileImagePreview] = useState(null);
+    if (
+        typeof data ===
+            "string"
+        &&
+        data.trim()
+    ) {
+        return data.trim();
+    }
 
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [success, setSuccess] = useState(false);
+    if (
+        typeof data?.detail ===
+            "string"
+        &&
+        data.detail.trim()
+    ) {
+        return data.detail.trim();
+    }
 
-    useEffect(() => {
-        if (profileData) {
-            setFormData({
-                first_name: profileData.first_name ?? "",
-                last_name: profileData.last_name ?? "",
-                email: profileData.email ?? "",
+    if (
+        data?.email
+    ) {
+        const emailError =
+            Array.isArray(
+                data.email
+            )
+                ? data.email[0]
+                : data.email;
 
-                birthday: normalizeDateForInput(
-                    profileData.birthday || profileData.birth_date
-                ),
+        return `Email: ${emailError}`;
+    }
 
-                address: profileData.address ?? "",
-                about_me: profileData.about_me ?? "",
-                skill_level: profileData.skill_level ?? "beginner",
-                skills: normalizeSkillsForInput(profileData.skills),
-                company: profileData.company ?? "",
-                position: profileData.position ?? "",
-                website_url: profileData.website_url ?? "",
-                github_url: profileData.github_url ?? "",
-            });
+    if (
+        data?.birthday
+    ) {
+        const birthdayError =
+            Array.isArray(
+                data.birthday
+            )
+                ? data.birthday[0]
+                : data.birthday;
 
-            setProfileImagePreview(profileData.image || null);
-            setProfileImageFile(null);
-            setError(null);
-            setSuccess(false);
-        }
-    }, [profileData]);
+        return (
+            `Tug‘ilgan sana: ${birthdayError}`
+        );
+    }
 
-    if (!isOpen) return null;
+    if (
+        data
+        &&
+        typeof data ===
+            "object"
+    ) {
+        const firstValue =
+            Object.values(
+                data
+            )[0];
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
-
-        setError(null);
-        setSuccess(false);
-    };
-
-    const handleImageChange = (e) => {
-        const file = e.target.files?.[0];
-
-        if (file) {
-            setProfileImageFile(file);
-            setProfileImagePreview(URL.createObjectURL(file));
-            setError(null);
-            setSuccess(false);
-        }
-    };
-
-    const handleImageRemove = () => {
-        setProfileImageFile(new File([], "null", { type: "application/json" }));
-        setProfileImagePreview(null);
-        setSuccess(false);
-        setError(null);
-    };
-
-    const buildSkillsArray = () => {
-        return formData.skills
-            .split(",")
-            .map((skill) => skill.trim())
-            .filter(Boolean);
-    };
-
-    const handleSave = async (e) => {
-        e.preventDefault();
-
-        if (!profileData?.username) {
-            setError("Username topilmadi. Profilni yangilab bo‘lmadi.");
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-        setSuccess(false);
-
-        const isFileUpdate = profileImageFile !== null;
-        let dataToSend;
-
-        if (isFileUpdate) {
-            dataToSend = new FormData();
-
-            Object.keys(formData).forEach((key) => {
-                if (key !== "skills") {
-                    dataToSend.append(key, formData[key] ?? "");
-                }
-            });
-
-            buildSkillsArray().forEach((skill) => {
-                dataToSend.append("skills", skill);
-            });
-
-            if (profileImageFile) {
-                if (profileImageFile.name === "null") {
-                    dataToSend.append("image", "");
-                } else {
-                    dataToSend.append("image", profileImageFile);
-                }
-            }
-        } else {
-            dataToSend = {
-                ...formData,
-                birthday: formData.birthday || null,
-                email: formData.email || "",
-                skills: buildSkillsArray(),
-            };
-        }
-
-        try {
-            const response = await ProfileService.updateProfile(
-                profileData.username,
-                dataToSend
+        if (
+            Array.isArray(
+                firstValue
+            )
+            &&
+            firstValue.length > 0
+        ) {
+            return String(
+                firstValue[0]
             );
+        }
 
-            dispatch(getProfileSuccess(response));
+        if (
+            typeof firstValue ===
+                "string"
+        ) {
+            return firstValue;
+        }
+    }
 
-            setLoading(false);
-            setSuccess(true);
+    if (
+        error?.message
+    ) {
+        try {
+            const parsed =
+                JSON.parse(
+                    error.message
+                );
 
-            setTimeout(() => {
-                onClose();
-            }, 800);
-        } catch (err) {
-            console.error("Profilni tahrirlashda xato:", err);
-
-            let errorMessage = "Ma'lumotlarni saqlashda xato yuz berdi.";
-
-            try {
-                const parsed = JSON.parse(err.message);
-
-                if (parsed.email) {
-                    errorMessage = `Email: ${parsed.email[0]}`;
-                } else if (parsed.birthday) {
-                    errorMessage = `Tug‘ilgan sana: ${parsed.birthday[0]}`;
-                } else if (parsed.detail) {
-                    errorMessage = parsed.detail;
-                } else {
-                    errorMessage = err.message;
-                }
-            } catch {
-                errorMessage = err.message || errorMessage;
+            if (
+                parsed?.email
+            ) {
+                return (
+                    `Email: ${
+                        Array.isArray(
+                            parsed.email
+                        )
+                            ? parsed.email[0]
+                            : parsed.email
+                    }`
+                );
             }
 
-            setError(errorMessage);
-            setLoading(false);
-        }
-    };
+            if (
+                parsed?.birthday
+            ) {
+                return (
+                    `Tug‘ilgan sana: ${
+                        Array.isArray(
+                            parsed.birthday
+                        )
+                            ? parsed.birthday[0]
+                            : parsed.birthday
+                    }`
+                );
+            }
 
-    const handleBackgroundClick = (e) => {
-        if (e.target.id === "modal-backdrop") {
-            onClose();
-        }
-    };
+            if (
+                parsed?.detail
+            ) {
+                return String(
+                    parsed.detail
+                );
+            }
 
+            const firstValue =
+                Object.values(
+                    parsed
+                )[0];
+
+            if (
+                Array.isArray(
+                    firstValue
+                )
+                &&
+                firstValue.length > 0
+            ) {
+                return String(
+                    firstValue[0]
+                );
+            }
+
+            if (
+                typeof firstValue ===
+                    "string"
+            ) {
+                return firstValue;
+            }
+        } catch {
+            return String(
+                error.message
+            );
+        }
+    }
+
+    return fallback;
+};
+
+// =========================================================
+// SECTION HEADER
+// =========================================================
+
+const SectionHeader = ({
+    Icon,
+    title,
+    description,
+}) => {
     return (
         <div
-            id="modal-backdrop"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
-            onClick={handleBackgroundClick}
+            className="
+                col-span-full
+                mb-1
+                flex
+                items-start
+                gap-3
+            "
         >
-            <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-gray-700 bg-gray-800 shadow-2xl">
-                <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-700 bg-gray-800/95 p-6 backdrop-blur">
-                    <div>
-                        <h2 className="text-2xl font-black text-white">
-                            Profilni tahrirlash
-                        </h2>
-                        <p className="mt-1 text-sm font-medium text-gray-400">
-                            Shaxsiy, kasbiy va ijtimoiy ma’lumotlaringizni yangilang
-                        </p>
-                    </div>
+            <div
+                className="
+                    grid
+                    h-10
+                    w-10
+                    shrink-0
+                    place-items-center
+                    rounded-xl
+                    border
+                    border-indigo-400/10
+                    bg-indigo-500/[0.06]
+                    text-indigo-300
+                "
+            >
+                <Icon
+                    size={17}
+                />
+            </div>
 
-                    <button
-                        onClick={onClose}
-                        className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
-                        type="button"
+            <div>
+                <h3
+                    className="
+                        font-display
+                        text-sm
+                        font-semibold
+                        text-white
+                    "
+                >
+                    {title}
+                </h3>
+
+                {description && (
+                    <p
+                        className="
+                            mt-0.5
+                            text-[10px]
+                            font-medium
+                            leading-5
+                            text-gray-600
+                        "
                     >
-                        <i className="fa-solid fa-times text-2xl"></i>
-                    </button>
-                </div>
-
-                <form onSubmit={handleSave} className="space-y-5 p-6">
-                    {/* PROFIL RASMI */}
-                    <div className="space-y-4 border-b border-gray-700 pb-5">
-                        <h3 className="col-span-full text-lg font-bold text-indigo-400">
-                            <i className="fa-solid fa-camera-retro mr-2"></i>
-                            Profil rasmi
-                        </h3>
-
-                        <div className="mx-auto flex w-fit flex-col items-center rounded-xl border border-gray-700 bg-gray-700/30 p-4">
-                            <label className="mb-2 text-sm font-semibold text-gray-300">
-                                Profil rasmini yuklash
-                            </label>
-
-                            <div className="mb-3 flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-indigo-500 bg-gray-700">
-                                {profileImagePreview ? (
-                                    <img
-                                        src={profileImagePreview}
-                                        alt="Profil rasmi"
-                                        className="h-full w-full object-cover"
-                                    />
-                                ) : (
-                                    <i className="fa-solid fa-user text-3xl text-gray-500"></i>
-                                )}
-                            </div>
-
-                            <input
-                                type="file"
-                                id="profileImage"
-                                hidden
-                                accept="image/*"
-                                onChange={handleImageChange}
-                            />
-
-                            <div className="mt-2 flex gap-2">
-                                <label
-                                    htmlFor="profileImage"
-                                    className="cursor-pointer rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
-                                >
-                                    <i className="fa-solid fa-upload mr-1"></i>
-                                    Yuklash
-                                </label>
-
-                                {(profileImagePreview || profileImageFile) && (
-                                    <button
-                                        type="button"
-                                        onClick={handleImageRemove}
-                                        className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-red-700"
-                                    >
-                                        <i className="fa-solid fa-trash-alt mr-1"></i>
-                                        O‘chirish
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* SHAXSIY MA'LUMOTLAR */}
-                    <div className="grid grid-cols-1 gap-4 border-b border-gray-700 pb-5 md:grid-cols-2">
-                        <h3 className="col-span-full text-lg font-bold text-indigo-400">
-                            <i className="fa-solid fa-user-edit mr-2"></i>
-                            Shaxsiy ma’lumotlar
-                        </h3>
-
-                        <div>
-                            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
-                                Ism
-                            </label>
-                            <input
-                                type="text"
-                                name="first_name"
-                                placeholder="Ism"
-                                value={formData.first_name}
-                                onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
-                                Familiya
-                            </label>
-                            <input
-                                type="text"
-                                name="last_name"
-                                placeholder="Familiya"
-                                value={formData.last_name}
-                                onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                            />
-                        </div>
-
-                        <div className="md:col-span-2">
-                            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
-                                Email
-                            </label>
-                            <div className="relative">
-                                <i className="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    placeholder="example@gmail.com"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 pl-10 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                                />
-                            </div>
-                            <p className="mt-1 text-xs text-gray-500">
-                                Email manzilingiz profil va tizim xabarlari uchun ishlatiladi.
-                            </p>
-                        </div>
-
-                        <div>
-                            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
-                                Tug‘ilgan sana
-                            </label>
-                            <input
-                                type="date"
-                                name="birthday"
-                                value={formData.birthday}
-                                onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                            />
-                            <p className="mt-1 text-xs text-gray-500">
-                                Masalan: 2004-05-28
-                            </p>
-                        </div>
-
-                        <div>
-                            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
-                                Manzil
-                            </label>
-                            <input
-                                type="text"
-                                name="address"
-                                placeholder="Masalan: Tashkent, Uzbekistan"
-                                value={formData.address}
-                                onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                            />
-                        </div>
-
-                        <div className="col-span-full">
-                            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
-                                Men haqimda
-                            </label>
-                            <textarea
-                                name="about_me"
-                                placeholder="Men haqimda..."
-                                value={formData.about_me}
-                                onChange={handleChange}
-                                rows="4"
-                                className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                            />
-                        </div>
-                    </div>
-
-                    {/* KASBIY MA'LUMOTLAR */}
-                    <div className="grid grid-cols-1 gap-4 border-b border-gray-700 pb-5 md:grid-cols-2">
-                        <h3 className="col-span-full text-lg font-bold text-indigo-400">
-                            <i className="fa-solid fa-laptop-code mr-2"></i>
-                            Kasbiy ma’lumotlar
-                        </h3>
-
-                        <div className="relative">
-                            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
-                                Daraja
-                            </label>
-                            <select
-                                name="skill_level"
-                                value={formData.skill_level}
-                                onChange={handleChange}
-                                className="w-full appearance-none rounded-lg border border-gray-600 bg-gray-700 p-3 pr-8 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                            >
-                                {SKILL_LEVELS.map((level) => (
-                                    <option key={level.value} value={level.value}>
-                                        {level.label}
-                                    </option>
-                                ))}
-                            </select>
-                            <i className="fa-solid fa-chevron-down pointer-events-none absolute bottom-4 right-3 text-gray-400"></i>
-                        </div>
-
-                        <div>
-                            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
-                                Kompaniya
-                            </label>
-                            <input
-                                type="text"
-                                name="company"
-                                placeholder="Kompaniya"
-                                value={formData.company}
-                                onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
-                                Lavozim
-                            </label>
-                            <input
-                                type="text"
-                                name="position"
-                                placeholder="Backend Developer"
-                                value={formData.position}
-                                onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                            />
-                        </div>
-
-                        <div className="col-span-full">
-                            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
-                                Ko‘nikmalar
-                            </label>
-                            <input
-                                type="text"
-                                name="skills"
-                                placeholder="Python, Django, React, CSS"
-                                value={formData.skills}
-                                onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                            />
-                            <p className="mt-1 flex items-center text-xs text-gray-500">
-                                <i className="fa-solid fa-info-circle mr-1"></i>
-                                Ko‘nikmalarni vergul bilan ajratib yozing.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* IJTIMOIY TARMOQLAR */}
-                    <div className="grid grid-cols-1 gap-4 border-b border-gray-700 pb-5 md:grid-cols-2">
-                        <h3 className="col-span-full text-lg font-bold text-indigo-400">
-                            <i className="fa-solid fa-share-alt mr-2"></i>
-                            Ijtimoiy tarmoqlar
-                        </h3>
-
-                        <div>
-                            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
-                                Veb-sayt
-                            </label>
-                            <div className="relative">
-                                <i className="fa-solid fa-link absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                <input
-                                    type="text"
-                                    name="website_url"
-                                    placeholder="https://dimodev.uz"
-                                    value={formData.website_url}
-                                    onChange={handleChange}
-                                    className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 pl-10 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
-                                GitHub
-                            </label>
-                            <div className="relative">
-                                <i className="fa-brands fa-github absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                <input
-                                    type="text"
-                                    name="github_url"
-                                    placeholder="github.com/username yoki username"
-                                    value={formData.github_url}
-                                    onChange={handleChange}
-                                    className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 pl-10 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* TAHRIRLAB BO‘LMAYDIGAN */}
-                    <div className="rounded-lg border border-gray-700 bg-gray-900/50 p-3 text-sm text-gray-500">
-                        <p className="mb-1 flex items-center font-semibold text-gray-300">
-                            <i className="fa-solid fa-lock mr-2 text-red-400"></i>
-                            Tahrirlab bo‘lmaydigan ma’lumotlar
-                        </p>
-                        <ul className="ml-2 list-inside list-disc">
-                            <li>
-                                <b>username, id, coins</b> — tizim tomonidan boshqariladi
-                            </li>
-                            <li>
-                                <b>date_joined</b> — avtomatik sana
-                            </li>
-                            <li>
-                                <b>cover_image</b> — alohida “Fon rasmi” tugmasi orqali tahrirlanadi
-                            </li>
-                        </ul>
-                    </div>
-
-                    {error && (
-                        <div className="flex items-start rounded-lg border border-red-700 bg-red-900/50 p-3 text-sm text-red-400">
-                            <i className="fa-solid fa-exclamation-triangle mr-2 mt-1"></i>
-                            <p>{error}</p>
-                        </div>
-                    )}
-
-                    {success && (
-                        <div className="flex items-center rounded-lg border border-green-700 bg-green-900/50 p-3 text-sm font-semibold text-green-400">
-                            <i className="fa-solid fa-check-circle mr-2"></i>
-                            Profil muvaffaqiyatli saqlandi!
-                        </div>
-                    )}
-
-                    <div className="flex justify-end gap-3 pt-3">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="rounded-lg bg-gray-600 px-5 py-2 font-semibold text-white transition-all hover:bg-gray-500"
-                        >
-                            Bekor qilish
-                        </button>
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 font-semibold text-white transition-all hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {loading ? (
-                                <>
-                                    <i className="fa-solid fa-spinner fa-spin"></i>
-                                    <span>Saqlanmoqda...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <i className="fa-solid fa-save"></i>
-                                    <span>Saqlash</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </form>
+                        {description}
+                    </p>
+                )}
             </div>
         </div>
     );
 };
+
+// =========================================================
+// FIELD LABEL
+// =========================================================
+
+const FieldLabel = ({
+    children,
+    optional = false,
+}) => {
+    return (
+        <div
+            className="
+                mb-2
+                flex
+                items-center
+                gap-2
+            "
+        >
+            <span
+                className="
+                    font-display
+                    text-[9px]
+                    font-semibold
+                    uppercase
+                    tracking-[0.12em]
+                    text-gray-500
+                "
+            >
+                {children}
+            </span>
+
+            {optional && (
+                <span
+                    className="
+                        text-[9px]
+                        font-medium
+                        text-gray-700
+                    "
+                >
+                    ixtiyoriy
+                </span>
+            )}
+        </div>
+    );
+};
+
+// =========================================================
+// INPUT WRAPPER
+// =========================================================
+
+const InputWrapper = ({
+    Icon,
+    children,
+}) => {
+    return (
+        <div className="relative">
+            {Icon && (
+                <Icon
+                    size={15}
+                    className="
+                        pointer-events-none
+                        absolute
+                        left-3.5
+                        top-1/2
+                        -translate-y-1/2
+                        text-gray-600
+                    "
+                />
+            )}
+
+            {children}
+        </div>
+    );
+};
+
+// =========================================================
+// EDIT PROFILE MODAL
+// =========================================================
+
+const EditProfileModal = ({
+    profileData,
+    isOpen,
+    onClose,
+}) => {
+    const dispatch =
+        useDispatch();
+
+    // =====================================================
+    // FORM
+    // =====================================================
+
+    const [
+        formData,
+        setFormData,
+    ] = useState(
+        INITIAL_FORM_DATA
+    );
+
+    // =====================================================
+    // PROFILE IMAGE
+    // =====================================================
+
+    const [
+        profileImageFile,
+        setProfileImageFile,
+    ] = useState(null);
+
+    const [
+        profileImagePreview,
+        setProfileImagePreview,
+    ] = useState(null);
+
+    const [
+        removeProfileImage,
+        setRemoveProfileImage,
+    ] = useState(false);
+
+    const previewObjectUrlRef =
+        useRef(null);
+
+    const imageInputRef =
+        useRef(null);
+
+    // =====================================================
+    // REQUEST
+    // =====================================================
+
+    const [
+        loading,
+        setLoading,
+    ] = useState(false);
+
+    const [
+        error,
+        setError,
+    ] = useState("");
+
+    // =====================================================
+    // CLEAN PREVIEW OBJECT URL
+    // =====================================================
+
+    const clearLocalPreviewUrl = () => {
+        if (
+            previewObjectUrlRef.current
+        ) {
+            URL.revokeObjectURL(
+                previewObjectUrlRef.current
+            );
+
+            previewObjectUrlRef.current =
+                null;
+        }
+    };
+
+    useEffect(
+        () => {
+            return () => {
+                if (
+                    previewObjectUrlRef.current
+                ) {
+                    URL.revokeObjectURL(
+                        previewObjectUrlRef.current
+                    );
+                }
+            };
+        },
+        []
+    );
+
+    // =====================================================
+    // FILL FORM
+    // =====================================================
+
+    useEffect(
+        () => {
+            if (
+                !isOpen
+                ||
+                !profileData
+            ) {
+                return;
+            }
+
+            clearLocalPreviewUrl();
+
+            setFormData({
+                first_name:
+                    profileData.first_name
+                    ??
+                    "",
+
+                last_name:
+                    profileData.last_name
+                    ??
+                    "",
+
+                email:
+                    profileData.email
+                    ??
+                    "",
+
+                birthday:
+                    normalizeDateForInput(
+                        profileData.birthday
+                        ||
+                        profileData.birth_date
+                    ),
+
+                address:
+                    profileData.address
+                    ??
+                    "",
+
+                about_me:
+                    profileData.about_me
+                    ??
+                    "",
+
+                skill_level:
+                    profileData.skill_level
+                    ??
+                    "beginner",
+
+                skills:
+                    normalizeSkillsForInput(
+                        profileData.skills
+                    ),
+
+                company:
+                    profileData.company
+                    ??
+                    "",
+
+                position:
+                    profileData.position
+                    ??
+                    "",
+
+                website_url:
+                    profileData.website_url
+                    ??
+                    "",
+
+                github_url:
+                    profileData.github_url
+                    ??
+                    "",
+            });
+
+            setProfileImagePreview(
+                profileData.image
+                ||
+                null
+            );
+
+            setProfileImageFile(
+                null
+            );
+
+            setRemoveProfileImage(
+                false
+            );
+
+            setError(
+                ""
+            );
+
+            if (
+                imageInputRef.current
+            ) {
+                imageInputRef
+                    .current
+                    .value = "";
+            }
+        },
+        [
+            isOpen,
+            profileData,
+        ]
+    );
+
+    // =====================================================
+    // ESC + BODY LOCK
+    // =====================================================
+
+    useEffect(
+        () => {
+            if (
+                !isOpen
+            ) {
+                return undefined;
+            }
+
+            const previousOverflow =
+                document
+                    .body
+                    .style
+                    .overflow;
+
+            document
+                .body
+                .style
+                .overflow =
+                "hidden";
+
+            const handleKeyDown = (
+                event
+            ) => {
+                if (
+                    event.key ===
+                        "Escape"
+                    &&
+                    !loading
+                ) {
+                    onClose?.();
+                }
+            };
+
+            window.addEventListener(
+                "keydown",
+                handleKeyDown
+            );
+
+            return () => {
+                document
+                    .body
+                    .style
+                    .overflow =
+                    previousOverflow;
+
+                window.removeEventListener(
+                    "keydown",
+                    handleKeyDown
+                );
+            };
+        },
+        [
+            isOpen,
+            loading,
+            onClose,
+        ]
+    );
+
+    // =====================================================
+    // CHANGE
+    // =====================================================
+
+    const handleChange = (
+        event
+    ) => {
+        const {
+            name,
+            value,
+        } = event.target;
+
+        setFormData(
+            (
+                previous
+            ) => ({
+                ...previous,
+
+                [name]:
+                    value,
+            })
+        );
+
+        setError(
+            ""
+        );
+    };
+
+    // =====================================================
+    // IMAGE CHANGE
+    // =====================================================
+
+    const handleImageChange = (
+        event
+    ) => {
+        const file =
+            event
+                .target
+                .files?.[0];
+
+        if (
+            !file
+        ) {
+            return;
+        }
+
+        if (
+            !file.type
+                ?.startsWith(
+                    "image/"
+                )
+        ) {
+            const message =
+                "Faqat rasm faylini yuklash mumkin.";
+
+            setError(
+                message
+            );
+
+            siteToast.warning(
+                message
+            );
+
+            event.target.value =
+                "";
+
+            return;
+        }
+
+        clearLocalPreviewUrl();
+
+        const previewUrl =
+            URL.createObjectURL(
+                file
+            );
+
+        previewObjectUrlRef.current =
+            previewUrl;
+
+        setProfileImageFile(
+            file
+        );
+
+        setProfileImagePreview(
+            previewUrl
+        );
+
+        setRemoveProfileImage(
+            false
+        );
+
+        setError(
+            ""
+        );
+    };
+
+    // =====================================================
+    // REMOVE PROFILE IMAGE
+    // =====================================================
+
+    const handleImageRemove = () => {
+        if (
+            loading
+        ) {
+            return;
+        }
+
+        clearLocalPreviewUrl();
+
+        setProfileImageFile(
+            null
+        );
+
+        setProfileImagePreview(
+            null
+        );
+
+        setRemoveProfileImage(
+            true
+        );
+
+        setError(
+            ""
+        );
+
+        if (
+            imageInputRef.current
+        ) {
+            imageInputRef
+                .current
+                .value = "";
+        }
+    };
+
+    // =====================================================
+    // SKILLS ARRAY
+    // =====================================================
+
+    const buildSkillsArray = () => {
+        return String(
+            formData.skills
+            ||
+            ""
+        )
+            .split(
+                ","
+            )
+            .map(
+                (
+                    skill
+                ) => (
+                    skill.trim()
+                )
+            )
+            .filter(
+                Boolean
+            );
+    };
+
+    // =====================================================
+    // CLOSE
+    // =====================================================
+
+    const handleClose = () => {
+        if (
+            loading
+        ) {
+            return;
+        }
+
+        onClose?.();
+    };
+
+    // =====================================================
+    // BACKDROP
+    // =====================================================
+
+    const handleBackdropMouseDown = (
+        event
+    ) => {
+        if (
+            event.target ===
+                event.currentTarget
+            &&
+            !loading
+        ) {
+            onClose?.();
+        }
+    };
+
+    // =====================================================
+    // SAVE
+    // =====================================================
+
+    const handleSave = async (
+        event
+    ) => {
+        event.preventDefault();
+
+        if (
+            loading
+        ) {
+            return;
+        }
+
+        if (
+            !profileData?.username
+        ) {
+            const message =
+                "Username topilmadi. Profilni yangilab bo‘lmadi.";
+
+            setError(
+                message
+            );
+
+            siteToast.error(
+                message
+            );
+
+            return;
+        }
+
+        setLoading(
+            true
+        );
+
+        setError(
+            ""
+        );
+
+        const toastId =
+            siteToast.loading(
+                "Profil saqlanmoqda..."
+            );
+
+        try {
+            const hasImageUpdate =
+                Boolean(
+                    profileImageFile
+                )
+                ||
+                removeProfileImage;
+
+            let dataToSend;
+
+            // =============================================
+            // MULTIPART
+            // =============================================
+
+            if (
+                hasImageUpdate
+            ) {
+                dataToSend =
+                    new FormData();
+
+                Object.keys(
+                    formData
+                ).forEach(
+                    (
+                        key
+                    ) => {
+                        if (
+                            key ===
+                            "skills"
+                        ) {
+                            return;
+                        }
+
+                        dataToSend.append(
+                            key,
+                            formData[key]
+                            ??
+                            ""
+                        );
+                    }
+                );
+
+                buildSkillsArray()
+                    .forEach(
+                        (
+                            skill
+                        ) => {
+                            dataToSend.append(
+                                "skills",
+                                skill
+                            );
+                        }
+                    );
+
+                if (
+                    profileImageFile
+                ) {
+                    dataToSend.append(
+                        "image",
+                        profileImageFile
+                    );
+                } else if (
+                    removeProfileImage
+                ) {
+                    // Existing backend flow bilan
+                    // backward compatible.
+                    dataToSend.append(
+                        "image",
+                        ""
+                    );
+                }
+            } else {
+                // =========================================
+                // JSON
+                // =========================================
+
+                dataToSend = {
+                    ...formData,
+
+                    birthday:
+                        formData.birthday
+                        ||
+                        null,
+
+                    email:
+                        formData.email
+                        ||
+                        "",
+
+                    skills:
+                        buildSkillsArray(),
+                };
+            }
+
+            const response =
+                await ProfileService
+                    .updateProfile(
+                        profileData.username,
+                        dataToSend
+                    );
+
+            dispatch(
+                getProfileSuccess(
+                    response
+                )
+            );
+
+            siteToast.update(
+                toastId,
+                "success",
+                "Profil muvaffaqiyatli saqlandi."
+            );
+
+            clearLocalPreviewUrl();
+
+            onClose?.();
+        } catch (
+            saveError
+        ) {
+            console.error(
+                "Profilni tahrirlashda xato:",
+                saveError
+            );
+
+            const message =
+                getProfileErrorMessage(
+                    saveError
+                );
+
+            setError(
+                message
+            );
+
+            siteToast.update(
+                toastId,
+                "error",
+                message
+            );
+        } finally {
+            setLoading(
+                false
+            );
+        }
+    };
+
+    // =====================================================
+    // CLOSED
+    // =====================================================
+
+    if (
+        !isOpen
+    ) {
+        return null;
+    }
+
+    // =====================================================
+    // JSX
+    // =====================================================
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{
+                    opacity: 0,
+                }}
+                animate={{
+                    opacity: 1,
+                }}
+                exit={{
+                    opacity: 0,
+                }}
+                onMouseDown={
+                    handleBackdropMouseDown
+                }
+                className="
+                    fixed
+                    inset-0
+                    z-[1000]
+                    flex
+                    items-center
+                    justify-center
+                    overflow-y-auto
+                    bg-black/80
+                    p-4
+                    font-sans
+                    backdrop-blur-md
+                    sm:p-6
+                "
+            >
+                {/* =========================================
+                    BACKGROUND GLOW
+                ========================================== */}
+
+                <div
+                    aria-hidden="true"
+                    className="
+                        pointer-events-none
+                        fixed
+                        left-1/2
+                        top-1/2
+                        h-[620px]
+                        w-[620px]
+                        -translate-x-1/2
+                        -translate-y-1/2
+                        rounded-full
+                        bg-indigo-600/[0.07]
+                        blur-[160px]
+                    "
+                />
+
+                {/* =========================================
+                    MODAL
+                ========================================== */}
+
+                <motion.div
+                    initial={{
+                        opacity: 0,
+                        y: 24,
+                        scale: 0.98,
+                    }}
+                    animate={{
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                    }}
+                    exit={{
+                        opacity: 0,
+                        y: 16,
+                        scale: 0.985,
+                    }}
+                    transition={{
+                        duration: 0.2,
+                    }}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="edit-profile-title"
+                    onMouseDown={(
+                        event
+                    ) => {
+                        event.stopPropagation();
+                    }}
+                    className="
+                        relative
+                        my-auto
+                        max-h-[94vh]
+                        w-full
+                        max-w-4xl
+                        overflow-y-auto
+                        rounded-[30px]
+                        border
+                        border-white/[0.08]
+                        bg-[#090c12]/95
+                        shadow-[0_35px_120px_rgba(0,0,0,0.65)]
+                        backdrop-blur-2xl
+                    "
+                >
+                    {/* =====================================
+                        HEADER
+                    ====================================== */}
+
+                    <div
+                        className="
+                            sticky
+                            top-0
+                            z-30
+                            flex
+                            items-center
+                            justify-between
+                            gap-4
+                            border-b
+                            border-white/[0.06]
+                            bg-[#090c12]/90
+                            px-5
+                            py-4
+                            backdrop-blur-xl
+                            sm:px-6
+                            sm:py-5
+                        "
+                    >
+                        <div
+                            className="
+                                flex
+                                min-w-0
+                                items-center
+                                gap-3
+                            "
+                        >
+                            <div
+                                className="
+                                    grid
+                                    h-11
+                                    w-11
+                                    shrink-0
+                                    place-items-center
+                                    rounded-2xl
+                                    border
+                                    border-indigo-400/15
+                                    bg-indigo-500/[0.07]
+                                    text-indigo-300
+                                "
+                            >
+                                <UserRound
+                                    size={19}
+                                />
+                            </div>
+
+                            <div className="min-w-0">
+                                <div
+                                    className="
+                                        flex
+                                        items-center
+                                        gap-2
+                                    "
+                                >
+                                    <h2
+                                        id="edit-profile-title"
+                                        className="
+                                            truncate
+                                            font-display
+                                            text-lg
+                                            font-semibold
+                                            text-white
+                                            sm:text-xl
+                                        "
+                                    >
+                                        Profilni tahrirlash
+                                    </h2>
+
+                                    <Sparkles
+                                        size={14}
+                                        className="
+                                            hidden
+                                            text-indigo-400/70
+                                            sm:block
+                                        "
+                                    />
+                                </div>
+
+                                <p
+                                    className="
+                                        mt-0.5
+                                        truncate
+                                        text-[10px]
+                                        font-medium
+                                        text-gray-600
+                                        sm:text-xs
+                                    "
+                                >
+                                    Shaxsiy va kasbiy ma’lumotlaringizni yangilang
+                                </p>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={
+                                handleClose
+                            }
+                            disabled={
+                                loading
+                            }
+                            aria-label="Profil modalini yopish"
+                            className="
+                                grid
+                                h-10
+                                w-10
+                                shrink-0
+                                place-items-center
+                                rounded-xl
+                                border
+                                border-white/[0.06]
+                                bg-white/[0.025]
+                                text-gray-500
+                                transition
+                                hover:bg-white/[0.06]
+                                hover:text-white
+                                disabled:cursor-not-allowed
+                                disabled:opacity-40
+                            "
+                        >
+                            <X
+                                size={18}
+                            />
+                        </button>
+                    </div>
+
+                    {/* =====================================
+                        FORM
+                    ====================================== */}
+
+                    <form
+                        onSubmit={
+                            handleSave
+                        }
+                        className="
+                            space-y-8
+                            p-5
+                            sm:p-6
+                        "
+                    >
+                        {/* =================================
+                            PROFILE IMAGE
+                        ================================== */}
+
+                        <section
+                            className="
+                                rounded-3xl
+                                border
+                                border-white/[0.06]
+                                bg-white/[0.018]
+                                p-5
+                            "
+                        >
+                            <SectionHeader
+                                Icon={
+                                    Camera
+                                }
+                                title="Profil rasmi"
+                                description="Profilingizda ko‘rinadigan asosiy avatar."
+                            />
+
+                            <div
+                                className="
+                                    mt-5
+                                    flex
+                                    flex-col
+                                    items-center
+                                    gap-5
+                                    sm:flex-row
+                                    sm:items-center
+                                "
+                            >
+                                <div
+                                    className="
+                                        relative
+                                        h-28
+                                        w-28
+                                        shrink-0
+                                        overflow-hidden
+                                        rounded-full
+                                        border
+                                        border-indigo-400/20
+                                        bg-[#10151f]
+                                        shadow-xl
+                                        shadow-black/30
+                                    "
+                                >
+                                    {profileImagePreview ? (
+                                        <img
+                                            src={
+                                                profileImagePreview
+                                            }
+                                            alt="Profil rasmi"
+                                            className="
+                                                h-full
+                                                w-full
+                                                object-cover
+                                            "
+                                        />
+                                    ) : (
+                                        <div
+                                            className="
+                                                grid
+                                                h-full
+                                                w-full
+                                                place-items-center
+                                                text-gray-700
+                                            "
+                                        >
+                                            <UserRound
+                                                size={38}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {loading && (
+                                        <div
+                                            className="
+                                                absolute
+                                                inset-0
+                                                grid
+                                                place-items-center
+                                                bg-black/65
+                                                backdrop-blur-sm
+                                            "
+                                        >
+                                            <Loader2
+                                                size={22}
+                                                className="
+                                                    animate-spin
+                                                    text-indigo-300
+                                                "
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div
+                                    className="
+                                        flex
+                                        flex-1
+                                        flex-col
+                                        items-center
+                                        sm:items-start
+                                    "
+                                >
+                                    <p
+                                        className="
+                                            text-center
+                                            text-xs
+                                            font-medium
+                                            leading-6
+                                            text-gray-500
+                                            sm:text-left
+                                        "
+                                    >
+                                        Yangi profil rasmi tanlang yoki joriy rasmni olib tashlang.
+                                    </p>
+
+                                    <input
+                                        ref={
+                                            imageInputRef
+                                        }
+                                        type="file"
+                                        id="profileImage"
+                                        hidden
+                                        accept="image/*"
+                                        disabled={
+                                            loading
+                                        }
+                                        onChange={
+                                            handleImageChange
+                                        }
+                                    />
+
+                                    <div
+                                        className="
+                                            mt-3
+                                            flex
+                                            flex-wrap
+                                            items-center
+                                            justify-center
+                                            gap-2
+                                            sm:justify-start
+                                        "
+                                    >
+                                        <label
+                                            htmlFor="profileImage"
+                                            className={`
+                                                inline-flex
+                                                items-center
+                                                justify-center
+                                                gap-2
+                                                rounded-xl
+                                                border
+                                                border-indigo-400/15
+                                                bg-indigo-500/[0.07]
+                                                px-4
+                                                py-2.5
+                                                font-display
+                                                text-[10px]
+                                                font-semibold
+                                                text-indigo-300
+                                                transition
+                                                hover:bg-indigo-500/[0.12]
+
+                                                ${
+                                                    loading
+                                                        ? "pointer-events-none opacity-40"
+                                                        : "cursor-pointer"
+                                                }
+                                            `}
+                                        >
+                                            <UploadCloud
+                                                size={14}
+                                            />
+
+                                            Rasm tanlash
+                                        </label>
+
+                                        {(
+                                            profileImagePreview
+                                            ||
+                                            profileImageFile
+                                        ) && (
+                                            <button
+                                                type="button"
+                                                onClick={
+                                                    handleImageRemove
+                                                }
+                                                disabled={
+                                                    loading
+                                                }
+                                                className="
+                                                    inline-flex
+                                                    items-center
+                                                    justify-center
+                                                    gap-2
+                                                    rounded-xl
+                                                    border
+                                                    border-red-400/15
+                                                    bg-red-500/[0.05]
+                                                    px-4
+                                                    py-2.5
+                                                    font-display
+                                                    text-[10px]
+                                                    font-semibold
+                                                    text-red-300
+                                                    transition
+                                                    hover:bg-red-500/10
+                                                    disabled:cursor-not-allowed
+                                                    disabled:opacity-40
+                                                "
+                                            >
+                                                <Trash2
+                                                    size={14}
+                                                />
+
+                                                Olib tashlash
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* =================================
+                            PERSONAL INFO
+                        ================================== */}
+
+                        <section
+                            className="
+                                grid
+                                grid-cols-1
+                                gap-4
+                                rounded-3xl
+                                border
+                                border-white/[0.06]
+                                bg-white/[0.018]
+                                p-5
+                                md:grid-cols-2
+                            "
+                        >
+                            <SectionHeader
+                                Icon={
+                                    UserRound
+                                }
+                                title="Shaxsiy ma’lumotlar"
+                                description="Profilingizning asosiy ma’lumotlari."
+                            />
+
+                            {/* FIRST NAME */}
+
+                            <div>
+                                <FieldLabel
+                                    optional
+                                >
+                                    Ism
+                                </FieldLabel>
+
+                                <InputWrapper
+                                    Icon={
+                                        UserRound
+                                    }
+                                >
+                                    <input
+                                        type="text"
+                                        name="first_name"
+                                        autoComplete="given-name"
+                                        placeholder="Ism"
+                                        value={
+                                            formData.first_name
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                        disabled={
+                                            loading
+                                        }
+                                        className="
+                                            w-full
+                                            rounded-2xl
+                                            border
+                                            border-white/[0.07]
+                                            bg-white/[0.025]
+                                            py-3.5
+                                            pl-10
+                                            pr-4
+                                            text-sm
+                                            font-medium
+                                            text-white
+                                            outline-none
+                                            transition
+                                            placeholder:text-gray-700
+                                            focus:border-indigo-400/30
+                                            focus:ring-2
+                                            focus:ring-indigo-500/[0.05]
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-50
+                                        "
+                                    />
+                                </InputWrapper>
+                            </div>
+
+                            {/* LAST NAME */}
+
+                            <div>
+                                <FieldLabel
+                                    optional
+                                >
+                                    Familiya
+                                </FieldLabel>
+
+                                <InputWrapper
+                                    Icon={
+                                        UserRound
+                                    }
+                                >
+                                    <input
+                                        type="text"
+                                        name="last_name"
+                                        autoComplete="family-name"
+                                        placeholder="Familiya"
+                                        value={
+                                            formData.last_name
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                        disabled={
+                                            loading
+                                        }
+                                        className="
+                                            w-full
+                                            rounded-2xl
+                                            border
+                                            border-white/[0.07]
+                                            bg-white/[0.025]
+                                            py-3.5
+                                            pl-10
+                                            pr-4
+                                            text-sm
+                                            font-medium
+                                            text-white
+                                            outline-none
+                                            transition
+                                            placeholder:text-gray-700
+                                            focus:border-indigo-400/30
+                                            focus:ring-2
+                                            focus:ring-indigo-500/[0.05]
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-50
+                                        "
+                                    />
+                                </InputWrapper>
+                            </div>
+
+                            {/* EMAIL */}
+
+                            <div
+                                className="
+                                    md:col-span-2
+                                "
+                            >
+                                <FieldLabel
+                                    optional
+                                >
+                                    Email
+                                </FieldLabel>
+
+                                <InputWrapper
+                                    Icon={
+                                        Mail
+                                    }
+                                >
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        autoComplete="email"
+                                        placeholder="example@gmail.com"
+                                        value={
+                                            formData.email
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                        disabled={
+                                            loading
+                                        }
+                                        className="
+                                            w-full
+                                            rounded-2xl
+                                            border
+                                            border-white/[0.07]
+                                            bg-white/[0.025]
+                                            py-3.5
+                                            pl-10
+                                            pr-4
+                                            text-sm
+                                            font-medium
+                                            text-white
+                                            outline-none
+                                            transition
+                                            placeholder:text-gray-700
+                                            focus:border-indigo-400/30
+                                            focus:ring-2
+                                            focus:ring-indigo-500/[0.05]
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-50
+                                        "
+                                    />
+                                </InputWrapper>
+
+                                <p
+                                    className="
+                                        mt-1.5
+                                        text-[10px]
+                                        font-medium
+                                        text-gray-700
+                                    "
+                                >
+                                    Profil va tizim xabarlari uchun ishlatiladi.
+                                </p>
+                            </div>
+
+                            {/* BIRTHDAY */}
+
+                            <div>
+                                <FieldLabel
+                                    optional
+                                >
+                                    Tug‘ilgan sana
+                                </FieldLabel>
+
+                                <InputWrapper
+                                    Icon={
+                                        CalendarDays
+                                    }
+                                >
+                                    <input
+                                        type="date"
+                                        name="birthday"
+                                        value={
+                                            formData.birthday
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                        disabled={
+                                            loading
+                                        }
+                                        className="
+                                            w-full
+                                            rounded-2xl
+                                            border
+                                            border-white/[0.07]
+                                            bg-white/[0.025]
+                                            py-3.5
+                                            pl-10
+                                            pr-4
+                                            text-sm
+                                            font-medium
+                                            text-white
+                                            outline-none
+                                            transition
+                                            focus:border-indigo-400/30
+                                            focus:ring-2
+                                            focus:ring-indigo-500/[0.05]
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-50
+                                            [color-scheme:dark]
+                                        "
+                                    />
+                                </InputWrapper>
+                            </div>
+
+                            {/* ADDRESS */}
+
+                            <div>
+                                <FieldLabel
+                                    optional
+                                >
+                                    Manzil
+                                </FieldLabel>
+
+                                <InputWrapper
+                                    Icon={
+                                        MapPin
+                                    }
+                                >
+                                    <input
+                                        type="text"
+                                        name="address"
+                                        autoComplete="address-level2"
+                                        placeholder="Masalan: Urganch, Uzbekistan"
+                                        value={
+                                            formData.address
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                        disabled={
+                                            loading
+                                        }
+                                        className="
+                                            w-full
+                                            rounded-2xl
+                                            border
+                                            border-white/[0.07]
+                                            bg-white/[0.025]
+                                            py-3.5
+                                            pl-10
+                                            pr-4
+                                            text-sm
+                                            font-medium
+                                            text-white
+                                            outline-none
+                                            transition
+                                            placeholder:text-gray-700
+                                            focus:border-indigo-400/30
+                                            focus:ring-2
+                                            focus:ring-indigo-500/[0.05]
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-50
+                                        "
+                                    />
+                                </InputWrapper>
+                            </div>
+
+                            {/* ABOUT */}
+
+                            <div
+                                className="
+                                    md:col-span-2
+                                "
+                            >
+                                <FieldLabel
+                                    optional
+                                >
+                                    Men haqimda
+                                </FieldLabel>
+
+                                <div className="relative">
+                                    <FileText
+                                        size={15}
+                                        className="
+                                            pointer-events-none
+                                            absolute
+                                            left-3.5
+                                            top-4
+                                            text-gray-600
+                                        "
+                                    />
+
+                                    <textarea
+                                        name="about_me"
+                                        placeholder="O‘zingiz haqingizda qisqacha..."
+                                        value={
+                                            formData.about_me
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                        rows={5}
+                                        disabled={
+                                            loading
+                                        }
+                                        className="
+                                            min-h-[130px]
+                                            w-full
+                                            resize-y
+                                            rounded-2xl
+                                            border
+                                            border-white/[0.07]
+                                            bg-white/[0.025]
+                                            py-3.5
+                                            pl-10
+                                            pr-4
+                                            text-sm
+                                            font-medium
+                                            leading-6
+                                            text-white
+                                            outline-none
+                                            transition
+                                            placeholder:text-gray-700
+                                            focus:border-indigo-400/30
+                                            focus:ring-2
+                                            focus:ring-indigo-500/[0.05]
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-50
+                                        "
+                                    />
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* =================================
+                            PROFESSIONAL INFO
+                        ================================== */}
+
+                        <section
+                            className="
+                                grid
+                                grid-cols-1
+                                gap-4
+                                rounded-3xl
+                                border
+                                border-white/[0.06]
+                                bg-white/[0.018]
+                                p-5
+                                md:grid-cols-2
+                            "
+                        >
+                            <SectionHeader
+                                Icon={
+                                    Code2
+                                }
+                                title="Kasbiy ma’lumotlar"
+                                description="Tajriba darajangiz va texnik yo‘nalishingiz."
+                            />
+
+                            {/* LEVEL */}
+
+                            <div>
+                                <FieldLabel>
+                                    Daraja
+                                </FieldLabel>
+
+                                <div className="relative">
+                                    <Code2
+                                        size={15}
+                                        className="
+                                            pointer-events-none
+                                            absolute
+                                            left-3.5
+                                            top-1/2
+                                            -translate-y-1/2
+                                            text-gray-600
+                                        "
+                                    />
+
+                                    <select
+                                        name="skill_level"
+                                        value={
+                                            formData.skill_level
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                        disabled={
+                                            loading
+                                        }
+                                        className="
+                                            w-full
+                                            appearance-none
+                                            rounded-2xl
+                                            border
+                                            border-white/[0.07]
+                                            bg-[#0d1119]
+                                            py-3.5
+                                            pl-10
+                                            pr-10
+                                            text-sm
+                                            font-medium
+                                            text-white
+                                            outline-none
+                                            transition
+                                            focus:border-indigo-400/30
+                                            focus:ring-2
+                                            focus:ring-indigo-500/[0.05]
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-50
+                                        "
+                                    >
+                                        {SKILL_LEVELS.map(
+                                            (
+                                                level
+                                            ) => (
+                                                <option
+                                                    key={
+                                                        level.value
+                                                    }
+                                                    value={
+                                                        level.value
+                                                    }
+                                                >
+                                                    {
+                                                        level.label
+                                                    }
+                                                </option>
+                                            )
+                                        )}
+                                    </select>
+
+                                    <ChevronDown
+                                        size={15}
+                                        className="
+                                            pointer-events-none
+                                            absolute
+                                            right-3.5
+                                            top-1/2
+                                            -translate-y-1/2
+                                            text-gray-600
+                                        "
+                                    />
+                                </div>
+                            </div>
+
+                            {/* COMPANY */}
+
+                            <div>
+                                <FieldLabel
+                                    optional
+                                >
+                                    Kompaniya
+                                </FieldLabel>
+
+                                <InputWrapper
+                                    Icon={
+                                        Building2
+                                    }
+                                >
+                                    <input
+                                        type="text"
+                                        name="company"
+                                        autoComplete="organization"
+                                        placeholder="Kompaniya"
+                                        value={
+                                            formData.company
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                        disabled={
+                                            loading
+                                        }
+                                        className="
+                                            w-full
+                                            rounded-2xl
+                                            border
+                                            border-white/[0.07]
+                                            bg-white/[0.025]
+                                            py-3.5
+                                            pl-10
+                                            pr-4
+                                            text-sm
+                                            font-medium
+                                            text-white
+                                            outline-none
+                                            transition
+                                            placeholder:text-gray-700
+                                            focus:border-indigo-400/30
+                                            focus:ring-2
+                                            focus:ring-indigo-500/[0.05]
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-50
+                                        "
+                                    />
+                                </InputWrapper>
+                            </div>
+
+                            {/* POSITION */}
+
+                            <div>
+                                <FieldLabel
+                                    optional
+                                >
+                                    Lavozim
+                                </FieldLabel>
+
+                                <InputWrapper
+                                    Icon={
+                                        BriefcaseBusiness
+                                    }
+                                >
+                                    <input
+                                        type="text"
+                                        name="position"
+                                        autoComplete="organization-title"
+                                        placeholder="Backend Developer"
+                                        value={
+                                            formData.position
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                        disabled={
+                                            loading
+                                        }
+                                        className="
+                                            w-full
+                                            rounded-2xl
+                                            border
+                                            border-white/[0.07]
+                                            bg-white/[0.025]
+                                            py-3.5
+                                            pl-10
+                                            pr-4
+                                            text-sm
+                                            font-medium
+                                            text-white
+                                            outline-none
+                                            transition
+                                            placeholder:text-gray-700
+                                            focus:border-indigo-400/30
+                                            focus:ring-2
+                                            focus:ring-indigo-500/[0.05]
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-50
+                                        "
+                                    />
+                                </InputWrapper>
+                            </div>
+
+                            {/* SKILLS */}
+
+                            <div>
+                                <FieldLabel
+                                    optional
+                                >
+                                    Ko‘nikmalar
+                                </FieldLabel>
+
+                                <InputWrapper
+                                    Icon={
+                                        Code2
+                                    }
+                                >
+                                    <input
+                                        type="text"
+                                        name="skills"
+                                        placeholder="Python, Django, React, Docker"
+                                        value={
+                                            formData.skills
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                        disabled={
+                                            loading
+                                        }
+                                        className="
+                                            w-full
+                                            rounded-2xl
+                                            border
+                                            border-white/[0.07]
+                                            bg-white/[0.025]
+                                            py-3.5
+                                            pl-10
+                                            pr-4
+                                            text-sm
+                                            font-medium
+                                            text-white
+                                            outline-none
+                                            transition
+                                            placeholder:text-gray-700
+                                            focus:border-indigo-400/30
+                                            focus:ring-2
+                                            focus:ring-indigo-500/[0.05]
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-50
+                                        "
+                                    />
+                                </InputWrapper>
+
+                                <p
+                                    className="
+                                        mt-1.5
+                                        text-[10px]
+                                        font-medium
+                                        text-gray-700
+                                    "
+                                >
+                                    Ko‘nikmalarni vergul bilan ajrating.
+                                </p>
+                            </div>
+                        </section>
+
+                        {/* =================================
+                            LINKS
+                        ================================== */}
+
+                        <section
+                            className="
+                                grid
+                                grid-cols-1
+                                gap-4
+                                rounded-3xl
+                                border
+                                border-white/[0.06]
+                                bg-white/[0.018]
+                                p-5
+                                md:grid-cols-2
+                            "
+                        >
+                            <SectionHeader
+                                Icon={
+                                    Link2
+                                }
+                                title="Havolalar"
+                                description="Portfolio va GitHub profilingiz."
+                            />
+
+                            {/* WEBSITE */}
+
+                            <div>
+                                <FieldLabel
+                                    optional
+                                >
+                                    Veb-sayt
+                                </FieldLabel>
+
+                                <InputWrapper
+                                    Icon={
+                                        Link2
+                                    }
+                                >
+                                    <input
+                                        type="text"
+                                        name="website_url"
+                                        inputMode="url"
+                                        placeholder="https://dimodev.uz"
+                                        value={
+                                            formData.website_url
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                        disabled={
+                                            loading
+                                        }
+                                        className="
+                                            w-full
+                                            rounded-2xl
+                                            border
+                                            border-white/[0.07]
+                                            bg-white/[0.025]
+                                            py-3.5
+                                            pl-10
+                                            pr-4
+                                            text-sm
+                                            font-medium
+                                            text-white
+                                            outline-none
+                                            transition
+                                            placeholder:text-gray-700
+                                            focus:border-indigo-400/30
+                                            focus:ring-2
+                                            focus:ring-indigo-500/[0.05]
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-50
+                                        "
+                                    />
+                                </InputWrapper>
+                            </div>
+
+                            {/* GITHUB */}
+
+                            <div>
+                                <FieldLabel
+                                    optional
+                                >
+                                    GitHub
+                                </FieldLabel>
+
+                                <InputWrapper
+                                    Icon={
+                                        Github
+                                    }
+                                >
+                                    <input
+                                        type="text"
+                                        name="github_url"
+                                        inputMode="url"
+                                        placeholder="github.com/username yoki username"
+                                        value={
+                                            formData.github_url
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                        disabled={
+                                            loading
+                                        }
+                                        className="
+                                            w-full
+                                            rounded-2xl
+                                            border
+                                            border-white/[0.07]
+                                            bg-white/[0.025]
+                                            py-3.5
+                                            pl-10
+                                            pr-4
+                                            text-sm
+                                            font-medium
+                                            text-white
+                                            outline-none
+                                            transition
+                                            placeholder:text-gray-700
+                                            focus:border-indigo-400/30
+                                            focus:ring-2
+                                            focus:ring-indigo-500/[0.05]
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-50
+                                        "
+                                    />
+                                </InputWrapper>
+                            </div>
+                        </section>
+
+                        {/* =================================
+                            COVER IMAGE INFO
+                        ================================== */}
+
+                        <div
+                            className="
+                                flex
+                                items-start
+                                gap-3
+                                rounded-2xl
+                                border
+                                border-cyan-400/10
+                                bg-cyan-500/[0.035]
+                                p-4
+                            "
+                        >
+                            <div
+                                className="
+                                    grid
+                                    h-9
+                                    w-9
+                                    shrink-0
+                                    place-items-center
+                                    rounded-xl
+                                    border
+                                    border-cyan-400/10
+                                    bg-cyan-500/[0.05]
+                                    text-cyan-300
+                                "
+                            >
+                                <ImageIcon
+                                    size={16}
+                                />
+                            </div>
+
+                            <div>
+                                <div
+                                    className="
+                                        flex
+                                        flex-wrap
+                                        items-center
+                                        gap-2
+                                    "
+                                >
+                                    <p
+                                        className="
+                                            font-display
+                                            text-[10px]
+                                            font-semibold
+                                            text-gray-300
+                                        "
+                                    >
+                                        Fon rasmi
+                                    </p>
+
+                                    <code
+                                        className="
+                                            rounded-md
+                                            bg-black/25
+                                            px-1.5
+                                            py-0.5
+                                            text-[9px]
+                                            text-cyan-300
+                                        "
+                                    >
+                                        cover_image
+                                    </code>
+                                </div>
+
+                                <p
+                                    className="
+                                        mt-1
+                                        text-[10px]
+                                        font-medium
+                                        leading-5
+                                        text-gray-600
+                                    "
+                                >
+                                    Fon rasmi profil sahifasidagi alohida
+                                    “Fon rasmi” tugmasi orqali tahrirlanadi.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* =================================
+                            ERROR
+                        ================================== */}
+
+                        <AnimatePresence>
+                            {error && (
+                                <motion.div
+                                    initial={{
+                                        opacity: 0,
+                                        y: -5,
+                                    }}
+                                    animate={{
+                                        opacity: 1,
+                                        y: 0,
+                                    }}
+                                    exit={{
+                                        opacity: 0,
+                                        y: -5,
+                                    }}
+                                    role="alert"
+                                    className="
+                                        flex
+                                        items-start
+                                        gap-3
+                                        rounded-2xl
+                                        border
+                                        border-red-400/15
+                                        bg-red-500/[0.05]
+                                        p-4
+                                        text-xs
+                                        font-medium
+                                        leading-5
+                                        text-red-300
+                                    "
+                                >
+                                    <AlertTriangle
+                                        size={17}
+                                        className="
+                                            mt-0.5
+                                            shrink-0
+                                        "
+                                    />
+
+                                    <span>
+                                        {error}
+                                    </span>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* =================================
+                            ACTIONS
+                        ================================== */}
+
+                        <div
+                            className="
+                                sticky
+                                bottom-0
+                                z-20
+                                -mx-5
+                                -mb-5
+                                flex
+                                flex-col-reverse
+                                gap-3
+                                border-t
+                                border-white/[0.06]
+                                bg-[#090c12]/90
+                                px-5
+                                py-4
+                                backdrop-blur-xl
+                                sm:-mx-6
+                                sm:-mb-6
+                                sm:flex-row
+                                sm:justify-end
+                                sm:px-6
+                            "
+                        >
+                            <button
+                                type="button"
+                                onClick={
+                                    handleClose
+                                }
+                                disabled={
+                                    loading
+                                }
+                                className="
+                                    rounded-xl
+                                    border
+                                    border-white/[0.07]
+                                    bg-white/[0.025]
+                                    px-5
+                                    py-3
+                                    font-display
+                                    text-xs
+                                    font-semibold
+                                    text-gray-400
+                                    transition
+                                    hover:bg-white/[0.06]
+                                    hover:text-white
+                                    disabled:cursor-not-allowed
+                                    disabled:opacity-40
+                                "
+                            >
+                                Bekor qilish
+                            </button>
+
+                            <button
+                                type="submit"
+                                disabled={
+                                    loading
+                                }
+                                className="
+                                    inline-flex
+                                    min-w-[150px]
+                                    items-center
+                                    justify-center
+                                    gap-2
+                                    rounded-xl
+                                    border
+                                    border-indigo-400/20
+                                    bg-indigo-600
+                                    px-5
+                                    py-3
+                                    font-display
+                                    text-xs
+                                    font-semibold
+                                    text-white
+                                    shadow-lg
+                                    shadow-indigo-950/30
+                                    transition-all
+                                    hover:-translate-y-0.5
+                                    hover:bg-indigo-500
+                                    active:translate-y-0
+                                    active:scale-[0.98]
+                                    disabled:cursor-not-allowed
+                                    disabled:opacity-50
+                                "
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader2
+                                            size={15}
+                                            className="
+                                                animate-spin
+                                            "
+                                        />
+
+                                        Saqlanmoqda...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save
+                                            size={15}
+                                        />
+
+                                        Saqlash
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </form>
+
+                    {/* =====================================
+                        PROCESS BAR
+                    ====================================== */}
+
+                    {loading && (
+                        <div
+                            className="
+                                pointer-events-none
+                                absolute
+                                inset-x-0
+                                top-0
+                                z-50
+                                h-[2px]
+                                overflow-hidden
+                                bg-white/[0.04]
+                            "
+                        >
+                            <motion.div
+                                initial={{
+                                    x: "-100%",
+                                }}
+                                animate={{
+                                    x: "350%",
+                                }}
+                                transition={{
+                                    duration: 1,
+                                    repeat: Infinity,
+                                    ease: "linear",
+                                }}
+                                className="
+                                    h-full
+                                    w-1/3
+                                    bg-gradient-to-r
+                                    from-transparent
+                                    via-indigo-400
+                                    to-transparent
+                                "
+                            />
+                        </div>
+                    )}
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+};
+
+// =========================================================
+// EXPORT
+// =========================================================
 
 export default EditProfileModal;

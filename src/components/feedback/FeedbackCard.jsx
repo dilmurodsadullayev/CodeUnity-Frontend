@@ -33,6 +33,7 @@ import {
     isFeedbackRewarded,
 } from "./feedbackHelpers";
 
+
 // =========================================================
 // TYPE BADGE
 // =========================================================
@@ -74,6 +75,7 @@ const TypeBadge = ({
         </span>
     );
 };
+
 
 // =========================================================
 // STATUS BADGE
@@ -117,6 +119,7 @@ const StatusBadge = ({
     );
 };
 
+
 // =========================================================
 // FEEDBACK CARD
 // =========================================================
@@ -134,6 +137,14 @@ const FeedbackCard = ({
 
     actionsDisabled = false,
 }) => {
+    if (
+        !feedback
+        ||
+        typeof feedback !== "object"
+    ) {
+        return null;
+    }
+
     // =====================================================
     // DATA
     // =====================================================
@@ -163,6 +174,10 @@ const FeedbackCard = ({
             feedback
         );
 
+    // =====================================================
+    // BUSY STATE
+    // =====================================================
+
     const isBusy =
         isUpdating
         ||
@@ -180,6 +195,31 @@ const FeedbackCard = ({
             typeof onDelete ===
                 "function"
         );
+
+    // =====================================================
+    // TEXT
+    // =====================================================
+
+    const title =
+        String(
+            feedback?.title
+            ||
+            "Feedback"
+        ).trim()
+        ||
+        "Feedback";
+
+    const message =
+        typeof feedback?.message ===
+            "string"
+            ? feedback.message
+            : "";
+
+    const adminComment =
+        typeof feedback?.admin_comment ===
+            "string"
+            ? feedback.admin_comment
+            : "";
 
     // =====================================================
     // DATE
@@ -205,17 +245,6 @@ const FeedbackCard = ({
             : "";
 
     // =====================================================
-    // TITLE
-    // =====================================================
-
-    const title =
-        String(
-            feedback?.title
-            ||
-            "Feedback"
-        );
-
-    // =====================================================
     // EDIT
     // =====================================================
 
@@ -239,9 +268,8 @@ const FeedbackCard = ({
     // =====================================================
     // DELETE REQUEST
     //
-    // Confirmation bu component ichida emas.
-    // Parent Feedback.jsx universal
-    // DeleteConfirmationModal ochadi.
+    // Confirmation bu component ichida YO‘Q.
+    // Parent Feedback.jsx universal modal ochadi.
     // =====================================================
 
     const handleDelete = () => {
@@ -287,6 +315,11 @@ const FeedbackCard = ({
             transition={{
                 duration: 0.22,
             }}
+            aria-busy={
+                isUpdating
+                ||
+                isDeleting
+            }
             className="
                 group
                 relative
@@ -398,9 +431,7 @@ const FeedbackCard = ({
                             flex-1
                         "
                     >
-                        {/* =============================
-                            BADGES
-                        ============================== */}
+                        {/* BADGES */}
 
                         <div
                             className="
@@ -458,9 +489,7 @@ const FeedbackCard = ({
                                 )}
                         </div>
 
-                        {/* =============================
-                            TITLE
-                        ============================== */}
+                        {/* TITLE */}
 
                         <h3
                             className="
@@ -478,9 +507,7 @@ const FeedbackCard = ({
                         </h3>
                     </div>
 
-                    {/* =============================
-                        DATE
-                    ============================== */}
+                    {/* DATE */}
 
                     {createdAt && (
                         <div
@@ -533,7 +560,7 @@ const FeedbackCard = ({
                     MESSAGE
                 ====================================== */}
 
-                {feedback?.message && (
+                {message && (
                     <p
                         className="
                             mt-4
@@ -545,7 +572,7 @@ const FeedbackCard = ({
                             text-gray-400
                         "
                     >
-                        {feedback.message}
+                        {message}
                     </p>
                 )}
 
@@ -578,7 +605,7 @@ const FeedbackCard = ({
                                 screenshot
                             }
                             alt={
-                                title
+                                `${title} skrinshoti`
                             }
                             loading="lazy"
                             className="
@@ -623,7 +650,7 @@ const FeedbackCard = ({
                     ADMIN COMMENT
                 ====================================== */}
 
-                {feedback?.admin_comment && (
+                {adminComment && (
                     <div
                         className="
                             relative
@@ -681,16 +708,14 @@ const FeedbackCard = ({
                                 className="
                                     mt-2
                                     whitespace-pre-wrap
+                                    break-words
                                     text-xs
                                     font-medium
                                     leading-6
                                     text-gray-400
                                 "
                             >
-                                {
-                                    feedback
-                                        .admin_comment
-                                }
+                                {adminComment}
                             </p>
                         </div>
                     </div>
@@ -732,6 +757,8 @@ const FeedbackCard = ({
                             @{username}
                         </span>
                     </div>
+
+                    {/* ACTIONS */}
 
                     {hasActions && (
                         <div
@@ -852,6 +879,7 @@ const FeedbackCard = ({
         </motion.article>
     );
 };
+
 
 // =========================================================
 // EXPORT
