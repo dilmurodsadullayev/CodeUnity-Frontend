@@ -1,6 +1,5 @@
-import {
-    createSlice,
-} from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
+
 
 // =========================================================
 // CONSTANTS
@@ -8,32 +7,32 @@ import {
 
 export const FEEDBACK_DEFAULT_PAGE_SIZE = 10;
 
+const FEEDBACK_STAT_STATUS_KEYS = new Set([
+    "pending",
+    "in_progress",
+    "approved",
+    "rejected",
+]);
+
+
 // =========================================================
-// SAFE ARRAY
+// SAFE HELPERS
 // =========================================================
 
-const safeArray = (
-    value
-) => {
-    return Array.isArray(
-        value
-    )
+const safeArray = (value) => {
+    return Array.isArray(value)
         ? value
         : [];
 };
 
-// =========================================================
-// SAFE NUMBER
-// =========================================================
 
 const safeNumber = (
     value,
     fallback = 0
 ) => {
-    const number =
-        Number(
-            value
-        );
+    const number = Number(
+        value
+    );
 
     return Number.isFinite(
         number
@@ -42,26 +41,39 @@ const safeNumber = (
         : fallback;
 };
 
-// =========================================================
-// SAFE POSITIVE INTEGER
-// =========================================================
 
-const safePositiveInteger = (
+const safeNonNegativeInteger = (
     value,
-    fallback = 1
+    fallback = 0
 ) => {
-    const number =
+    return Math.max(
+        0,
         Math.trunc(
             safeNumber(
                 value,
                 fallback
             )
-        );
+        )
+    );
+};
+
+
+const safePositiveInteger = (
+    value,
+    fallback = 1
+) => {
+    const number = Math.trunc(
+        safeNumber(
+            value,
+            fallback
+        )
+    );
 
     return number > 0
         ? number
         : fallback;
 };
+
 
 // =========================================================
 // TOTAL PAGES
@@ -72,14 +84,9 @@ const calculateTotalPages = (
     pageSize
 ) => {
     const safeCount =
-        Math.max(
-            0,
-            Math.trunc(
-                safeNumber(
-                    count,
-                    0
-                )
-            )
+        safeNonNegativeInteger(
+            count,
+            0
         );
 
     const safePageSize =
@@ -103,6 +110,7 @@ const calculateTotalPages = (
     );
 };
 
+
 // =========================================================
 // NORMALIZE LIST RESPONSE
 //
@@ -112,7 +120,7 @@ const calculateTotalPages = (
 //     ...
 // ]
 //
-// or
+// or:
 //
 // {
 //     count,
@@ -150,39 +158,44 @@ const normalizeListResponse = (
             results,
             count,
 
-            page: 1,
+            page:
+                1,
 
             pageSize,
 
-            totalPages: 1,
+            totalPages:
+                1,
 
-            next: null,
-            previous: null,
+            next:
+                null,
+
+            previous:
+                null,
         };
     }
+
 
     const source =
         payload
         &&
-        typeof payload === "object"
+        typeof payload ===
+            "object"
             ? payload
             : {};
+
 
     const results =
         safeArray(
             source.results
         );
 
+
     const count =
-        Math.max(
-            0,
-            Math.trunc(
-                safeNumber(
-                    source.count,
-                    results.length
-                )
-            )
+        safeNonNegativeInteger(
+            source.count,
+            results.length
         );
+
 
     const pageSize =
         safePositiveInteger(
@@ -194,17 +207,20 @@ const normalizeListResponse = (
             )
         );
 
+
     const calculatedTotalPages =
         calculateTotalPages(
             count,
             pageSize
         );
 
+
     const totalPages =
         safePositiveInteger(
             source.total_pages,
             calculatedTotalPages
         );
+
 
     const page =
         Math.min(
@@ -214,6 +230,7 @@ const normalizeListResponse = (
             ),
             totalPages
         );
+
 
     return {
         results,
@@ -237,6 +254,7 @@ const normalizeListResponse = (
     };
 };
 
+
 // =========================================================
 // NORMALIZE FEEDBACK OBJECT
 // =========================================================
@@ -253,6 +271,7 @@ const normalizeFeedbackPayload = (
         return payload.feedback;
     }
 
+
     if (
         payload
         &&
@@ -262,8 +281,10 @@ const normalizeFeedbackPayload = (
         return payload;
     }
 
+
     return null;
 };
+
 
 // =========================================================
 // NORMALIZE STATS
@@ -275,60 +296,50 @@ const normalizeStats = (
     const source =
         payload
         &&
-        typeof payload === "object"
+        typeof payload ===
+            "object"
             ? payload
             : {};
 
+
     return {
         total:
-            Math.max(
-                0,
-                safeNumber(
-                    source.total
-                )
+            safeNonNegativeInteger(
+                source.total
             ),
 
         pending:
-            Math.max(
-                0,
-                safeNumber(
-                    source.pending
-                )
+            safeNonNegativeInteger(
+                source.pending
+            ),
+
+        in_progress:
+            safeNonNegativeInteger(
+                source.in_progress
             ),
 
         approved:
-            Math.max(
-                0,
-                safeNumber(
-                    source.approved
-                )
+            safeNonNegativeInteger(
+                source.approved
             ),
 
         rejected:
-            Math.max(
-                0,
-                safeNumber(
-                    source.rejected
-                )
+            safeNonNegativeInteger(
+                source.rejected
             ),
 
         earned_fcoin:
-            Math.max(
-                0,
-                safeNumber(
-                    source.earned_fcoin
-                )
+            safeNonNegativeInteger(
+                source.earned_fcoin
             ),
 
         approved_bugs:
-            Math.max(
-                0,
-                safeNumber(
-                    source.approved_bugs
-                )
+            safeNonNegativeInteger(
+                source.approved_bugs
             ),
     };
 };
+
 
 // =========================================================
 // ERROR
@@ -336,15 +347,18 @@ const normalizeStats = (
 
 const normalizeError = (
     value,
-    fallback = "Feedback bilan ishlashda xatolik yuz berdi."
+    fallback =
+        "Feedback bilan ishlashda xatolik yuz berdi."
 ) => {
     if (
-        typeof value === "string"
+        typeof value ===
+            "string"
         &&
         value.trim()
     ) {
         return value.trim();
     }
+
 
     if (
         value?.message
@@ -354,21 +368,125 @@ const normalizeError = (
         );
     }
 
+
     return fallback;
 };
+
+
+// =========================================================
+// STATUS STAT HELPERS
+// =========================================================
+
+const normalizeFeedbackStatus = (
+    feedback
+) => {
+    const status =
+        String(
+            feedback?.status
+            ??
+            ""
+        )
+            .trim()
+            .toLowerCase();
+
+
+    return (
+        FEEDBACK_STAT_STATUS_KEYS.has(
+            status
+        )
+            ? status
+            : null
+    );
+};
+
+
+const incrementStatusStat = (
+    stats,
+    status
+) => {
+    if (
+        !status
+        ||
+        !FEEDBACK_STAT_STATUS_KEYS.has(
+            status
+        )
+    ) {
+        return;
+    }
+
+
+    stats[
+        status
+    ] =
+        safeNonNegativeInteger(
+            stats[
+                status
+            ]
+        )
+        +
+        1;
+};
+
+
+const decrementStatusStat = (
+    stats,
+    status
+) => {
+    if (
+        !status
+        ||
+        !FEEDBACK_STAT_STATUS_KEYS.has(
+            status
+        )
+    ) {
+        return;
+    }
+
+
+    stats[
+        status
+    ] =
+        Math.max(
+            0,
+
+            safeNonNegativeInteger(
+                stats[
+                    status
+                ]
+            )
+            -
+            1
+        );
+};
+
 
 // =========================================================
 // INITIAL STATS
 // =========================================================
 
 const initialStats = {
-    total: 0,
-    pending: 0,
-    approved: 0,
-    rejected: 0,
-    earned_fcoin: 0,
-    approved_bugs: 0,
+    total:
+        0,
+
+    pending:
+        0,
+
+    in_progress:
+        0,
+
+    approved:
+        0,
+
+    rejected:
+        0,
+
+    earned_fcoin:
+        0,
+
+    approved_bugs:
+        0,
 };
+
 
 // =========================================================
 // INITIAL STATE
@@ -379,39 +497,53 @@ const initialState = {
     // PUBLIC
     // =====================================================
 
-    feedbacks: [],
+    feedbacks:
+        [],
 
-    count: 0,
+    count:
+        0,
 
-    page: 1,
+    page:
+        1,
 
     pageSize:
         FEEDBACK_DEFAULT_PAGE_SIZE,
 
-    totalPages: 1,
+    totalPages:
+        1,
 
-    next: null,
+    next:
+        null,
 
-    previous: null,
+    previous:
+        null,
+
 
     // =====================================================
     // CURRENT USER
     // =====================================================
 
-    myFeedbacks: [],
+    myFeedbacks:
+        [],
 
-    myCount: 0,
+    myCount:
+        0,
 
-    myPage: 1,
+    myPage:
+        1,
 
     myPageSize:
         FEEDBACK_DEFAULT_PAGE_SIZE,
 
-    myTotalPages: 1,
+    myTotalPages:
+        1,
 
-    myNext: null,
+    myNext:
+        null,
 
-    myPrevious: null,
+    myPrevious:
+        null,
+
 
     // =====================================================
     // STATS
@@ -421,52 +553,72 @@ const initialState = {
         ...initialStats,
     },
 
+
     // =====================================================
     // LOADING
     // =====================================================
 
-    isLoading: false,
+    isLoading:
+        false,
 
-    isMyLoading: false,
+    isMyLoading:
+        false,
 
-    isStatsLoading: false,
+    isStatsLoading:
+        false,
 
-    isCreating: false,
+    isCreating:
+        false,
 
-    isUpdating: false,
+    isUpdating:
+        false,
 
-    isDeleting: false,
+    isDeleting:
+        false,
+
 
     // =====================================================
     // MUTATION
     // =====================================================
 
-    updatingId: null,
+    updatingId:
+        null,
 
-    deletingId: null,
+    deletingId:
+        null,
+
 
     // =====================================================
     // ERROR
     // =====================================================
 
-    error: null,
+    error:
+        null,
 
-    myError: null,
+    myError:
+        null,
 
-    statsError: null,
+    statsError:
+        null,
 
-    mutationError: null,
+    mutationError:
+        null,
+
 
     // =====================================================
     // META
     // =====================================================
 
-    hasLoaded: false,
+    hasLoaded:
+        false,
 
-    hasMyLoaded: false,
+    hasMyLoaded:
+        false,
 
-    hasStatsLoaded: false,
+    hasStatsLoaded:
+        false,
 };
+
 
 // =========================================================
 // SLICE
@@ -480,6 +632,7 @@ export const FeedbackSlice =
         initialState,
 
         reducers: {
+
             // =================================================
             // PUBLIC LIST
             // =================================================
@@ -494,6 +647,7 @@ export const FeedbackSlice =
                     null;
             },
 
+
             getFeedbackSuccess: (
                 state,
                 action
@@ -503,11 +657,13 @@ export const FeedbackSlice =
                         action.payload
                     );
 
+
                 state.isLoading =
                     false;
 
                 state.hasLoaded =
                     true;
+
 
                 state.feedbacks =
                     normalized.results;
@@ -530,9 +686,11 @@ export const FeedbackSlice =
                 state.previous =
                     normalized.previous;
 
+
                 state.error =
                     null;
             },
+
 
             getFeedbackFailure: (
                 state,
@@ -544,12 +702,15 @@ export const FeedbackSlice =
                 state.hasLoaded =
                     true;
 
+
                 state.error =
                     normalizeError(
                         action.payload,
+
                         "Feedbacklarni yuklashda xatolik yuz berdi."
                     );
             },
+
 
             // =================================================
             // MY FEEDBACKS
@@ -565,6 +726,7 @@ export const FeedbackSlice =
                     null;
             },
 
+
             getMyFeedbackSuccess: (
                 state,
                 action
@@ -574,11 +736,13 @@ export const FeedbackSlice =
                         action.payload
                     );
 
+
                 state.isMyLoading =
                     false;
 
                 state.hasMyLoaded =
                     true;
+
 
                 state.myFeedbacks =
                     normalized.results;
@@ -601,9 +765,11 @@ export const FeedbackSlice =
                 state.myPrevious =
                     normalized.previous;
 
+
                 state.myError =
                     null;
             },
+
 
             getMyFeedbackFailure: (
                 state,
@@ -615,12 +781,15 @@ export const FeedbackSlice =
                 state.hasMyLoaded =
                     true;
 
+
                 state.myError =
                     normalizeError(
                         action.payload,
+
                         "Feedbacklaringizni yuklashda xatolik yuz berdi."
                     );
             },
+
 
             // =================================================
             // STATS
@@ -636,6 +805,7 @@ export const FeedbackSlice =
                     null;
             },
 
+
             getFeedbackStatsSuccess: (
                 state,
                 action
@@ -646,14 +816,17 @@ export const FeedbackSlice =
                 state.hasStatsLoaded =
                     true;
 
+
                 state.stats =
                     normalizeStats(
                         action.payload
                     );
 
+
                 state.statsError =
                     null;
             },
+
 
             getFeedbackStatsFailure: (
                 state,
@@ -665,12 +838,15 @@ export const FeedbackSlice =
                 state.hasStatsLoaded =
                     true;
 
+
                 state.statsError =
                     normalizeError(
                         action.payload,
+
                         "Feedback statistikasini yuklashda xatolik yuz berdi."
                     );
             },
+
 
             // =================================================
             // CREATE
@@ -686,6 +862,7 @@ export const FeedbackSlice =
                     null;
             },
 
+
             postFeedbackSuccess: (
                 state,
                 action
@@ -696,10 +873,12 @@ export const FeedbackSlice =
                 state.mutationError =
                     null;
 
+
                 const feedback =
                     normalizeFeedbackPayload(
                         action.payload
                     );
+
 
                 if (
                     !feedback
@@ -713,11 +892,9 @@ export const FeedbackSlice =
                     return;
                 }
 
+
                 // =============================================
-                // Current user list optimistic update.
-                //
-                // Yangi feedback pending bo'ladi.
-                // Hook successdan keyin page 1 ni qayta yuklaydi.
+                // CURRENT USER LIST
                 // =============================================
 
                 const exists =
@@ -730,51 +907,68 @@ export const FeedbackSlice =
                         )
                     );
 
+
                 if (
-                    !exists
+                    exists
                 ) {
-                    state.myFeedbacks.unshift(
-                        feedback
-                    );
+                    return;
+                }
 
-                    if (
-                        state.myFeedbacks.length >
-                        state.myPageSize
-                    ) {
-                        state.myFeedbacks =
-                            state.myFeedbacks.slice(
-                                0,
-                                state.myPageSize
-                            );
-                    }
 
-                    state.myCount +=
-                        1;
+                state.myFeedbacks.unshift(
+                    feedback
+                );
 
-                    state.myTotalPages =
-                        calculateTotalPages(
-                            state.myCount,
+
+                if (
+                    state.myFeedbacks.length >
+                    state.myPageSize
+                ) {
+                    state.myFeedbacks =
+                        state.myFeedbacks.slice(
+                            0,
                             state.myPageSize
                         );
                 }
+
+
+                state.myCount +=
+                    1;
+
+
+                state.myTotalPages =
+                    calculateTotalPages(
+                        state.myCount,
+                        state.myPageSize
+                    );
+
 
                 // =============================================
                 // STATS OPTIMISTIC UPDATE
                 // =============================================
 
-                state.stats.total +=
+                state.stats.total =
+                    safeNonNegativeInteger(
+                        state.stats.total
+                    )
+                    +
                     1;
 
-                if (
-                    feedback?.status ===
-                    "pending"
-                    ||
-                    !feedback?.status
-                ) {
-                    state.stats.pending +=
-                        1;
-                }
+
+                const status =
+                    normalizeFeedbackStatus(
+                        feedback
+                    )
+                    ??
+                    "pending";
+
+
+                incrementStatusStat(
+                    state.stats,
+                    status
+                );
             },
+
 
             postFeedbackFailure: (
                 state,
@@ -783,12 +977,15 @@ export const FeedbackSlice =
                 state.isCreating =
                     false;
 
+
                 state.mutationError =
                     normalizeError(
                         action.payload,
+
                         "Feedback yuborishda xatolik yuz berdi."
                     );
             },
+
 
             // =================================================
             // UPDATE
@@ -810,6 +1007,7 @@ export const FeedbackSlice =
                     null;
             },
 
+
             updateFeedbackSuccess: (
                 state,
                 action
@@ -823,10 +1021,12 @@ export const FeedbackSlice =
                 state.mutationError =
                     null;
 
+
                 const feedback =
                     normalizeFeedbackPayload(
                         action.payload
                     );
+
 
                 if (
                     !feedback
@@ -840,20 +1040,21 @@ export const FeedbackSlice =
                     return;
                 }
 
+
                 // =============================================
                 // MY LIST
                 // =============================================
 
                 const myIndex =
-                    state.myFeedbacks
-                        .findIndex(
-                            (
-                                item
-                            ) => (
-                                item?.id ===
-                                feedback.id
-                            )
-                        );
+                    state.myFeedbacks.findIndex(
+                        (
+                            item
+                        ) => (
+                            item?.id ===
+                            feedback.id
+                        )
+                    );
+
 
                 if (
                     myIndex !==
@@ -861,23 +1062,25 @@ export const FeedbackSlice =
                 ) {
                     state.myFeedbacks[
                         myIndex
-                    ] = feedback;
+                    ] =
+                        feedback;
                 }
+
 
                 // =============================================
                 // PUBLIC LIST
                 // =============================================
 
                 const publicIndex =
-                    state.feedbacks
-                        .findIndex(
-                            (
-                                item
-                            ) => (
-                                item?.id ===
-                                feedback.id
-                            )
-                        );
+                    state.feedbacks.findIndex(
+                        (
+                            item
+                        ) => (
+                            item?.id ===
+                            feedback.id
+                        )
+                    );
+
 
                 if (
                     publicIndex !==
@@ -885,9 +1088,11 @@ export const FeedbackSlice =
                 ) {
                     state.feedbacks[
                         publicIndex
-                    ] = feedback;
+                    ] =
+                        feedback;
                 }
             },
+
 
             updateFeedbackFailure: (
                 state,
@@ -899,12 +1104,15 @@ export const FeedbackSlice =
                 state.updatingId =
                     null;
 
+
                 state.mutationError =
                     normalizeError(
                         action.payload,
+
                         "Feedbackni yangilashda xatolik yuz berdi."
                     );
             },
+
 
             // =================================================
             // DELETE
@@ -926,6 +1134,7 @@ export const FeedbackSlice =
                     null;
             },
 
+
             deleteFeedbackSuccess: (
                 state,
                 action
@@ -939,8 +1148,10 @@ export const FeedbackSlice =
                 state.mutationError =
                     null;
 
+
                 const feedbackId =
                     action.payload;
+
 
                 if (
                     feedbackId ===
@@ -952,149 +1163,138 @@ export const FeedbackSlice =
                     return;
                 }
 
+
                 // =============================================
                 // MY LIST
                 // =============================================
 
                 const deletedMyFeedback =
-                    state.myFeedbacks
-                        .find(
-                            (
-                                item
-                            ) => (
-                                item?.id ===
-                                feedbackId
-                            )
-                        );
+                    state.myFeedbacks.find(
+                        (
+                            item
+                        ) => (
+                            item?.id ===
+                            feedbackId
+                        )
+                    );
+
 
                 if (
                     deletedMyFeedback
                 ) {
                     state.myFeedbacks =
-                        state.myFeedbacks
-                            .filter(
-                                (
-                                    item
-                                ) => (
-                                    item?.id !==
-                                    feedbackId
-                                )
-                            );
+                        state.myFeedbacks.filter(
+                            (
+                                item
+                            ) => (
+                                item?.id !==
+                                feedbackId
+                            )
+                        );
 
-                    // Muhim:
-                    // paginationda count joriy page length emas.
+
                     state.myCount =
                         Math.max(
                             0,
+
                             state.myCount -
                             1
                         );
+
 
                     state.myTotalPages =
                         calculateTotalPages(
                             state.myCount,
                             state.myPageSize
                         );
+
+
+                    state.myPage =
+                        Math.min(
+                            state.myPage,
+                            state.myTotalPages
+                        );
+
+
+                    // =========================================
+                    // STATS
+                    // =========================================
+
+                    state.stats.total =
+                        Math.max(
+                            0,
+
+                            safeNonNegativeInteger(
+                                state.stats.total
+                            )
+                            -
+                            1
+                        );
+
+
+                    decrementStatusStat(
+                        state.stats,
+
+                        normalizeFeedbackStatus(
+                            deletedMyFeedback
+                        )
+                    );
                 }
+
 
                 // =============================================
                 // PUBLIC LIST
                 // =============================================
 
                 const deletedPublicFeedback =
-                    state.feedbacks
-                        .find(
-                            (
-                                item
-                            ) => (
-                                item?.id ===
-                                feedbackId
-                            )
-                        );
+                    state.feedbacks.find(
+                        (
+                            item
+                        ) => (
+                            item?.id ===
+                            feedbackId
+                        )
+                    );
+
 
                 if (
                     deletedPublicFeedback
                 ) {
                     state.feedbacks =
-                        state.feedbacks
-                            .filter(
-                                (
-                                    item
-                                ) => (
-                                    item?.id !==
-                                    feedbackId
-                                )
-                            );
+                        state.feedbacks.filter(
+                            (
+                                item
+                            ) => (
+                                item?.id !==
+                                feedbackId
+                            )
+                        );
+
 
                     state.count =
                         Math.max(
                             0,
+
                             state.count -
                             1
                         );
+
 
                     state.totalPages =
                         calculateTotalPages(
                             state.count,
                             state.pageSize
                         );
-                }
 
-                // =============================================
-                // STATS
-                // =============================================
 
-                if (
-                    deletedMyFeedback
-                ) {
-                    state.stats.total =
-                        Math.max(
-                            0,
-                            state.stats.total -
-                            1
+                    state.page =
+                        Math.min(
+                            state.page,
+                            state.totalPages
                         );
-
-                    const feedbackStatus =
-                        deletedMyFeedback
-                            ?.status;
-
-                    if (
-                        feedbackStatus ===
-                        "pending"
-                    ) {
-                        state.stats.pending =
-                            Math.max(
-                                0,
-                                state.stats.pending -
-                                1
-                            );
-                    }
-
-                    if (
-                        feedbackStatus ===
-                        "approved"
-                    ) {
-                        state.stats.approved =
-                            Math.max(
-                                0,
-                                state.stats.approved -
-                                1
-                            );
-                    }
-
-                    if (
-                        feedbackStatus ===
-                        "rejected"
-                    ) {
-                        state.stats.rejected =
-                            Math.max(
-                                0,
-                                state.stats.rejected -
-                                1
-                            );
-                    }
                 }
             },
+
 
             deleteFeedbackFailure: (
                 state,
@@ -1106,12 +1306,15 @@ export const FeedbackSlice =
                 state.deletingId =
                     null;
 
+
                 state.mutationError =
                     normalizeError(
                         action.payload,
+
                         "Feedbackni o‘chirishda xatolik yuz berdi."
                     );
             },
+
 
             // =================================================
             // REPLACE ONE FEEDBACK
@@ -1128,6 +1331,7 @@ export const FeedbackSlice =
                         action.payload
                     );
 
+
                 if (
                     !feedback
                     ||
@@ -1140,37 +1344,137 @@ export const FeedbackSlice =
                     return;
                 }
 
-                const replaceInList = (
-                    list
-                ) => {
-                    const index =
-                        list.findIndex(
-                            (
-                                item
-                            ) => (
-                                item?.id ===
-                                feedback.id
-                            )
+
+                // =============================================
+                // MY LIST
+                // =============================================
+
+                const myIndex =
+                    state.myFeedbacks.findIndex(
+                        (
+                            item
+                        ) => (
+                            item?.id ===
+                            feedback.id
+                        )
+                    );
+
+
+                if (
+                    myIndex !==
+                    -1
+                ) {
+                    const previousFeedback =
+                        state.myFeedbacks[
+                            myIndex
+                        ];
+
+
+                    const previousStatus =
+                        normalizeFeedbackStatus(
+                            previousFeedback
                         );
 
+
+                    const nextStatus =
+                        normalizeFeedbackStatus(
+                            feedback
+                        );
+
+
+                    state.myFeedbacks[
+                        myIndex
+                    ] =
+                        feedback;
+
+
                     if (
-                        index !==
-                        -1
+                        previousStatus !==
+                        nextStatus
                     ) {
-                        list[
-                            index
-                        ] = feedback;
+                        decrementStatusStat(
+                            state.stats,
+                            previousStatus
+                        );
+
+
+                        incrementStatusStat(
+                            state.stats,
+                            nextStatus
+                        );
                     }
-                };
+                }
 
-                replaceInList(
-                    state.feedbacks
-                );
 
-                replaceInList(
-                    state.myFeedbacks
-                );
+                // =============================================
+                // PUBLIC LIST
+                //
+                // Public API faqat approved feedbacklarni
+                // qaytaradi.
+                //
+                // Existing item statusi approved bo‘lmay
+                // qolsa public listdan chiqariladi.
+                //
+                // Yangi approved feedbackni listga qo‘shish
+                // server pagination/order bilan refresh orqali
+                // bajariladi.
+                // =============================================
+
+                const publicIndex =
+                    state.feedbacks.findIndex(
+                        (
+                            item
+                        ) => (
+                            item?.id ===
+                            feedback.id
+                        )
+                    );
+
+
+                if (
+                    publicIndex !==
+                    -1
+                ) {
+                    if (
+                        feedback.status ===
+                        "approved"
+                    ) {
+                        state.feedbacks[
+                            publicIndex
+                        ] =
+                            feedback;
+                    } else {
+                        state.feedbacks.splice(
+                            publicIndex,
+                            1
+                        );
+
+
+                        state.count =
+                            Math.max(
+                                0,
+
+                                state.count -
+                                1
+                            );
+
+
+                        state.totalPages =
+                            calculateTotalPages(
+                                state.count,
+                                state.pageSize
+                            );
+
+
+                        state.page =
+                            Math.min(
+                                state.page,
+                                state.totalPages
+                            );
+                    }
+                }
             },
+
 
             // =================================================
             // SET STATS
@@ -1185,6 +1489,7 @@ export const FeedbackSlice =
                         action.payload
                     );
             },
+
 
             // =================================================
             // CLEAR ERRORS
@@ -1205,6 +1510,7 @@ export const FeedbackSlice =
                 state.mutationError =
                     null;
             },
+
 
             // =================================================
             // CLEAR MY DATA
@@ -1236,15 +1542,41 @@ export const FeedbackSlice =
                 state.myPrevious =
                     null;
 
+
                 state.stats = {
                     ...initialStats,
                 };
+
+
+                state.isMyLoading =
+                    false;
+
+                state.isStatsLoading =
+                    false;
+
+                state.isCreating =
+                    false;
+
+                state.isUpdating =
+                    false;
+
+                state.isDeleting =
+                    false;
+
+
+                state.updatingId =
+                    null;
+
+                state.deletingId =
+                    null;
+
 
                 state.hasMyLoaded =
                     false;
 
                 state.hasStatsLoaded =
                     false;
+
 
                 state.myError =
                     null;
@@ -1256,6 +1588,7 @@ export const FeedbackSlice =
                     null;
             },
 
+
             // =================================================
             // RESET
             // =================================================
@@ -1264,6 +1597,12 @@ export const FeedbackSlice =
                 return {
                     ...initialState,
 
+                    feedbacks:
+                        [],
+
+                    myFeedbacks:
+                        [],
+
                     stats: {
                         ...initialStats,
                     },
@@ -1271,6 +1610,7 @@ export const FeedbackSlice =
             },
         },
     });
+
 
 // =========================================================
 // ACTIONS
@@ -1311,6 +1651,7 @@ export const {
     resetFeedbackState,
 } = FeedbackSlice.actions;
 
+
 // =========================================================
 // SELECTORS
 // =========================================================
@@ -1324,6 +1665,7 @@ export const selectFeedbackState = (
         initialState
     );
 };
+
 
 // =========================================================
 // PUBLIC
@@ -1339,6 +1681,7 @@ export const selectFeedbacks = (
     );
 };
 
+
 export const selectFeedbackLoading = (
     state
 ) => {
@@ -1348,6 +1691,7 @@ export const selectFeedbackLoading = (
         ).isLoading
     );
 };
+
 
 export const selectFeedbackError = (
     state
@@ -1359,6 +1703,7 @@ export const selectFeedbackError = (
     );
 };
 
+
 export const selectFeedbackPagination = (
     state
 ) => {
@@ -1366,6 +1711,7 @@ export const selectFeedbackPagination = (
         selectFeedbackState(
             state
         );
+
 
     return {
         count:
@@ -1388,6 +1734,7 @@ export const selectFeedbackPagination = (
     };
 };
 
+
 // =========================================================
 // MY FEEDBACK
 // =========================================================
@@ -1402,6 +1749,7 @@ export const selectMyFeedbacks = (
     );
 };
 
+
 export const selectMyFeedbackLoading = (
     state
 ) => {
@@ -1412,6 +1760,7 @@ export const selectMyFeedbackLoading = (
     );
 };
 
+
 export const selectMyFeedbackPagination = (
     state
 ) => {
@@ -1419,6 +1768,7 @@ export const selectMyFeedbackPagination = (
         selectFeedbackState(
             state
         );
+
 
     return {
         count:
@@ -1441,6 +1791,7 @@ export const selectMyFeedbackPagination = (
     };
 };
 
+
 // =========================================================
 // STATS
 // =========================================================
@@ -1455,6 +1806,7 @@ export const selectFeedbackStats = (
     );
 };
 
+
 export const selectFeedbackStatsLoading = (
     state
 ) => {
@@ -1464,6 +1816,7 @@ export const selectFeedbackStatsLoading = (
         ).isStatsLoading
     );
 };
+
 
 // =========================================================
 // MUTATION STATE
@@ -1476,6 +1829,7 @@ export const selectFeedbackMutationState = (
         selectFeedbackState(
             state
         );
+
 
     return {
         isCreating:
@@ -1497,6 +1851,7 @@ export const selectFeedbackMutationState = (
             feedback.mutationError,
     };
 };
+
 
 // =========================================================
 // DEFAULT REDUCER

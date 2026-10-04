@@ -23,6 +23,7 @@ import {
     RefreshCcw,
     ShieldCheck,
     Sparkles,
+    Wrench,
     XCircle,
 } from "lucide-react";
 
@@ -38,6 +39,10 @@ import FeedbackSkeleton, {
 } from "./feedback/FeedbackSkeleton";
 
 import useFeedbackPage from "./feedback/useFeedbackPage";
+
+import {
+    getFeedbackStatusFilterLabel,
+} from "./feedback/feedbackHelpers";
 
 
 // =========================================================
@@ -76,6 +81,8 @@ const StatCard = ({
                 hover:bg-white/[0.035]
             "
         >
+            {/* BACKGROUND GLOW */}
+
             <div
                 aria-hidden="true"
                 className="
@@ -410,7 +417,7 @@ const Feedback = () => {
         );
 
     // =====================================================
-    // DELETE MODAL
+    // OPEN DELETE MODAL
     // =====================================================
 
     const handleOpenDeleteModal = (
@@ -431,6 +438,9 @@ const Feedback = () => {
         );
     };
 
+    // =====================================================
+    // CLOSE DELETE MODAL
+    // =====================================================
 
     const handleCloseDeleteModal =
         () => {
@@ -445,6 +455,9 @@ const Feedback = () => {
             );
         };
 
+    // =====================================================
+    // CONFIRM DELETE
+    // =====================================================
 
     const handleConfirmDelete =
         async () => {
@@ -494,9 +507,10 @@ const Feedback = () => {
                     description:
                         "Yuborgan feedbacklaringiz",
                 },
+
                 {
                     title:
-                        "Pending",
+                        "Kutilmoqda",
 
                     value:
                         stats?.pending
@@ -507,11 +521,28 @@ const Feedback = () => {
                         Clock3,
 
                     description:
-                        "Admin tekshiruvini kutmoqda",
+                        "Admin ko‘rib chiqishini kutmoqda",
                 },
+
                 {
                     title:
-                        "Approved",
+                        "Ishlanmoqda",
+
+                    value:
+                        stats?.in_progress
+                        ??
+                        0,
+
+                    Icon:
+                        Wrench,
+
+                    description:
+                        "Admin ishlashga olgan",
+                },
+
+                {
+                    title:
+                        "Tasdiqlangan",
 
                     value:
                         stats?.approved
@@ -524,9 +555,10 @@ const Feedback = () => {
                     description:
                         "Tasdiqlangan feedbacklar",
                 },
+
                 {
                     title:
-                        "Rejected",
+                        "Rad etilgan",
 
                     value:
                         stats?.rejected
@@ -539,6 +571,7 @@ const Feedback = () => {
                     description:
                         "Rad etilgan feedbacklar",
                 },
+
                 {
                     title:
                         "Earned FCoin",
@@ -554,6 +587,7 @@ const Feedback = () => {
                     description:
                         "Feedback orqali topilgan",
                 },
+
                 {
                     title:
                         "Approved Bugs",
@@ -572,6 +606,22 @@ const Feedback = () => {
             ],
             [
                 stats,
+            ]
+        );
+
+    // =====================================================
+    // ACTIVE STATUS LABEL
+    // =====================================================
+
+    const activeStatusLabel =
+        useMemo(
+            () => {
+                return getFeedbackStatusFilterLabel(
+                    activeStatus
+                );
+            },
+            [
+                activeStatus,
             ]
         );
 
@@ -791,11 +841,14 @@ const Feedback = () => {
                                     Bug topdingizmi, yangi feature
                                     g‘oyangiz bormi yoki platforma
                                     haqida fikringizni aytmoqchimisiz?
-                                    Feedback yuboring. Admin
-                                    tasdiqlagan foydali feedbacklar
-                                    uchun FCoin mukofoti beriladi.
+                                    Feedback yuboring. Admin uni
+                                    ko‘rib chiqadi, ishlashga oladi
+                                    va foydali feedbacklar uchun
+                                    FCoin mukofoti berilishi mumkin.
                                 </p>
                             </div>
+
+                            {/* BUTTONS */}
 
                             <div
                                 className="
@@ -976,8 +1029,9 @@ const Feedback = () => {
                                             text-gray-600
                                         "
                                     >
-                                        Feedback faoliyatingiz
-                                        va FCoin natijalari.
+                                        Feedback faoliyatingiz,
+                                        moderatsiya jarayoni va
+                                        FCoin natijalari.
                                     </p>
                                 </div>
 
@@ -995,7 +1049,7 @@ const Feedback = () => {
                                     grid-cols-2
                                     gap-3
                                     md:grid-cols-3
-                                    xl:grid-cols-6
+                                    xl:grid-cols-7
                                 "
                             >
                                 {statCards.map(
@@ -1052,15 +1106,29 @@ const Feedback = () => {
                                     <p
                                         className="
                                             mt-1
+                                            max-w-xl
                                             text-xs
                                             font-medium
+                                            leading-5
                                             text-gray-600
                                         "
                                     >
-                                        Pending feedbacklarni
+                                        Faqat{" "}
+                                        <span
+                                            className="
+                                                text-amber-300/80
+                                            "
+                                        >
+                                            Kutilmoqda
+                                        </span>{" "}
+                                        holatidagi feedbackni
                                         tahrirlash yoki o‘chirish mumkin.
+                                        Admin ishlashni boshlagach
+                                        feedback bloklanadi.
                                     </p>
                                 </div>
+
+                                {/* FILTERS */}
 
                                 <div
                                     className="
@@ -1077,6 +1145,51 @@ const Feedback = () => {
                                                 activeStatus ===
                                                 item.value;
 
+                                            const activeClass =
+                                                item.value ===
+                                                "in_progress"
+                                                    ? (
+                                                        "border-blue-400/25 "
+                                                        +
+                                                        "bg-blue-500/[0.10] "
+                                                        +
+                                                        "text-blue-300"
+                                                    )
+                                                    : item.value ===
+                                                    "approved"
+                                                        ? (
+                                                            "border-emerald-400/25 "
+                                                            +
+                                                            "bg-emerald-500/[0.10] "
+                                                            +
+                                                            "text-emerald-300"
+                                                        )
+                                                        : item.value ===
+                                                        "rejected"
+                                                            ? (
+                                                                "border-red-400/25 "
+                                                                +
+                                                                "bg-red-500/[0.10] "
+                                                                +
+                                                                "text-red-300"
+                                                            )
+                                                            : item.value ===
+                                                            "pending"
+                                                                ? (
+                                                                    "border-amber-400/25 "
+                                                                    +
+                                                                    "bg-amber-500/[0.10] "
+                                                                    +
+                                                                    "text-amber-300"
+                                                                )
+                                                                : (
+                                                                    "border-indigo-400/25 "
+                                                                    +
+                                                                    "bg-indigo-500/[0.10] "
+                                                                    +
+                                                                    "text-indigo-300"
+                                                                );
+
                                             return (
                                                 <button
                                                     key={
@@ -1090,6 +1203,9 @@ const Feedback = () => {
                                                     }}
                                                     disabled={
                                                         isMyLoading
+                                                    }
+                                                    aria-pressed={
+                                                        active
                                                     }
                                                     className={`
                                                         rounded-xl
@@ -1107,13 +1223,7 @@ const Feedback = () => {
 
                                                         ${
                                                             active
-                                                                ? (
-                                                                    "border-indigo-400/25 "
-                                                                    +
-                                                                    "bg-indigo-500/[0.10] "
-                                                                    +
-                                                                    "text-indigo-300"
-                                                                )
+                                                                ? activeClass
                                                                 : (
                                                                     "border-white/[0.06] "
                                                                     +
@@ -1135,6 +1245,46 @@ const Feedback = () => {
                                     )}
                                 </div>
                             </div>
+
+                            {/* ACTIVE FILTER */}
+
+                            {activeStatus !==
+                                "all"
+                                && (
+                                    <div
+                                        className="
+                                            mt-4
+                                            inline-flex
+                                            items-center
+                                            gap-2
+                                            rounded-xl
+                                            border
+                                            border-white/[0.06]
+                                            bg-white/[0.02]
+                                            px-3
+                                            py-2
+                                            text-[10px]
+                                            font-medium
+                                            text-gray-500
+                                        "
+                                    >
+                                        <span>
+                                            Filter:
+                                        </span>
+
+                                        <span
+                                            className="
+                                                font-display
+                                                font-semibold
+                                                text-gray-300
+                                            "
+                                        >
+                                            {activeStatusLabel}
+                                        </span>
+                                    </div>
+                                )}
+
+                            {/* LIST */}
 
                             <div
                                 className="
@@ -1235,12 +1385,14 @@ const Feedback = () => {
                                                     "Siz hali feedback yubormagansiz."
                                                 )
                                                 : (
-                                                    `Hozircha ${activeStatus} holatidagi feedback yo‘q.`
+                                                    `${activeStatusLabel} holatidagi feedback hozircha yo‘q.`
                                                 )
                                         }
                                     />
                                 )}
                             </div>
+
+                            {/* MY PAGINATION */}
 
                             {!isMyInitialLoading && (
                                 <FeedbackPagination
@@ -1354,6 +1506,8 @@ const Feedback = () => {
                             </span>
                         </div>
 
+                        {/* PUBLIC LIST */}
+
                         <div
                             className="
                                 mt-5
@@ -1395,6 +1549,8 @@ const Feedback = () => {
                                 />
                             )}
                         </div>
+
+                        {/* PUBLIC PAGINATION */}
 
                         <FeedbackPagination
                             page={

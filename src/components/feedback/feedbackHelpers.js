@@ -2,7 +2,9 @@
 
 import {
     CheckCircle2,
+    CircleHelp,
     Clock3,
+    Wrench,
     XCircle,
 } from "lucide-react";
 
@@ -13,35 +15,24 @@ import {
 
 export const FEEDBACK_STATUS_FILTERS = [
     {
-        value:
-            "all",
-
-        label:
-            "Barchasi",
+        value: "all",
+        label: "Barchasi",
     },
-
     {
-        value:
-            "pending",
-
-        label:
-            "Pending",
+        value: "pending",
+        label: "Kutilmoqda",
     },
-
     {
-        value:
-            "approved",
-
-        label:
-            "Approved",
+        value: "in_progress",
+        label: "Ishlanmoqda",
     },
-
     {
-        value:
-            "rejected",
-
-        label:
-            "Rejected",
+        value: "approved",
+        label: "Tasdiqlangan",
+    },
+    {
+        value: "rejected",
+        label: "Rad etilgan",
     },
 ];
 
@@ -52,37 +43,149 @@ export const FEEDBACK_STATUS_FILTERS = [
 
 export const FEEDBACK_STATUS_CONFIG = {
     pending: {
-        label:
-            "Pending",
+        value: "pending",
 
-        Icon:
-            Clock3,
+        label: "Kutilmoqda",
+
+        shortLabel: "Pending",
+
+        description:
+            "Admin ko‘rib chiqishini kutmoqda.",
+
+        Icon: Clock3,
 
         className:
-            "border-amber-400/20 bg-amber-500/[0.07] text-amber-300",
+            "border-amber-400/20 "
+            +
+            "bg-amber-500/[0.07] "
+            +
+            "text-amber-300",
+    },
+
+    in_progress: {
+        value: "in_progress",
+
+        label: "Ishlanmoqda",
+
+        shortLabel: "In progress",
+
+        description:
+            "Admin feedback ustida ishlamoqda.",
+
+        Icon: Wrench,
+
+        className:
+            "border-blue-400/20 "
+            +
+            "bg-blue-500/[0.07] "
+            +
+            "text-blue-300",
     },
 
     approved: {
-        label:
-            "Approved",
+        value: "approved",
 
-        Icon:
-            CheckCircle2,
+        label: "Tasdiqlangan",
+
+        shortLabel: "Approved",
+
+        description:
+            "Feedback admin tomonidan tasdiqlangan.",
+
+        Icon: CheckCircle2,
 
         className:
-            "border-emerald-400/20 bg-emerald-500/[0.07] text-emerald-300",
+            "border-emerald-400/20 "
+            +
+            "bg-emerald-500/[0.07] "
+            +
+            "text-emerald-300",
     },
 
     rejected: {
-        label:
-            "Rejected",
+        value: "rejected",
 
-        Icon:
-            XCircle,
+        label: "Rad etilgan",
+
+        shortLabel: "Rejected",
+
+        description:
+            "Feedback admin tomonidan rad etilgan.",
+
+        Icon: XCircle,
 
         className:
-            "border-red-400/20 bg-red-500/[0.07] text-red-300",
+            "border-red-400/20 "
+            +
+            "bg-red-500/[0.07] "
+            +
+            "text-red-300",
     },
+};
+
+
+// =========================================================
+// FALLBACK STATUS
+// =========================================================
+
+const FALLBACK_STATUS_CONFIG = {
+    value: "unknown",
+
+    label: "Noma’lum",
+
+    shortLabel: "Unknown",
+
+    description:
+        "Feedback holati aniqlanmadi.",
+
+    Icon: CircleHelp,
+
+    className:
+        "border-gray-400/20 "
+        +
+        "bg-gray-500/[0.07] "
+        +
+        "text-gray-400",
+};
+
+
+// =========================================================
+// SAFE NUMBER
+// =========================================================
+
+const toSafeNumber = (
+    value,
+    fallback = 0
+) => {
+    const number =
+        Number(
+            value
+        );
+
+    return Number.isFinite(
+        number
+    )
+        ? number
+        : fallback;
+};
+
+
+// =========================================================
+// SAFE NON-NEGATIVE INTEGER
+// =========================================================
+
+const toSafeCount = (
+    value
+) => {
+    return Math.max(
+        0,
+        Math.trunc(
+            toSafeNumber(
+                value,
+                0
+            )
+        )
+    );
 };
 
 
@@ -96,275 +199,193 @@ export const getFeedbackStatusConfig = (
     const normalizedStatus =
         String(
             status
-            ||
-            "pending"
+            ??
+            ""
         )
             .trim()
             .toLowerCase();
-
 
     return (
         FEEDBACK_STATUS_CONFIG[
             normalizedStatus
         ]
         ||
-        FEEDBACK_STATUS_CONFIG.pending
+        FALLBACK_STATUS_CONFIG
     );
 };
 
 
 // =========================================================
-// API ERROR
+// VALID STATUS
 // =========================================================
 
-export const getFeedbackErrorMessage = (
-    error,
-    fallback = "Feedback ma’lumotlarini olishda xatolik yuz berdi."
+export const isValidFeedbackStatus = (
+    status
 ) => {
-    const data =
-        error?.serverData
-        ||
-        error?.response?.data;
-
-
     if (
-        typeof data === "string"
-        &&
-        data.trim()
+        status ===
+        "all"
     ) {
-        return data.trim();
+        return true;
     }
 
-
-    if (
-        data?.detail
-    ) {
-        return String(
-            data.detail
-        );
-    }
-
-
-    if (
-        data?.message
-    ) {
-        return String(
-            data.message
-        );
-    }
-
-
-    if (
-        data?.error
-    ) {
-        return String(
-            data.error
-        );
-    }
-
-
-    if (
-        data
-        &&
-        typeof data === "object"
-    ) {
-        const firstValue =
-            Object.values(
-                data
-            )[0];
-
-
-        if (
-            Array.isArray(
-                firstValue
+    return Boolean(
+        FEEDBACK_STATUS_CONFIG[
+            String(
+                status
+                ??
+                ""
             )
-            &&
-            firstValue.length > 0
-        ) {
-            return String(
-                firstValue[0]
-            );
-        }
-
-
-        if (
-            typeof firstValue ===
-            "string"
-        ) {
-            return firstValue;
-        }
-    }
-
-
-    if (
-        error?.message
-    ) {
-        return String(
-            error.message
-        );
-    }
-
-
-    return fallback;
-};
-
-
-// =========================================================
-// NORMALIZE FEEDBACK LIST
-//
-// Quyidagilarni qo'llaydi:
-//
-// [
-//     ...
-// ]
-//
-// yoki
-//
-// {
-//     results: [
-//         ...
-//     ]
-// }
-// =========================================================
-
-export const normalizeFeedbackList = (
-    data
-) => {
-    if (
-        Array.isArray(
-            data
-        )
-    ) {
-        return data;
-    }
-
-
-    if (
-        Array.isArray(
-            data?.results
-        )
-    ) {
-        return data.results;
-    }
-
-
-    return [];
-};
-
-
-// =========================================================
-// SAFE NUMBER
-// =========================================================
-
-export const safeFeedbackNumber = (
-    value,
-    fallback = 0
-) => {
-    const number =
-        Number(
-            value
-        );
-
-
-    return (
-        Number.isFinite(
-            number
-        )
-            ? number
-            : fallback
+                .trim()
+                .toLowerCase()
+        ]
     );
 };
 
 
 // =========================================================
-// DEFAULT STATS
+// STATUS HELPERS
 // =========================================================
 
-export const DEFAULT_FEEDBACK_STATS = {
-    total:
-        0,
+export const isFeedbackPending = (
+    feedback
+) => {
+    return (
+        feedback?.status ===
+        "pending"
+    );
+};
 
-    pending:
-        0,
 
-    approved:
-        0,
+export const isFeedbackInProgress = (
+    feedback
+) => {
+    return (
+        feedback?.status ===
+        "in_progress"
+    );
+};
 
-    rejected:
-        0,
 
-    earned_fcoin:
-        0,
+export const isFeedbackApproved = (
+    feedback
+) => {
+    return (
+        feedback?.status ===
+        "approved"
+    );
+};
 
-    approved_bugs:
-        0,
+
+export const isFeedbackRejected = (
+    feedback
+) => {
+    return (
+        feedback?.status ===
+        "rejected"
+    );
+};
+
+
+export const isFeedbackFinal = (
+    feedback
+) => {
+    return (
+        isFeedbackApproved(
+            feedback
+        )
+        ||
+        isFeedbackRejected(
+            feedback
+        )
+    );
 };
 
 
 // =========================================================
-// NORMALIZE STATS
+// CAN USER MODIFY
 // =========================================================
 
-export const normalizeFeedbackStats = (
-    data
+export const canModifyFeedback = (
+    feedback
 ) => {
-    const source =
-        data
-        &&
-        typeof data === "object"
-            ? data
-            : {};
+    if (
+        !feedback
+        ||
+        typeof feedback !==
+            "object"
+    ) {
+        return false;
+    }
+
+    // =====================================================
+    // BACKEND SOURCE OF TRUTH
+    // =====================================================
+
+    if (
+        typeof feedback
+            .can_user_modify ===
+        "boolean"
+    ) {
+        return (
+            feedback
+                .can_user_modify
+        );
+    }
+
+    // =====================================================
+    // FRONTEND FALLBACK
+    //
+    // Faqat PENDING edit/delete qilinadi.
+    //
+    // IN_PROGRESS boshlangan zahoti edit/delete yo‘q.
+    // =====================================================
+
+    return isFeedbackPending(
+        feedback
+    );
+};
 
 
-    return {
-        total:
-            Math.max(
-                0,
-                safeFeedbackNumber(
-                    source.total
-                )
-            ),
+// =========================================================
+// REWARD
+// =========================================================
 
-        pending:
-            Math.max(
-                0,
-                safeFeedbackNumber(
-                    source.pending
-                )
-            ),
+export const getFeedbackRewardAmount = (
+    feedback
+) => {
+    const amount =
+        toSafeNumber(
+            feedback
+                ?.reward_amount,
+            0
+        );
 
-        approved:
-            Math.max(
-                0,
-                safeFeedbackNumber(
-                    source.approved
-                )
-            ),
+    return Math.max(
+        0,
+        Math.trunc(
+            amount
+        )
+    );
+};
 
-        rejected:
-            Math.max(
-                0,
-                safeFeedbackNumber(
-                    source.rejected
-                )
-            ),
 
-        earned_fcoin:
-            Math.max(
-                0,
-                safeFeedbackNumber(
-                    source.earned_fcoin
-                )
-            ),
+export const isFeedbackRewarded = (
+    feedback
+) => {
+    if (
+        !feedback
+    ) {
+        return false;
+    }
 
-        approved_bugs:
-            Math.max(
-                0,
-                safeFeedbackNumber(
-                    source.approved_bugs
-                )
-            ),
-    };
+    return Boolean(
+        feedback.rewarded_at
+    )
+    ||
+    getFeedbackRewardAmount(
+        feedback
+    ) > 0;
 };
 
 
@@ -375,11 +396,21 @@ export const normalizeFeedbackStats = (
 export const getFeedbackScreenshot = (
     feedback
 ) => {
-    const value =
-        feedback?.screenshot_url
+    if (
+        !feedback
         ||
-        feedback?.screenshot;
+        typeof feedback !==
+            "object"
+    ) {
+        return null;
+    }
 
+    const value =
+        feedback.screenshot_url
+        ??
+        feedback.screenshot
+        ??
+        null;
 
     if (
         !value
@@ -387,18 +418,47 @@ export const getFeedbackScreenshot = (
         return null;
     }
 
+    if (
+        typeof value ===
+        "string"
+    ) {
+        const trimmed =
+            value.trim();
 
-    const screenshot =
-        String(
-            value
-        ).trim();
+        return (
+            trimmed
+            ||
+            null
+        );
+    }
 
+    if (
+        typeof value ===
+        "object"
+    ) {
+        const url =
+            value.url
+            ??
+            value.src
+            ??
+            null;
 
-    return (
-        screenshot
-        ||
-        null
-    );
+        if (
+            typeof url ===
+            "string"
+        ) {
+            const trimmed =
+                url.trim();
+
+            return (
+                trimmed
+                ||
+                null
+            );
+        }
+    }
+
+    return null;
 };
 
 
@@ -409,70 +469,318 @@ export const getFeedbackScreenshot = (
 export const getFeedbackUsername = (
     feedback
 ) => {
+    if (
+        !feedback
+        ||
+        typeof feedback !==
+            "object"
+    ) {
+        return "unknown";
+    }
+
+    const username =
+        feedback
+            ?.user
+            ?.username
+        ??
+        feedback
+            ?.username
+        ??
+        feedback
+            ?.user_username
+        ??
+        "unknown";
+
+    const normalized =
+        String(
+            username
+        ).trim();
+
     return (
-        feedback?.user?.username
+        normalized
         ||
-        feedback?.username
-        ||
-        "user"
+        "unknown"
     );
 };
 
 
 // =========================================================
-// REWARDED
+// NORMALIZE LIST
 // =========================================================
 
-export const isFeedbackRewarded = (
-    feedback
+export const normalizeFeedbackList = (
+    payload
 ) => {
     if (
-        feedback?.is_rewarded ===
-        true
-    ) {
-        return true;
-    }
-
-
-    if (
-        feedback?.rewarded_at
-    ) {
-        return true;
-    }
-
-
-    return (
-        safeFeedbackNumber(
-            feedback?.reward_amount
-        ) > 0
-    );
-};
-
-
-// =========================================================
-// REWARD AMOUNT
-// =========================================================
-
-export const getFeedbackRewardAmount = (
-    feedback
-) => {
-    return Math.max(
-        0,
-        safeFeedbackNumber(
-            feedback?.reward_amount
+        Array.isArray(
+            payload
         )
-    );
+    ) {
+        return payload;
+    }
+
+    if (
+        Array.isArray(
+            payload?.results
+        )
+    ) {
+        return payload.results;
+    }
+
+    if (
+        Array.isArray(
+            payload?.data
+        )
+    ) {
+        return payload.data;
+    }
+
+    if (
+        Array.isArray(
+            payload?.data?.results
+        )
+    ) {
+        return payload
+            .data
+            .results;
+    }
+
+    return [];
 };
 
 
 // =========================================================
-// CAN MODIFY
+// NORMALIZE STATS
 // =========================================================
 
-export const canModifyFeedback = (
-    feedback
+export const normalizeFeedbackStats = (
+    payload
 ) => {
-    return Boolean(
-        feedback?.can_user_modify
+    const source =
+        payload
+        &&
+        typeof payload ===
+            "object"
+            ? payload
+            : {};
+
+    return {
+        total:
+            toSafeCount(
+                source.total
+            ),
+
+        pending:
+            toSafeCount(
+                source.pending
+            ),
+
+        in_progress:
+            toSafeCount(
+                source.in_progress
+            ),
+
+        approved:
+            toSafeCount(
+                source.approved
+            ),
+
+        rejected:
+            toSafeCount(
+                source.rejected
+            ),
+
+        earned_fcoin:
+            toSafeCount(
+                source.earned_fcoin
+            ),
+
+        approved_bugs:
+            toSafeCount(
+                source.approved_bugs
+            ),
+    };
+};
+
+
+// =========================================================
+// DRF ERROR VALUE
+// =========================================================
+
+const getFirstErrorValue = (
+    value
+) => {
+    if (
+        value ===
+        null
+        ||
+        value ===
+        undefined
+    ) {
+        return null;
+    }
+
+    if (
+        typeof value ===
+        "string"
+    ) {
+        const text =
+            value.trim();
+
+        return (
+            text
+            ||
+            null
+        );
+    }
+
+    if (
+        Array.isArray(
+            value
+        )
+    ) {
+        for (
+            const item
+            of value
+        ) {
+            const message =
+                getFirstErrorValue(
+                    item
+                );
+
+            if (
+                message
+            ) {
+                return message;
+            }
+        }
+
+        return null;
+    }
+
+    if (
+        typeof value ===
+        "object"
+    ) {
+        for (
+            const item
+            of Object.values(
+                value
+            )
+        ) {
+            const message =
+                getFirstErrorValue(
+                    item
+                );
+
+            if (
+                message
+            ) {
+                return message;
+            }
+        }
+    }
+
+    return null;
+};
+
+
+// =========================================================
+// ERROR MESSAGE
+// =========================================================
+
+export const getFeedbackErrorMessage = (
+    error,
+    fallback = "Feedback bilan ishlashda xatolik yuz berdi."
+) => {
+    if (
+        !error
+    ) {
+        return fallback;
+    }
+
+    const serverData =
+        error?.serverData
+        ??
+        error?.response?.data
+        ??
+        null;
+
+    // =====================================================
+    // COMMON DRF KEYS
+    // =====================================================
+
+    const commonMessage =
+        serverData?.detail
+        ??
+        serverData?.message
+        ??
+        serverData?.error
+        ??
+        null;
+
+    const normalizedCommon =
+        getFirstErrorValue(
+            commonMessage
+        );
+
+    if (
+        normalizedCommon
+    ) {
+        return normalizedCommon;
+    }
+
+    // =====================================================
+    // FIELD ERRORS
+    // =====================================================
+
+    const fieldMessage =
+        getFirstErrorValue(
+            serverData
+        );
+
+    if (
+        fieldMessage
+    ) {
+        return fieldMessage;
+    }
+
+    // =====================================================
+    // GENERIC ERROR
+    // =====================================================
+
+    if (
+        typeof error?.message ===
+            "string"
+        &&
+        error.message.trim()
+    ) {
+        return (
+            error.message.trim()
+        );
+    }
+
+    return fallback;
+};
+
+
+// =========================================================
+// STATUS FILTER LABEL
+// =========================================================
+
+export const getFeedbackStatusFilterLabel = (
+    status
+) => {
+    if (
+        status ===
+        "all"
+    ) {
+        return "Barchasi";
+    }
+
+    return (
+        getFeedbackStatusConfig(
+            status
+        ).label
     );
 };
